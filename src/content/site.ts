@@ -77,3 +77,17 @@ export const site: SiteContent = {
 export const siteUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.charityworks.net"
 ).replace(/\/$/, "");
+
+/**
+ * Whether to tell search engines not to index this deployment.
+ *
+ * On while the site is served from a *.vercel.app URL: canonical tags point at
+ * https://www.charityworks.net, which currently serves the client's legacy
+ * site. Letting that get indexed would have every page declaring a canonical
+ * on a domain that does not contain it — worse than not being indexed at all.
+ *
+ * TURN THIS OFF when DNS cuts over to Vercel. See README, "Launch checklist".
+ * Defaults to false so a missing variable can never silently deindex a live
+ * site; it has to be switched on deliberately.
+ */
+export const noindex = process.env.SITE_NOINDEX === "true";

@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { RevealObserver } from "@/components/RevealObserver";
 import { AnimatedLayout } from "@/components/AnimatedLayout";
 import { OrganizationJsonLd } from "@/components/JsonLd";
-import { site, siteUrl } from "@/content/site";
+import { noindex, site, siteUrl } from "@/content/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -17,7 +17,11 @@ export const metadata: Metadata = {
   description: site.description,
   applicationName: site.name,
   authors: [{ name: site.name }],
-  robots: { index: true, follow: true },
+  // Set once here rather than per route: no page-level metadata sets `robots`,
+  // so this default applies to every route including the category pages.
+  robots: noindex
+    ? { index: false, follow: false, nocache: true }
+    : { index: true, follow: true },
 };
 
 export default function RootLayout({

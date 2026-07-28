@@ -66,6 +66,56 @@ Set `NEXT_PUBLIC_SITE_URL` in the Vercel project to the production domain. It
 drives canonical tags, OpenGraph URLs and the sitemap, and defaults to
 `https://www.charityworks.net`.
 
+## 🚨 Launch checklist
+
+**The site is currently set to `noindex`. This must be turned off when the
+domain cuts over, or the site will never appear in search results.**
+
+`.env.production` sets `SITE_NOINDEX=true`. Change that one line to `false`
+(or set `SITE_NOINDEX=false` in the Vercel project settings) and redeploy.
+`NEXT_PUBLIC_` and build-time variables are inlined at build, so this needs a
+**rebuild**, not just a restart.
+
+### Why it is on
+
+`charityworks.net` does not yet point at Vercel — it still resolves to the
+client's legacy site behind Cloudflare. Canonical tags are pinned to that
+domain, so indexing the site while it is served from a `*.vercel.app` URL would
+have every page declaring a canonical on a domain that does not contain it.
+That is worse than not being indexed: it actively teaches search engines the
+wrong thing. The flag exists to hold indexing until DNS and canonicals agree.
+
+### What the flag does
+
+| | `SITE_NOINDEX=true` (now) | `false` (at launch) |
+| --- | --- | --- |
+| `<meta name="robots">` | `noindex, nofollow, nocache` | `index, follow` |
+| `X-Robots-Tag` header | `noindex, nofollow, noarchive` | absent |
+| `Sitemap:` in robots.txt | withheld | present |
+| Crawling in robots.txt | **allowed** | allowed |
+
+Three layers because a `<meta>` tag only exists in HTML — the header is what
+covers `sitemap.xml` and the optimized images.
+
+**Crawling stays allowed on purpose, in both states.** The instinctive
+pre-launch config is `Disallow: /`, but that is counter-productive: a crawler
+blocked by robots.txt never fetches the page, so it never reads the `noindex`,
+and a URL discovered from an external link can still be indexed as a bare
+result. Google's guidance is not to block a page you want de-indexed. Do not
+"tighten" robots.txt here.
+
+The flag defaults to `false` when unset, so a missing variable can never
+silently de-index a live site — it has to be switched on deliberately.
+
+### Cutover order
+
+1. Point `charityworks.net` DNS at Vercel and add the domain to the project.
+2. Confirm the domain serves this app (`/auctioneers` should return 200, not 404).
+3. Set `SITE_NOINDEX=false` and redeploy.
+4. Verify `curl -s https://www.charityworks.net/ | grep 'name="robots"'` shows
+   `index, follow`, and that `/robots.txt` lists the sitemap.
+5. Submit the sitemap in Google Search Console.
+
 ## Where the content lives
 
 **No copy is hardcoded in a component.** Everything renders from
