@@ -66,6 +66,54 @@ Set `NEXT_PUBLIC_SITE_URL` in the Vercel project to the production domain. It
 drives canonical tags, OpenGraph URLs and the sitemap, and defaults to
 `https://www.charityworks.net`.
 
+## Where to review the deployed site
+
+**Use <https://charityworks-pearl.vercel.app> until the domain cuts over.**
+
+That is the project's production domain on Vercel. It is exempt from Vercel's
+deployment protection, so it opens in any browser with no Vercel login, and it
+re-points itself to the newest production deployment automatically.
+
+`https://charityworks-review.vercel.app` serves the same build but sits behind
+Vercel SSO, so it only opens for someone logged into the `grivoais-projects`
+team. It is a manually assigned alias, which means it does **not** follow new
+production deployments — it has to be re-pointed by hand:
+
+```bash
+vercel alias set <new-deployment-url> charityworks-review.vercel.app
+```
+
+Prefer the pearl URL. The review alias is a convenience for logged-in team
+members and will go away at cutover.
+
+### ⚠️ The framework preset must stay "Next.js"
+
+The Vercel project setting **Framework Preset** must be `Next.js`. If it is
+`Other` (API: `"framework": null`), the deployment still reports a successful
+build and a green **Ready** status — `npm run build` runs and `next build`
+genuinely succeeds — but Vercel then discards the `.next/` output and serves
+`public/` as a plain static directory.
+
+The symptom is deceptive: every route returns a **plain-text `404` with
+`X-Vercel-Error: NOT_FOUND`**, there are **no runtime logs** (nothing is ever
+invoked), and yet files that physically exist under `public/` still return 200.
+So `/images/catalog/guitars/guitar_01_taylor-swift.jpg` works while `/` and
+`/auctioneers` 404, which reads like a routing or DNS fault rather than a build
+configuration one.
+
+This is a live trap for this project specifically: it began as a static HTML
+site, so the Vercel project was created with no framework preset, and that
+setting survived the rebuild into Next.js. If the project is ever recreated,
+set the preset explicitly.
+
+Quick check:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://charityworks-pearl.vercel.app/auctioneers
+```
+
+`200` is healthy. `404` means check the framework preset before anything else.
+
 ## 🚨 Launch checklist
 
 **The site is currently set to `noindex`. This must be turned off when the
@@ -111,6 +159,8 @@ silently de-index a live site — it has to be switched on deliberately.
 
 1. Point `charityworks.net` DNS at Vercel and add the domain to the project.
 2. Confirm the domain serves this app (`/auctioneers` should return 200, not 404).
+   A 404 here is far more likely to be the framework preset than DNS — see
+   "The framework preset must stay Next.js" above.
 3. Set `SITE_NOINDEX=false` and redeploy.
 4. Verify `curl -s https://www.charityworks.net/ | grep 'name="robots"'` shows
    `index, follow`, and that `/robots.txt` lists the sitemap.
