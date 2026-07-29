@@ -206,8 +206,14 @@ section { position: relative; }
 .bento-card::before { content: ""; position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at 80% 0%, rgba(184,134,11,0.45), transparent 60%); opacity: 0; transition: opacity 0.5s; }
 .bento-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-lg); }
 .bento-card:hover::before { opacity: 1; }
-.bento-card h3 { font-size: 1.25rem; position: relative; z-index: 2; text-shadow: 0 2px 14px rgba(7,21,46,0.6); }
-.bento-card .reveal-txt { font-size: 0.9rem; color: rgba(255,255,255,0.88); margin-top: 6px; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.5s var(--ease), opacity 0.4s, margin 0.4s; position: relative; z-index: 2; text-shadow: 0 1px 10px rgba(7,21,46,0.7); }
+/* These three lift above .bento-scrim with z-index alone, deliberately WITHOUT
+   `position: relative`. .bento-card is a flex container, and z-index applies to
+   flex items whatever their position, so the stacking works either way — but a
+   positioned element here would become the containing block for
+   .bento-link::after and shrink the tile's click area to this heading. See
+   "Clickable category tiles" below before adding position to any of them. */
+.bento-card h3 { font-size: 1.25rem; z-index: 2; text-shadow: 0 2px 14px rgba(7,21,46,0.6); }
+.bento-card .reveal-txt { font-size: 0.9rem; color: rgba(255,255,255,0.88); margin-top: 6px; max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.5s var(--ease), opacity 0.4s, margin 0.4s; z-index: 2; text-shadow: 0 1px 10px rgba(7,21,46,0.7); }
 .bento-card:hover .reveal-txt { max-height: 80px; opacity: 1; margin-top: 10px; }
 /* spans */
 .b-wide { grid-column: span 2; }
@@ -640,7 +646,17 @@ main.is-transitioning {
 /* ---- Clickable category tiles ----
    The whole tile is a click target via a stretched pseudo-element, but the
    anchor itself wraps only the title so the accessible name is the category
-   name rather than the entire card's text. */
+   name rather than the entire card's text.
+
+   `inset: 0` resolves against the nearest *positioned* ancestor, so every
+   element between this anchor and .bento-card must stay unpositioned for the
+   pseudo-element to reach the full tile. The anchor's own `position: static`
+   is necessary but not sufficient: the <a> sits inside the card's <h3>, and
+   while that heading carried `position: relative` the ::after stretched over
+   the 22-43px title line instead of the card — roughly 15% of the tile, with
+   the other 85% landing on the inert .bento-scrim. `cursor: pointer` on the
+   whole card made every one of those dead clicks look live, which is why the
+   failure read as intermittent rather than as a broken link. */
 .bento-link { position: static; }
 .bento-link::after {
   content: "";
@@ -655,7 +671,7 @@ main.is-transitioning {
 .bento-link:focus-visible { outline: none; }
 
 .bento-cue {
-  position: relative;
+  /* Unpositioned for the same reason as .bento-card h3 — see above. */
   z-index: 2;
   margin-top: 10px;
   font-size: 0.82rem;
