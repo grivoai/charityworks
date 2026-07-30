@@ -33,7 +33,14 @@ export function FaqAccordion({ faqs }: { faqs: FaqItem[] }) {
       {faqs.map((faq) => {
         const open = openId === faq.id;
         return (
-          <div key={faq.id} className={`faq-item reveal${open ? " open" : ""}`}>
+          // className must stay a constant string. This element carries
+          // `.reveal`, and RevealObserver adds its `in` class imperatively via
+          // classList — React has no record of it, so the moment a
+          // state-dependent class is interpolated here React rewrites the whole
+          // attribute on open/close and `in` is destroyed, leaving the item at
+          // opacity 0 and translateY(38px). The open state is expressed by the
+          // button's aria-expanded, which globals.css styles the icon from.
+          <div key={faq.id} className="faq-item reveal">
             <h3>
               <button
                 type="button"

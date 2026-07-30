@@ -6,6 +6,13 @@ import { useEffect, useRef } from "react";
 /**
  * Adds the `.in` class to `.reveal` elements as they scroll into view.
  *
+ * Because `in` is applied imperatively, React holds no record of it: any
+ * `.reveal` element whose className is derived from state will have the whole
+ * class attribute rewritten on the next render, silently dropping `in` and
+ * leaving the element stuck at `opacity: 0`. Keep className constant on
+ * `.reveal` elements and express state as an attribute instead — see
+ * FaqAccordion, which styles its open state from aria-expanded for this reason.
+ *
  * Re-runs on navigation because each route renders a fresh set of elements.
  * A <noscript> rule in the layout forces `.reveal` visible when JavaScript is
  * unavailable, so content is never hidden from a client that cannot run this.

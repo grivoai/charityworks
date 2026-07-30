@@ -297,8 +297,15 @@ section { position: relative; }
 .faq-icon::before, .faq-icon::after { content: ""; position: absolute; background: var(--gold); border-radius: 2px; top: 50%; left: 50%; transform: translate(-50%,-50%); transition: 0.3s; }
 .faq-icon::before { width: 12px; height: 2px; }
 .faq-icon::after { width: 2px; height: 12px; }
-.faq-item.open .faq-icon { transform: rotate(135deg); background: var(--gold); }
-.faq-item.open .faq-icon::before, .faq-item.open .faq-icon::after { background: #fff; }
+/* Keyed off aria-expanded, not an `open` class on .faq-item. The item carries
+   `.reveal`, whose `in` class RevealObserver adds imperatively; React does not
+   know about that class, so any state-dependent className on the same element
+   makes React rewrite the attribute and wipe `in`, dropping the item back to
+   opacity 0. The button already exposes the open state for assistive tech, so
+   styling from it keeps .faq-item's className a constant string. */
+.faq-q[aria-expanded="true"] .faq-icon { transform: rotate(135deg); background: var(--gold); }
+.faq-q[aria-expanded="true"] .faq-icon::before,
+.faq-q[aria-expanded="true"] .faq-icon::after { background: #fff; }
 .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.5s var(--ease); }
 .faq-a p { padding: 0 8px 24px; color: var(--muted); font-size: 1rem; max-width: 720px; }
 
