@@ -18,6 +18,7 @@ export type PageSlug =
   | "home"
   | "auction-info"
   | "auction-items"
+  | "auction-planner"
   | "auctioneers"
   | "faqs"
   | "testimonials"
@@ -389,10 +390,71 @@ export interface ContactPage extends BasePage {
   mobileNote: { heading: string; body: string };
 }
 
+/* ------------------------------------------------------------------ */
+/* Auction planner                                                     */
+/* ------------------------------------------------------------------ */
+
+/** The five questions, in the order they are asked. */
+export type PlannerQuestionId =
+  | "eventType"
+  | "attendance"
+  | "format"
+  | "priceBand"
+  | "interests";
+
+/**
+ * One selectable answer.
+ *
+ * `weights` maps an auction category id to the points this answer contributes.
+ * A category absent from the map scores nothing from this answer; an option
+ * with no map at all — every "Not sure" — is deliberately neutral, so saying
+ * so costs nothing rather than skewing the result.
+ */
+export interface PlannerOption {
+  id: string;
+  label: string;
+  /** Shown on the results screen as a chip echoing what was chosen. */
+  summaryLabel: string;
+  weights?: Record<string, number>;
+  /**
+   * Clears every other choice when picked, and cannot be combined. Used by the
+   * multi-select question's "Not sure" so it stays an answer rather than
+   * becoming one more thing to tick alongside three real preferences.
+   */
+  exclusive?: boolean;
+}
+
+export interface PlannerQuestion {
+  id: PlannerQuestionId;
+  prompt: string;
+  /** One clarifying line under the prompt. */
+  help?: string;
+  /** Present on multi-select questions; absent means pick exactly one. */
+  maxChoices?: number;
+  options: PlannerOption[];
+}
+
+export interface AuctionPlannerPage extends BasePage {
+  slug: "auction-planner";
+  intro: SectionHeader;
+  /** Copy on the opening screen, before the first question. */
+  start: { blurb: string; button: string; duration: string };
+  results: {
+    heading: string;
+    lede: string;
+    answersLabel: string;
+    /** Heading above the three recommended categories. */
+    picksHeading: string;
+    restart: string;
+  };
+  cta: CtaRef;
+}
+
 export type AnyPage =
   | HomePage
   | AuctionInfoPage
   | AuctionItemsPage
+  | AuctionPlannerPage
   | AuctioneersPage
   | FaqsPage
   | TestimonialsPage
@@ -403,6 +465,7 @@ export interface PageMap {
   home: HomePage;
   "auction-info": AuctionInfoPage;
   "auction-items": AuctionItemsPage;
+  "auction-planner": AuctionPlannerPage;
   auctioneers: AuctioneersPage;
   faqs: FaqsPage;
   testimonials: TestimonialsPage;

@@ -95,6 +95,28 @@ not be able to put chosen wording in front of the client. See
 `src/lib/lead-context.ts` for the full trust model and
 `src/lib/interests.ts` for the registry.
 
+### Auction planner
+
+`/auction-planner` asks five questions and recommends three categories. It is
+ungated on purpose — no email, results shown immediately — and it scores in the
+browser from the table in `src/content/collections/planner-rules.ts`, so seeing
+the answer costs nothing and needs no round trip. The contact CTA on the results
+screen is an offer, not a toll.
+
+All the judgement is in that rules file as data. Changing what the planner
+recommends is a change to the weights, not to logic; `src/lib/planner.ts` only
+adds them up and sorts. Ties break on a fixed order, broadest appeal first, so
+answering "not sure" throughout still returns something sensible.
+
+Planner leads reach `/api/contact` on the same path as everything else, carrying
+their answers in the six `quiz*` fields. The endpoint resolves the recommended
+category ids to names, so the notification reads "Auction planner quiz —
+recommended: Hand-Signed Guitars, Bucket List Trips, Affordable Vacations".
+
+Answers travel from the results screen to the form in the query string, and are
+rendered as hidden inputs only — never as text. Printing one back would be a way
+to put chosen wording on the page via a crafted link.
+
 ### Booking
 
 The contact form's success state embeds Calendly's inline widget, so a lead can

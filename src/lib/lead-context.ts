@@ -67,6 +67,7 @@ export const CLIENT_CONTEXT_KEYS = [
   "interestId",
   "quizEventType",
   "quizAttendance",
+  "quizFormat",
   "quizPriceBand",
   "quizInterests",
   "quizRecommended",

@@ -184,6 +184,22 @@ export function ContactForm({
 }
 
 /**
+ * Planner answers the form will forward if they are in the URL.
+ *
+ * Mirrors the `quiz*` keys `/api/contact` accepts. Listed explicitly rather
+ * than copied from the query string wholesale, so a crafted link cannot add
+ * fields of its own to the submission.
+ */
+const QUIZ_PARAMS = [
+  "quizEventType",
+  "quizAttendance",
+  "quizFormat",
+  "quizPriceBand",
+  "quizInterests",
+  "quizRecommended",
+] as const;
+
+/**
  * Which source each kind of interest implies. Exhaustive over the record types
  * by construction, so adding one to the registry is a type error here rather
  * than a lead quietly filed under the wrong source.
@@ -244,13 +260,49 @@ function LeadContextFields({
     ? SOURCE_FOR_TYPE[record.type]
     : source;
 
+  // Planner answers, when the lead came from the quiz. Carried as hidden fields
+  // and never rendered as text: these are raw query-string values, and printing
+  // one would be a way to put chosen wording on the page. The server sanitises
+  // them again and caps their length.
+  const fromQuiz = params.get("source") === "quiz";
+  const quiz = fromQuiz
+    ? QUIZ_PARAMS.map((key) => [key, params.get(key) ?? ""] as const).filter(
+        ([, value]) => value !== ""
+      )
+    : [];
+
   return (
     <>
-      <input type="hidden" name="source" value={resolvedSource} />
+      <input
+        type="hidden"
+        name="source"
+        value={fromQuiz && !record ? "quiz" : resolvedSource}
+      />
       {sourcePath && (
         <input type="hidden" name="sourcePath" value={sourcePath} />
       )}
       {record && <input type="hidden" name="interestId" value={interestId} />}
+
+      {quiz.map(([key, value]) => (
+        <input key={key} type="hidden" name={key} value={value} />
+      ))}
+
+      {/* Static text, deliberately. The banner confirms the answers travelled
+          without echoing any of them back. */}
+      {fromQuiz && !record && (
+        <div className="lead-context">
+          <p>
+            <span className="lead-context-label">Coming from</span>
+            <strong>Your auction planner answers</strong>
+            <span className="lead-context-parent">
+              They&rsquo;re attached to this enquiry — no need to retype them.
+            </span>
+          </p>
+          <Link href="/contact" className="lead-context-clear">
+            Clear
+          </Link>
+        </div>
+      )}
 
       {record && (
         <div className="lead-context">

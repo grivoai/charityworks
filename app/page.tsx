@@ -128,6 +128,13 @@ export default function HomePage() {
           <BentoGrid items={page.itemsTeaser.items} variant="uniform" />
           <div className="center" style={{ marginTop: "46px" }}>
             <Cta cta={page.itemsTeaser.cta} onDark={false} />
+            <p className="home-planner-link reveal">
+              Or{" "}
+              <Link href="/auction-planner">
+                answer five questions and we&rsquo;ll suggest a starting point
+              </Link>
+              .
+            </p>
           </div>
         </div>
       </section>

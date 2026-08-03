@@ -41,6 +41,7 @@ const WEBHOOK_TIMEOUT_MS = 8000;
 const QUIZ_KEYS = [
   "quizEventType",
   "quizAttendance",
+  "quizFormat",
   "quizPriceBand",
   "quizInterests",
   "quizRecommended",

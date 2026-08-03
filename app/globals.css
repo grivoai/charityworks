@@ -962,3 +962,224 @@ main.is-transitioning {
   .auc-portrait { min-height: 320px; }
   .auc-profile-body { padding: 26px 24px 28px; }
 }
+
+/* ============ AUCTION PLANNER ============ */
+/* Nothing in this feature uses `.reveal`: every screen after the first mounts
+   after RevealObserver has taken its snapshot, so a reveal here would never
+   receive `in` and would sit at opacity 0 permanently. */
+
+.wrap-narrow { max-width: 860px; }
+
+.planner {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: clamp(26px, 5vw, 46px);
+}
+.planner-heading {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  color: var(--green);
+  line-height: 1.25;
+}
+/* Focus is moved here on every screen change. The ring would frame the whole
+   heading for a move the reader did not make, and programmatic focus on a
+   tabindex=-1 element does not trigger :focus-visible. */
+.planner-heading:focus { outline: none; }
+.planner-lede { margin-top: 12px; color: var(--muted); font-size: 1rem; line-height: 1.6; }
+.planner-blurb { margin-top: 18px; color: var(--muted); font-size: 0.94rem; line-height: 1.6; }
+.planner .btn { margin-top: 26px; }
+.planner-duration { margin-top: 12px; font-size: 0.84rem; color: #8a7c5c; }
+
+/* ---- progress ---- */
+.planner-progress {
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(7, 21, 46, 0.08);
+  overflow: hidden;
+}
+.planner-progress-bar {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  transition: width 0.4s var(--ease);
+}
+.planner-step {
+  margin-top: 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #8a7c5c;
+}
+
+/* ---- questions ---- */
+.planner-fieldset { border: 0; padding: 0; margin-top: 10px; }
+.planner-help { margin-top: 10px; color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
+.planner-options { margin-top: 22px; display: grid; gap: 10px; }
+
+/* The input stays in the accessibility tree and keeps its keyboard behaviour —
+   arrow keys within the radio group, space to toggle a checkbox — while the
+   label supplies the visible control. Hiding it with `display: none` would take
+   all of that away. */
+.planner-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.97rem;
+  color: var(--green);
+  transition: border-color 0.25s, background 0.25s, transform 0.25s var(--ease);
+}
+.planner-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.planner-option:hover { border-color: var(--gold-bright); background: rgba(224, 168, 46, 0.06); }
+.planner-option[data-selected="true"] {
+  border-color: var(--gold);
+  background: rgba(224, 168, 46, 0.12);
+  font-weight: 600;
+}
+.planner-option:has(input:focus-visible) {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+}
+
+.planner-nav {
+  margin-top: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.planner-nav .btn { margin-top: 0; }
+.planner-back {
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.25s;
+}
+.planner-back:hover { color: var(--green); }
+.planner-back:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
+
+/* ---- results ---- */
+.planner-answers { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.planner-answers h3 {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #8a7c5c;
+}
+.planner-answers ul { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; list-style: none; }
+.planner-answers li {
+  padding: 6px 13px;
+  border-radius: 99px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  font-size: 0.84rem;
+  color: var(--green);
+}
+
+.planner-picks-heading {
+  margin-top: 32px;
+  font-family: "Playfair Display", serif;
+  font-size: 1.2rem;
+  color: var(--green);
+}
+.planner-picks {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  list-style: none;
+  counter-reset: pick;
+}
+.planner-pick {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #fff;
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+.planner-pick:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.planner-pick-media { position: relative; aspect-ratio: 4 / 3; background: var(--cream); }
+.planner-pick-body { display: flex; flex-direction: column; flex: 1; padding: 16px 18px 18px; }
+.planner-pick-body h4 { font-size: 1rem; color: var(--green); line-height: 1.25; }
+.planner-pick-note { margin-top: 8px; font-size: 0.87rem; color: var(--muted); line-height: 1.5; }
+.planner-pick-link {
+  margin-top: auto;
+  padding-top: 14px;
+  align-self: flex-start;
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--gold);
+  transition: color 0.3s;
+}
+.planner-pick-link:hover { color: var(--green); }
+.planner-pick-link:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
+
+.planner-cta {
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.planner-cta .btn { margin-top: 0; }
+.planner-cta-note { margin-top: 12px; font-size: 0.86rem; color: var(--muted); }
+.planner-cta-alt {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+.planner-cta-alt a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.planner-cta-alt a:hover { color: var(--green); }
+
+/* Entry point on the catalog index. */
+.planner-promo {
+  margin: 0 auto 44px;
+  max-width: 760px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 20px 26px;
+  border-radius: var(--radius-sm);
+  background: rgba(224, 168, 46, 0.1);
+  border: 1px solid rgba(224, 168, 46, 0.3);
+}
+.planner-promo p { color: var(--green); font-size: 0.97rem; }
+.planner-promo strong { display: block; font-size: 1.05rem; margin-bottom: 3px; }
+.planner-promo a { flex: 0 0 auto; font-weight: 600; color: var(--gold); }
+.planner-promo a:hover { color: var(--green); }
+
+@media (max-width: 860px) {
+  .planner-picks { grid-template-columns: 1fr; }
+  .planner-promo { flex-direction: column; align-items: flex-start; }
+}
+
+.home-planner-link { margin-top: 18px; font-size: 0.94rem; color: var(--muted); }
+.home-planner-link a { color: var(--gold); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.home-planner-link a:hover { color: var(--green); }
