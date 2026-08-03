@@ -75,7 +75,7 @@ export interface Step {
 
 /**
  * One labelled specific about a lot — "Certificate of Authenticity", "Framed
- * size", "Retail value", "Lead time" and so on.
+ * size", "Includes", "Lead time" and so on.
  *
  * Deliberately a free-form label/value pair rather than fixed fields: what is
  * known differs by category, and a fixed shape would either force empty rows or
@@ -85,6 +85,12 @@ export interface Step {
  * These are claims about goods a nonprofit will resell to its donors, so every
  * value must come from the client. Nothing here may be inferred from a
  * photograph or a description.
+ *
+ * Descriptive facts only — no prices, retail values or estimates. The site
+ * quotes no figure for any individual lot; pricing is a phone conversation.
+ * (The consignment terms elsewhere on the site — items at 75% of retail —
+ * describe how the arrangement works, which is a different thing from putting
+ * a number on a piece.)
  */
 export interface ItemDetail {
   label: string;

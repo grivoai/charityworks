@@ -1,14 +1,26 @@
 # Lot details needed from the client
 
 The catalog pages can now show verified specifics under each lot — certificate
-of authenticity, framed dimensions, retail value, lead time, and anything else
-worth stating. **The site ships with none of them filled in**, because every
-one of these is a claim about goods a nonprofit will resell to its own donors.
-Nothing here may be inferred from a photograph, a description, or what is
-typical for the category.
+of authenticity, framed dimensions, what is included, lead time, and anything
+else worth stating. **The site ships with none of them filled in**, because
+every one of these is a claim about goods a nonprofit will resell to its own
+donors. Nothing here may be inferred from a photograph, a description, or what
+is typical for the category.
 
 A row that has not been supplied is not shown. Partial information is fine —
 send what is known per lot and the rest simply stays absent.
+
+## No pricing
+
+**Descriptive facts only. No retail values, price estimates or ranges.** The
+site quotes no figure for any individual lot; pricing is a phone conversation.
+Please do not send prices expecting them to appear on the page — they will not
+be published.
+
+(This is separate from the consignment terms already described elsewhere on the
+site — items at 75% of retail, bidding opening at retail. That explains how the
+arrangement works, which is a different thing from putting a number on a
+specific piece.)
 
 ## What the fields are
 
@@ -18,10 +30,10 @@ forcing empty rows. Suggested labels, for consistency across the catalog:
 | Label | Example value | Notes |
 | --- | --- | --- |
 | `Authenticity` | "JSA certificate of authenticity included" | Name the authenticator. "Certified" alone says nothing. |
-| `Retail value` | "$3,500" | The figure the client is willing to stand behind, since it anchors bidding. |
 | `Framed size` | "32 × 40 in, framed" | State whether the figure is framed or unframed. |
-| `Lead time` | "2–3 weeks from confirmation" | What the nonprofit tells its event committee. |
 | `Includes` | "Display case, certificate, easel" | Anything shipped alongside the piece. |
+| `Lead time` | "2–3 weeks from confirmation" | What the nonprofit tells its event committee. |
+| `Signed by` | "Signed in person at Wembley, 2023" | Where and when, when it is known. |
 
 Any other label works — these are only a starting set.
 
@@ -29,7 +41,7 @@ Any other label works — these are only a starting set.
 
 A spreadsheet is fine. One row per lot, columns for whichever labels apply:
 
-| Lot | Authenticity | Retail value | Framed size | Lead time |
+| Lot | Authenticity | Framed size | Includes | Lead time |
 | --- | --- | --- | --- | --- |
 | Taylor Swift Hand-Signed Acoustic Guitar | | | | |
 | Morgan Wallen Hand-Signed Acoustic Guitar | | | | |
@@ -72,7 +84,7 @@ Add a `details` array to any item in the catalog files:
   image: { … },
   details: [
     { label: "Authenticity", value: "JSA certificate of authenticity included" },
-    { label: "Retail value", value: "$3,500" },
+    { label: "Includes", value: "Certificate, hard case" },
     { label: "Lead time", value: "2–3 weeks from confirmation" },
   ],
 },
@@ -83,8 +95,8 @@ editable rows in the admin panel rather than a code change.
 
 ## One thing to check before publishing
 
-Retail values and authentication claims are what a bidder relies on when
-deciding what to pay, and what an auditor looks at afterwards. Confirm the
-client is willing to stand behind each figure as published, rather than treating
-them as indicative — once they are on the page they are a representation to
-every donor who bids.
+Authentication claims are what a bidder relies on when deciding what to pay,
+and what an auditor looks at afterwards. "JSA certified" and "certificate
+included" are different statements, and a bidder will read the first as the
+second. Confirm the client can produce the paperwork behind each one as
+worded — once it is on the page it is a representation to every donor who bids.
