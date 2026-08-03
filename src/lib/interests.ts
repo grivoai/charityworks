@@ -22,7 +22,7 @@ import type { InterestType } from "@/lib/lead-context";
 
 export interface InterestRecord {
   id: string;
-  type: Extract<InterestType, "category" | "item" | "auctioneer">;
+  type: Extract<InterestType, "category" | "item" | "auctioneer" | "partner">;
   /** Display name, authoritative. */
   label: string;
   /** For lots: the category they belong to, used in the summary line. */
@@ -65,12 +65,23 @@ function buildRegistry(): Map<string, InterestRecord> {
     }
   }
 
+  // Auctioneers and partners share a page but not a trade: the featured partner
+  // does event planning and catering. They are typed apart so the summary line
+  // asks for the right thing.
   const { auctioneers, partners } = getPage("auctioneers");
-  for (const person of [...auctioneers, ...partners.items]) {
+  for (const person of auctioneers) {
     add({
       id: person.id,
       type: "auctioneer",
       label: person.name,
+      path: "/auctioneers",
+    });
+  }
+  for (const partner of partners.items) {
+    add({
+      id: partner.id,
+      type: "partner",
+      label: partner.name,
       path: "/auctioneers",
     });
   }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
@@ -9,6 +10,14 @@ export const metadata: Metadata = buildMetadata("auctioneers");
 
 export default function AuctioneersRoute() {
   const page = getPage("auctioneers");
+
+  /**
+   * Requests carry only the person's id; /api/contact resolves the name from
+   * the roster itself. Same one form and one endpoint as every other enquiry —
+   * see lib/lead-context.ts for why the label is never sent from here.
+   */
+  const requestHref = (id: string) =>
+    `/contact?interest=${encodeURIComponent(id)}&from=%2Fauctioneers`;
 
   return (
     <>
@@ -118,6 +127,18 @@ export default function AuctioneersRoute() {
                   {auctioneer.bio.map((para, i) => (
                     <p key={i}>{para}</p>
                   ))}
+
+                  {/* Named in the accessible label: a page of nine identical
+                      "Request this auctioneer" links tells a screen reader user
+                      nothing about which one they are on. */}
+                  <Link
+                    className="auc-request"
+                    href={requestHref(auctioneer.id)}
+                    aria-label={`Request ${auctioneer.name} for your event`}
+                  >
+                    Request this auctioneer
+                    <span aria-hidden="true"> →</span>
+                  </Link>
                 </div>
               </article>
             ))}
@@ -163,6 +184,18 @@ export default function AuctioneersRoute() {
                   {partner.closer && (
                     <p className="auc-closer">{partner.closer}</p>
                   )}
+
+                  {/* Not "request this auctioneer": the partner does event
+                      planning and catering. The lead is typed `partner` too, so
+                      the notification asks for what they actually do. */}
+                  <Link
+                    className="auc-request"
+                    href={requestHref(partner.id)}
+                    aria-label={`Ask about working with ${partner.name}`}
+                  >
+                    Ask about this partner
+                    <span aria-hidden="true"> →</span>
+                  </Link>
                 </div>
               </article>
             ))}

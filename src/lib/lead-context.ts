@@ -31,16 +31,25 @@ export const LEAD_SOURCES = [
   "category-request",
   "item-request",
   "auctioneer-request",
+  "partner-request",
   "quiz",
 ] as const;
 export type LeadSource = (typeof LEAD_SOURCES)[number];
 
-/** What the lead is about. Derived from the resolved interest, not trusted. */
+/**
+ * What the lead is about. Derived from the resolved interest, not trusted.
+ *
+ * `partner` is separate from `auctioneer` because the roster page carries both,
+ * and the featured partner is an event planning and catering firm. Collapsing
+ * the two would have the client's notification ask for an auctioneer by a
+ * caterer's name.
+ */
 export const INTEREST_TYPES = [
   "general",
   "category",
   "item",
   "auctioneer",
+  "partner",
   "quiz",
 ] as const;
 export type InterestType = (typeof INTEREST_TYPES)[number];
@@ -145,6 +154,8 @@ export function buildContextSummary(input: {
       return `Category enquiry: ${interestLabel}`;
     case "auctioneer":
       return `Auctioneer request: ${interestLabel}`;
+    case "partner":
+      return `Partner enquiry: ${interestLabel}`;
     case "quiz": {
       const picks = input.quizRecommendedLabels?.filter(Boolean) ?? [];
       return picks.length

@@ -944,6 +944,19 @@ main.is-transitioning {
   color: var(--gold) !important;
 }
 
+/* Per-person request link. Sits after the bio rather than beside the name so
+   it reads as the end of the profile — you decide after reading, not before. */
+.auc-request {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--gold);
+  transition: color 0.3s;
+}
+.auc-request:hover { color: var(--green); }
+.auc-request:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
+
 @media (max-width: 860px) {
   .auc-profile { grid-template-columns: 1fr; gap: 0; }
   .auc-portrait { min-height: 320px; }

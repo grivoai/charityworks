@@ -183,6 +183,20 @@ export function ContactForm({
   );
 }
 
+/**
+ * Which source each kind of interest implies. Exhaustive over the record types
+ * by construction, so adding one to the registry is a type error here rather
+ * than a lead quietly filed under the wrong source.
+ */
+const SOURCE_FOR_TYPE: Record<InterestRecordType, LeadSource> = {
+  item: "item-request",
+  category: "category-request",
+  auctioneer: "auctioneer-request",
+  partner: "partner-request",
+};
+
+type InterestRecordType = NonNullable<InterestLookup[string]>["type"];
+
 /** The parts of a delivered submission the booking widget needs. */
 type SubmittedLead = {
   leadId: string;
@@ -227,11 +241,7 @@ function LeadContextFields({
   // Derived from what the id actually resolved to, so the recorded source can
   // never contradict the recorded interest.
   const resolvedSource: LeadSource = record
-    ? record.type === "item"
-      ? "item-request"
-      : record.type === "auctioneer"
-        ? "auctioneer-request"
-        : "category-request"
+    ? SOURCE_FOR_TYPE[record.type]
     : source;
 
   return (
