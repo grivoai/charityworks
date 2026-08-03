@@ -166,11 +166,18 @@ export default async function AuctionCategoryRoute({
           <div className="center" style={{ marginTop: "52px" }}>
             {/* Carries the category itself as the interest, so someone who
                 wants the category rather than one lot still arrives at the
-                form with context attached. */}
+                form with context attached.
+
+                Worded around availability rather than the free-plan offer:
+                this sits directly under the availability notice, at the end of
+                a page of specific lots, and by that point the question in the
+                reader's mind is whether these can be had for their date. The
+                free-plan wording stays on the home, FAQ and testimonial
+                surfaces, where the offer is the point. */}
             <Cta
               cta={{
                 id: `cta-category-${category.slug}`,
-                label: "Get Your Free Fundraising Plan",
+                label: "Check Availability for Your Event",
                 href: requestHref(category.id),
                 variant: "primary",
               }}
