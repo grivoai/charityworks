@@ -66,6 +66,56 @@ Set `NEXT_PUBLIC_SITE_URL` in the Vercel project to the production domain. It
 drives canonical tags, OpenGraph URLs and the sitemap, and defaults to
 `https://www.charityworks.net`.
 
+## Leads
+
+Every enquiry on the site posts to one endpoint, `/api/contact`: both copies of
+the contact form, requests for a specific lot, requests for an auctioneer, and
+the auction planner. They differ only in the context they carry, so there is one
+validation path, one payload shape and one delivery step downstream.
+
+`POST /api/contact` does two things with a lead:
+
+1. **Delivers it** to `LEAD_WEBHOOK_URL` as flat JSON — one key per column,
+   every key always present even when empty, so a spreadsheet destination gets a
+   stable column set. Set this in the Vercel project (Production *and* Preview)
+   to the n8n webhook trigger URL.
+2. **Logs it** with `console.info`, whatever the webhook did. This is the
+   fallback record: if the webhook is unset, unreachable, times out or returns
+   an error, the lead is still recoverable from the Vercel function logs.
+
+A delivery failure never surfaces to the submitter. From their side the enquiry
+succeeded — their details were captured — and an error would only produce
+duplicate submissions.
+
+**The browser sends an id; the server derives the label.** A request link
+carries only `?interest=guitar-taylor-swift`, and the endpoint resolves the
+display name from the catalog itself, ignoring any label posted from the client.
+That text ends up in a notification a human acts on, so a hand-edited URL must
+not be able to put chosen wording in front of the client. See
+`src/lib/lead-context.ts` for the full trust model and
+`src/lib/interests.ts` for the registry.
+
+### Booking
+
+The contact form's success state embeds Calendly's inline widget, so a lead can
+book a call immediately instead of waiting for the follow-up. It is additive —
+the lead is delivered and logged before the widget renders, and if Calendly is
+blocked or slow the thank-you message and a plain booking link remain.
+
+The scheduling URL lives in `site.booking` in `src/content/site.ts`. Blank it
+and the success state reverts to the thank-you message alone.
+
+Calendly's script loads only after a successful submission, so visitors who
+never submit get no third-party code and no Calendly cookies. Note that their
+copy-paste embed snippet will *not* work here: `widget.js` scans for its
+container as it loads, and ours does not exist until after submit. See
+`src/components/BookingPanel.tsx`.
+
+The lead's `leadId` travels to Calendly as `utm_content` and its source as
+`utm_campaign`. Calendly carries UTM parameters onto the booking record and its
+own webhooks, which is what lets a booking be joined to the lead that produced
+it rather than matched on email address.
+
 ## Where to review the deployed site
 
 **Use <https://charityworks-pearl.vercel.app> until the domain cuts over.**

@@ -203,7 +203,9 @@ export default function HomePage() {
             </p>
           </div>
 
-          <ContactForm form={contactForm} idPrefix="home" />
+          {/* No `interests` map: this form cannot carry a specific lot or
+              auctioneer, so the lookup stays out of the home page bundle. */}
+          <ContactForm form={contactForm} idPrefix="home" source="home" />
         </div>
       </section>
     </>

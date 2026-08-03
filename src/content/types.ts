@@ -238,6 +238,24 @@ export interface SiteContent {
     offices: string;
     channels: ContactChannel[];
   };
+  /**
+   * Calendly scheduling, offered on the contact form's success state so a lead
+   * can book immediately instead of waiting on the follow-up.
+   *
+   * An empty `url` disables the widget and the success state falls back to the
+   * thank-you message alone, so the scheduling link can be changed or pulled
+   * without touching a component.
+   */
+  booking: {
+    /** Bare scheduling URL — no query string; params are added at embed time. */
+    url: string;
+    /** Heading above the widget. */
+    heading: string;
+    /** One line of context under the heading. */
+    lede: string;
+    /** Text of the plain link shown if the embed cannot load. */
+    fallbackLabel: string;
+  };
   footer: {
     exploreHeading: string;
     contactHeading: string;

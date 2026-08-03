@@ -338,6 +338,72 @@ section { position: relative; }
 .field textarea { resize: vertical; min-height: 110px; }
 .form-msg { grid-column: span 2; text-align: center; font-size: 0.92rem; color: var(--gold-soft); min-height: 20px; }
 
+/* ---- "You're asking about ..." context note ----
+   Shown when the form is reached from a specific lot, category or auctioneer.
+   The matching id travels as a hidden field; this is the visible confirmation
+   that the context carried, so nobody has to retype it into the message box. */
+.lead-context {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(224, 168, 46, 0.12);
+  border: 1px solid rgba(224, 168, 46, 0.34);
+}
+.lead-context p { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lead-context-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+.lead-context strong { color: #fff; font-size: 1rem; line-height: 1.3; }
+.lead-context-parent { font-size: 0.84rem; color: rgba(255, 255, 255, 0.62); }
+.lead-context-clear {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.68);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lead-context-clear:hover { color: var(--gold-bright); }
+
+/* ---- Success state: thank-you + Calendly booking ----
+   Replaces the fields in place once a lead has been delivered, so the panel
+   keeps its size and the page does not jump. Nothing here carries `.reveal`:
+   RevealObserver snapshots `.reveal:not(.in)` once per navigation, and an
+   element mounted this late would never be observed — it would sit at
+   opacity 0 permanently. See BookingPanel and RevealObserver. */
+.form-success { display: flex; flex-direction: column; gap: 26px; }
+/* Focus is moved here on success. The ring would frame the whole panel for a
+   move the user did not make, and programmatic focus on a tabindex=-1 element
+   does not trigger :focus-visible, so keyboard focus rings are unaffected. */
+.form-success:focus { outline: none; }
+.form-success-msg { font-size: 1.06rem; line-height: 1.5; color: var(--gold-soft); }
+
+.booking { display: flex; flex-direction: column; gap: 10px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.14); }
+.booking-heading { font-family: "Playfair Display", serif; font-size: 1.28rem; color: #fff; }
+.booking-lede { font-size: 0.92rem; line-height: 1.55; color: rgba(255,255,255,0.7); }
+
+/* Calendly owns everything inside this element. It is given a background and a
+   fixed height because an inline embed does not size itself — the iframe fills
+   whatever box it is handed. `width` rather than Calendly's suggested
+   `min-width: 320px`: below that width their min-width would push the box wider
+   than the panel and scroll the whole page sideways, where 100% keeps any
+   overflow inside the iframe, which scrolls on its own. */
+.booking-embed { width: 100%; height: 700px; margin-top: 12px; border-radius: 12px; overflow: hidden; background: #fff; }
+.booking[data-state="failed"] .booking-embed { display: none; }
+
+.booking-note { font-size: 0.86rem; color: rgba(255,255,255,0.55); }
+.booking[data-state="ready"] .booking-note { display: none; }
+
+.booking-fallback { align-self: flex-start; font-size: 0.9rem; font-weight: 600; color: var(--gold-bright); text-decoration: underline; text-underline-offset: 4px; transition: color 0.3s; }
+.booking-fallback:hover { color: var(--gold-soft); }
+
 /* ============ FOOTER ============ */
 .footer { background: var(--green-deep); color: rgba(255,255,255,0.75); padding: 70px 0 30px; }
 .footer-top { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; padding-bottom: 44px; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -371,7 +437,11 @@ section { position: relative; }
   .bento { grid-auto-rows: 170px; }
   .b-wide, .b-tall { grid-column: span 1; grid-row: span 1; }
   .form-grid { grid-template-columns: 1fr; }
-  .field.full, .form-msg { grid-column: span 1; }
+  .field.full, .form-msg, .lead-context { grid-column: span 1; }
+  /* Claw back the form panel's 36px padding. The widget is the only thing on
+     the success panel at this width and needs every pixel available; the
+     calendar grid is what suffers first when it is squeezed. */
+  .booking-embed { width: auto; height: 880px; margin-inline: -36px; border-radius: 0; }
   .footer-top { grid-template-columns: 1fr; }
   .t-card { width: 300px; flex-basis: 300px; }
 }

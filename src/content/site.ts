@@ -63,6 +63,19 @@ export const site: SiteContent = {
     ],
   },
 
+  /**
+   * Ira's 30-minute scheduling link. Stored bare: ContactForm appends the
+   * embed's own parameters, and a query string saved here would be silently
+   * overwritten by them.
+   */
+  booking: {
+    url: "https://calendly.com/iraklein82/30min",
+    heading: "Rather not wait? Book a call now.",
+    lede:
+      "Pick a 30-minute slot with Ira and we'll walk through what would work for your event.",
+    fallbackLabel: "Open the booking calendar →",
+  },
+
   footer: {
     exploreHeading: "Explore",
     contactHeading: "Contact",
