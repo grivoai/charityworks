@@ -73,6 +73,24 @@ export interface Step {
   body: string;
 }
 
+/**
+ * One labelled specific about a lot — "Certificate of Authenticity", "Framed
+ * size", "Retail value", "Lead time" and so on.
+ *
+ * Deliberately a free-form label/value pair rather than fixed fields: what is
+ * known differs by category, and a fixed shape would either force empty rows or
+ * invite filling them in with guesses. A row that is not supplied is a row that
+ * is not shown.
+ *
+ * These are claims about goods a nonprofit will resell to its donors, so every
+ * value must come from the client. Nothing here may be inferred from a
+ * photograph or a description.
+ */
+export interface ItemDetail {
+  label: string;
+  value: string;
+}
+
 /** A single lot within an auction category. */
 export interface CategoryItem {
   id: string;
@@ -82,6 +100,12 @@ export interface CategoryItem {
   image?: ImageRef;
   /** Per-item disclaimer, e.g. jersey availability wording required by the client. */
   note?: string;
+  /**
+   * Verified specifics, shown as a definition list on the item card. Optional
+   * throughout: the catalog ships with these empty pending the client's own
+   * figures, and the card simply renders without the block until they arrive.
+   */
+  details?: ItemDetail[];
 }
 
 /**

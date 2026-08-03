@@ -822,6 +822,38 @@ main.is-transitioning {
   color: #7a6a48 !important;
 }
 
+/* Per-lot specifics. A definition list because that is what this is — the
+   label is the term and the figure is its definition — which also gives a
+   screen reader the pairing for free. Rows only exist when the client has
+   supplied them, so the block is absent rather than empty. */
+.cat-card-details { margin-top: 14px; display: flex; flex-direction: column; gap: 7px; }
+.cat-card-details > div { display: grid; grid-template-columns: minmax(0, 8.5em) 1fr; gap: 10px; align-items: baseline; }
+.cat-card-details dt {
+  font-size: 0.73rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8a7c5c;
+}
+.cat-card-details dd { font-size: 0.88rem; color: var(--green); }
+
+/* Pushed to the bottom of the card so the button sits on one line across a row
+   of cards whose descriptions differ in length. `margin-top: auto` needs the
+   body to be a column flex box, hence the display change here rather than on
+   .cat-card-body's original padding-only rule. */
+.cat-card-body { display: flex; flex-direction: column; flex: 1; }
+.cat-card-request {
+  margin-top: auto;
+  padding-top: 16px;
+  align-self: flex-start;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--gold);
+  transition: color 0.3s;
+}
+.cat-card-request:hover { color: var(--green); }
+.cat-card-request:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
+
 /* Availability disclosure. Visually distinct so it cannot be mistaken for
    catalog copy. */
 .cat-notice {
