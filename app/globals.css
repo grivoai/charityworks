@@ -1183,3 +1183,17 @@ main.is-transitioning {
 .home-planner-link { margin-top: 18px; font-size: 0.94rem; color: var(--muted); }
 .home-planner-link a { color: var(--gold); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .home-planner-link a:hover { color: var(--green); }
+
+/* Shown on the results screen only when the auction runs live in whole or in
+   part. Visually distinct from the category picks: it is an addition to the
+   plan, not a fourth thing competing with the three. */
+.planner-auctioneer {
+  margin-top: 18px;
+  padding: 20px 22px;
+  border-radius: var(--radius-sm);
+  background: var(--cream);
+  border: 1px solid var(--line);
+}
+.planner-auctioneer h3 { font-family: "Playfair Display", serif; font-size: 1.05rem; color: var(--green); }
+.planner-auctioneer p { margin-top: 8px; font-size: 0.9rem; color: var(--muted); line-height: 1.55; }
+.planner-auctioneer .planner-pick-link { margin-top: 0; padding-top: 12px; display: inline-block; }

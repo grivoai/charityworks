@@ -4,10 +4,7 @@ import { buildMetadata } from "@/lib/seo";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { AuctionPlanner } from "@/components/AuctionPlanner";
 import type { PlannerCategoryCard } from "@/components/AuctionPlanner";
-import {
-  PLANNER_TIE_BREAK,
-  plannerCategoryNotes,
-} from "@/content/collections/planner-rules";
+import { PLANNER_TIE_BREAK } from "@/content/collections/planner-rules";
 
 export const metadata: Metadata = buildMetadata("auction-planner");
 
@@ -30,8 +27,9 @@ export default function AuctionPlannerRoute() {
     return {
       id: category.id,
       title: category.title,
-      blurb: category.blurb,
-      note: plannerCategoryNotes[category.id] ?? category.blurb,
+      // The client's own one-line description, verbatim. See the note where
+      // the per-category copy used to live in planner-rules.ts.
+      note: category.blurb,
       path: `/auction-items/${category.slug}`,
       image: { src: category.image.src, alt: category.image.alt },
     };

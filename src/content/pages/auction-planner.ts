@@ -37,6 +37,13 @@ export const auctionPlannerPage: AuctionPlannerPage = {
     restart: "Start over",
   },
 
+  auctioneerCard: {
+    heading: "Consider a professional auctioneer",
+    body: "A live auction turns on whoever is holding the microphone. Our roster works mainly across California, with one auctioneer covering the wider United States — worth asking who can reach your event.",
+    linkLabel: "Meet the auctioneers",
+    href: "/auctioneers",
+  },
+
   cta: {
     id: "cta-planner-results",
     label: "Get Your Free Fundraising Plan",

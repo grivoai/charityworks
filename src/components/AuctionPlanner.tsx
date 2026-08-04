@@ -26,7 +26,7 @@ import type { AuctionPlannerPage, PlannerOption } from "@/content/types";
 export interface PlannerCategoryCard {
   id: string;
   title: string;
-  blurb: string;
+  /** The client's own description of the category, verbatim. */
   note: string;
   path: string;
   image: { src: string; alt: string };
@@ -245,6 +245,8 @@ export function AuctionPlanner({
   /* Results                                                             */
   /* ------------------------------------------------------------------ */
   const contactHref = `/contact?${buildContactQuery(answers, recommended)}`;
+  const format = answers.format ?? [];
+  const isLiveAuction = format.includes("live") || format.includes("both");
 
   return (
     <div className="planner planner-results">
@@ -272,6 +274,9 @@ export function AuctionPlanner({
       </div>
 
       <h3 className="planner-picks-heading">{page.results.picksHeading}</h3>
+      {/* Rendered from the format answer rather than the score, because it is
+          not competing with the categories — a live auction needs someone to
+          run it whichever lots are in the room. */}
       <ol className="planner-picks">
         {picks.map((pick) => (
           <li key={pick.id} className="planner-pick">
@@ -302,6 +307,17 @@ export function AuctionPlanner({
           </li>
         ))}
       </ol>
+
+      {isLiveAuction && (
+        <div className="planner-auctioneer">
+          <h3>{page.auctioneerCard.heading}</h3>
+          <p>{page.auctioneerCard.body}</p>
+          <Link href={page.auctioneerCard.href} className="planner-pick-link">
+            {page.auctioneerCard.linkLabel}
+            <span aria-hidden="true"> →</span>
+          </Link>
+        </div>
+      )}
 
       <div className="planner-cta">
         <Link href={contactHref} className="btn btn-gold">

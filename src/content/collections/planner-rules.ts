@@ -8,11 +8,22 @@ import type { PlannerQuestion } from "../types";
  * changing what the tool recommends is a change to this file rather than to
  * logic. `src/lib/planner.ts` does nothing but add these numbers up.
  *
- * The weights encode what the client already says about each category in its
- * own copy — jewelry as "the workhorse of a silent auction", handbags as a
- * mid-tier lot that lifts the average bid, experiences having "no retail price
- * a bidder can look up". This is a heuristic for pointing someone at a sensible
- * starting place, not a valuation, and the results screen is worded to match.
+ * On what the weights are grounded in — an earlier version of this comment
+ * claimed they encoded the client's own description of each category. That was
+ * wrong, and worth recording so it is not assumed again. Phrases like "the
+ * workhorse of a silent auction" and "lifts the average bid" come from the
+ * `intro` fields in auction-items.ts, which were written during the Phase 1
+ * rebuild. None of them appear anywhere in the client's original site.
+ *
+ * What the client actually publishes is one line per category, preserved
+ * verbatim in each category's `blurb`. Those lines say what a category is and
+ * who it appeals to; they say nothing about live versus silent format or about
+ * price bands, which is most of what this table has to decide.
+ *
+ * So: the format and price weights are a fundraising heuristic, not a claim
+ * sourced from the client. They point someone at a sensible starting place.
+ * The results screen is worded to match, and the recommendation is offered as
+ * a conversation starter rather than an answer.
  */
 
 /** Category ids the planner can recommend. */
@@ -57,45 +68,44 @@ export const PLANNER_TIE_BREAK = [
 export const PLANNER_PICK_COUNT = 3;
 
 export const plannerQuestions: PlannerQuestion[] = [
+  /**
+   * Scores nothing, deliberately. Every option here carries no weights.
+   *
+   * The earlier version nudged categories by event type — jewelry for a
+   * luncheon, memorabilia for a school fundraiser — and none of it was sourced.
+   * Nothing the client publishes says a synagogue bids differently from a
+   * university, so those numbers were invented and have been removed rather
+   * than reworded.
+   *
+   * The question stays because the answer is worth having: it travels to the
+   * lead as `quizEventType`, which is real information for the follow-up
+   * conversation. The recommendation itself rests on format, price band and
+   * stated interests.
+   *
+   * The options themselves are drawn from the client's real material where it
+   * exists. Galas appear across the original site and in the auctioneer bios
+   * ("specializes in benefit galas"); there is a real golf client (Cal Men's
+   * Golf) and a real faith client (Congregation B'nai Shalom); "school or
+   * university" covers the two college-athletics clients in the testimonials.
+   * "Luncheon or breakfast" and "church" were assumptions with no support
+   * anywhere in the client's material — the one faith client is a synagogue —
+   * and are gone.
+   */
   {
     id: "eventType",
     prompt: "What kind of event are you running?",
     options: [
+      { id: "gala", label: "Gala or dinner", summaryLabel: "Gala or dinner" },
+      { id: "golf", label: "Golf tournament", summaryLabel: "Golf tournament" },
       {
-        id: "gala",
-        label: "Gala or dinner",
-        summaryLabel: "Gala or dinner",
-        weights: {
-          "item-bucket-list": 1,
-          "item-signed-guitars": 1,
-          "item-jewelry": 1,
-        },
+        id: "faith",
+        label: "Faith-based fundraiser",
+        summaryLabel: "Faith-based fundraiser",
       },
       {
-        id: "golf",
-        label: "Golf tournament",
-        summaryLabel: "Golf tournament",
-        weights: { "item-memorabilia": 2, "item-vacations": 1 },
-      },
-      {
-        id: "luncheon",
-        label: "Luncheon or breakfast",
-        summaryLabel: "Luncheon or breakfast",
-        weights: {
-          "item-jewelry": 1,
-          "item-handbags": 1,
-          "item-gold-albums": 1,
-        },
-      },
-      {
-        id: "school-church",
-        label: "School or church fundraiser",
-        summaryLabel: "School or church fundraiser",
-        weights: {
-          "item-vacations": 1,
-          "item-memorabilia": 1,
-          "item-gold-albums": 1,
-        },
+        id: "school-university",
+        label: "School or university",
+        summaryLabel: "School or university",
       },
       { id: "other", label: "Something else", summaryLabel: "Other event" },
     ],
@@ -158,7 +168,12 @@ export const plannerQuestions: PlannerQuestion[] = [
           "item-bucket-list": 3,
           "item-meet-greets": 3,
           "item-signed-guitars": 2,
-          "item-memorabilia": 1,
+          // Leans live, not silent. The reverse used to be true here, on the
+          // strength of a description of memorabilia as breadth to fill a
+          // table — which was invented. What the client actually publishes is
+          // "The WOW factor that creates buzz and drives up every bid", and
+          // buzz is a live-room property.
+          "item-memorabilia": 2,
         },
       },
       {
@@ -169,8 +184,8 @@ export const plannerQuestions: PlannerQuestion[] = [
           "item-jewelry": 3,
           "item-handbags": 3,
           "item-gold-albums": 2,
-          "item-memorabilia": 2,
           "item-vacations": 2,
+          "item-memorabilia": 1,
         },
       },
       {
@@ -325,27 +340,16 @@ export const plannerQuestions: PlannerQuestion[] = [
   },
 ];
 
-/**
- * One line per category explaining when it earns its place, shown on the
- * recommended card. Written once and static — the results screen never
- * generates prose about why a category was picked, because a made-up
- * justification is worse than none.
+/*
+ * There is no per-category note map here, on purpose.
+ *
+ * There was one, and its eight lines were mostly invented — a "mid-tier lot",
+ * a category suiting "a broad range of budgets", memorabilia as breadth to
+ * fill a table. Audited against the client's original site, one of the eight
+ * was grounded.
+ *
+ * The results card uses each category's `blurb` instead. Those are the
+ * client's own one-line descriptions, verbatim, and they already say what a
+ * category is and who it appeals to. Anything written to sit alongside them
+ * can only add words the client did not say.
  */
-export const plannerCategoryNotes: Record<string, string> = {
-  "item-vacations":
-    "Wide appeal across a whole room, and priced so more than a handful of guests can bid.",
-  "item-bucket-list":
-    "One or two of these carry a live auction — they are what the room remembers.",
-  "item-signed-guitars":
-    "A headline lot that photographs well and needs no explanation from the stage.",
-  "item-memorabilia":
-    "Covers a wide range of price points, so it fills a table rather than resting on one big lot.",
-  "item-jewelry":
-    "The workhorse of a silent auction — it keeps bidding sheets busy across every table.",
-  "item-handbags":
-    "A mid-tier lot that draws guests to the table and lifts the average bid.",
-  "item-meet-greets":
-    "No retail price a bidder can look up, which is exactly why the bidding runs.",
-  "item-gold-albums":
-    "Framed display pieces that hold a wall and suit a broad range of budgets.",
-};

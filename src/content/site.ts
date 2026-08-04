@@ -70,9 +70,9 @@ export const site: SiteContent = {
    */
   booking: {
     url: "https://calendly.com/iraklein82/30min",
-    heading: "Rather not wait? Book a call now.",
+    heading: "Pick a time to talk with Ira",
     lede:
-      "Pick a 30-minute slot with Ira and we'll walk through what would work for your event.",
+      "Thirty minutes, and you'll leave knowing what would work for your event and what it would raise.",
     fallbackLabel: "Open the booking calendar →",
   },
 

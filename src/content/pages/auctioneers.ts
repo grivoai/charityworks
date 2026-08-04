@@ -59,10 +59,14 @@ export const auctioneersPage: AuctioneersPage = {
     ],
   },
 
+  // No figure here. The site quotes no price for anything — those
+  // conversations happen on the phone — and "From $1,500" was the one place a
+  // number had survived. The offer itself is unchanged: "half their usual base
+  // rate" describes it without putting an amount on the page.
   offer: {
-    headline: "From $1,500",
+    headline: "Exclusive first-time client offer",
     detail:
-      "Exclusive offer for first-time clients: book one of our elite auctioneers for your next event at half their usual base rate. First-year introductory rate, available to California fundraisers only.",
+      "Book one of our elite auctioneers for your next event at half their usual base rate. First-year introductory rate, available to California fundraisers only.",
   },
 
   rosterHeading: "Meet the Auctioneers",

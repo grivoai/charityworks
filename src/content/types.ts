@@ -447,6 +447,20 @@ export interface AuctionPlannerPage extends BasePage {
     picksHeading: string;
     restart: string;
   };
+  /**
+   * Shown only when the auction runs live, in whole or in part.
+   *
+   * The body states where the roster actually works. Seven of the nine publish
+   * a territory and six of those are Californian, while the catalog side of the
+   * business serves all 50 states — so a bare "book an auctioneer" would
+   * promise a reach this roster does not have.
+   */
+  auctioneerCard: {
+    heading: string;
+    body: string;
+    linkLabel: string;
+    href: string;
+  };
   cta: CtaRef;
 }
 
