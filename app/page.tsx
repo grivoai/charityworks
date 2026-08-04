@@ -128,6 +128,13 @@ export default function HomePage() {
           <BentoGrid items={page.itemsTeaser.items} variant="uniform" />
           <div className="center" style={{ marginTop: "46px" }}>
             <Cta cta={page.itemsTeaser.cta} onDark={false} />
+            <p className="home-planner-link reveal">
+              Or{" "}
+              <Link href="/auction-planner">
+                answer five questions and we&rsquo;ll suggest a starting point
+              </Link>
+              .
+            </p>
           </div>
         </div>
       </section>
@@ -203,7 +210,9 @@ export default function HomePage() {
             </p>
           </div>
 
-          <ContactForm form={contactForm} idPrefix="home" />
+          {/* No `interests` map: this form cannot carry a specific lot or
+              auctioneer, so the lookup stays out of the home page bundle. */}
+          <ContactForm form={contactForm} idPrefix="home" source="home" />
         </div>
       </section>
     </>

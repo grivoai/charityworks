@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { ContactForm } from "@/components/ContactForm";
+import { getInterestLookup } from "@/lib/interests";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { site } from "@/content/site";
 
@@ -61,7 +62,14 @@ export default function ContactRoute() {
             </p>
           </div>
 
-          <ContactForm form={page.form} />
+          {/* The lookup is passed from the server so `?interest=` can be turned
+              into a label without a request, which is what lets this page stay
+              statically rendered. */}
+          <ContactForm
+            form={page.form}
+            source="contact-page"
+            interests={getInterestLookup()}
+          />
         </div>
       </section>
     </>

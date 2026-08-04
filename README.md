@@ -66,6 +66,92 @@ Set `NEXT_PUBLIC_SITE_URL` in the Vercel project to the production domain. It
 drives canonical tags, OpenGraph URLs and the sitemap, and defaults to
 `https://www.charityworks.net`.
 
+## Leads
+
+Every enquiry on the site posts to one endpoint, `/api/contact`: both copies of
+the contact form, requests for a specific lot, requests for an auctioneer, and
+the auction planner. They differ only in the context they carry, so there is one
+validation path, one payload shape and one delivery step downstream.
+
+`POST /api/contact` does two things with a lead:
+
+1. **Delivers it** to `LEAD_WEBHOOK_URL` as flat JSON — one key per column,
+   every key always present even when empty, so a spreadsheet destination gets a
+   stable column set. That endpoint is the **CW — Website Lead Intake** workflow
+   in n8n, and the request carries the shared secret from
+   `LEAD_WEBHOOK_SECRET` in an `x-grivo-secret` header.
+
+   **Both variables are required.** With either missing the lead is logged and
+   not sent, rather than posted unauthenticated — anyone who learned the URL
+   could otherwise file leads, and a lead starts an SMS follow-up to whatever
+   number it carries. The log line records `delivery: 'not-configured'` so the
+   cause is visible.
+
+   Two details are the live workflow's contract rather than ours, and should
+   not be changed on this side alone: the event date is sent as **`eventDate`**
+   (the form field is still `date`; it is renamed on the way out), and
+   **`leadId`** is `web:<surface>:<uuid>` — `web:contact:`, `web:item:`,
+   `web:quiz:` and so on. n8n dedupes on `leadId`, so a resubmitted enquiry is
+   discarded instead of being filed and texted twice.
+2. **Logs it** with `console.info`, whatever the webhook did. This is the
+   fallback record: if the webhook is unset, unreachable, times out or returns
+   an error, the lead is still recoverable from the Vercel function logs.
+
+A delivery failure never surfaces to the submitter. From their side the enquiry
+succeeded — their details were captured — and an error would only produce
+duplicate submissions.
+
+**The browser sends an id; the server derives the label.** A request link
+carries only `?interest=guitar-taylor-swift`, and the endpoint resolves the
+display name from the catalog itself, ignoring any label posted from the client.
+That text ends up in a notification a human acts on, so a hand-edited URL must
+not be able to put chosen wording in front of the client. See
+`src/lib/lead-context.ts` for the full trust model and
+`src/lib/interests.ts` for the registry.
+
+### Auction planner
+
+`/auction-planner` asks five questions and recommends three categories. It is
+ungated on purpose — no email, results shown immediately — and it scores in the
+browser from the table in `src/content/collections/planner-rules.ts`, so seeing
+the answer costs nothing and needs no round trip. The contact CTA on the results
+screen is an offer, not a toll.
+
+All the judgement is in that rules file as data. Changing what the planner
+recommends is a change to the weights, not to logic; `src/lib/planner.ts` only
+adds them up and sorts. Ties break on a fixed order, broadest appeal first, so
+answering "not sure" throughout still returns something sensible.
+
+Planner leads reach `/api/contact` on the same path as everything else, carrying
+their answers in the six `quiz*` fields. The endpoint resolves the recommended
+category ids to names, so the notification reads "Auction planner quiz —
+recommended: Hand-Signed Guitars, Bucket List Trips, Affordable Vacations".
+
+Answers travel from the results screen to the form in the query string, and are
+rendered as hidden inputs only — never as text. Printing one back would be a way
+to put chosen wording on the page via a crafted link.
+
+### Booking
+
+The contact form's success state embeds Calendly's inline widget, so a lead can
+book a call immediately instead of waiting for the follow-up. It is additive —
+the lead is delivered and logged before the widget renders, and if Calendly is
+blocked or slow the thank-you message and a plain booking link remain.
+
+The scheduling URL lives in `site.booking` in `src/content/site.ts`. Blank it
+and the success state reverts to the thank-you message alone.
+
+Calendly's script loads only after a successful submission, so visitors who
+never submit get no third-party code and no Calendly cookies. Note that their
+copy-paste embed snippet will *not* work here: `widget.js` scans for its
+container as it loads, and ours does not exist until after submit. See
+`src/components/BookingPanel.tsx`.
+
+The lead's `leadId` travels to Calendly as `utm_content` and its source as
+`utm_campaign`. Calendly carries UTM parameters onto the booking record and its
+own webhooks, which is what lets a booking be joined to the lead that produced
+it rather than matched on email address.
+
 ## Where to review the deployed site
 
 **Use <https://charityworks-pearl.vercel.app> until the domain cuts over.**

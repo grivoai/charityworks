@@ -28,9 +28,11 @@ export const auctionItemsPage: AuctionItemsPage = {
 
   note: "Every item is offered on consignment. Feature what you like at your event, return whatever does not sell, and pay only for the items that find a bidder.",
 
+  // Not "Request the Full Catalog": there is no catalog document to send, and a
+  // lead arriving expecting a PDF makes the first reply an apology.
   cta: {
     id: "cta-auction-items",
-    label: "Request the Full Catalog",
+    label: "Ask About Items for Your Event",
     href: "/contact",
     variant: "primary",
   },

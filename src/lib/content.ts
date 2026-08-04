@@ -9,6 +9,7 @@ import { auctionItems } from "@/content/collections/auction-items";
 import { homePage } from "@/content/pages/home";
 import { auctionInfoPage } from "@/content/pages/auction-info";
 import { auctionItemsPage } from "@/content/pages/auction-items";
+import { auctionPlannerPage } from "@/content/pages/auction-planner";
 import { auctioneersPage } from "@/content/pages/auctioneers";
 import { faqsPage } from "@/content/pages/faqs";
 import { testimonialsPage } from "@/content/pages/testimonials";
@@ -30,6 +31,7 @@ const registry: PageMap = {
   home: homePage,
   "auction-info": auctionInfoPage,
   "auction-items": auctionItemsPage,
+  "auction-planner": auctionPlannerPage,
   auctioneers: auctioneersPage,
   faqs: faqsPage,
   testimonials: testimonialsPage,

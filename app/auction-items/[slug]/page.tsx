@@ -53,6 +53,16 @@ export default async function AuctionCategoryRoute({
 
   const lotCount = category.groups.reduce((n, g) => n + g.items.length, 0);
 
+  /**
+   * Requests go to the one contact form, carrying only the lot's id. The label
+   * shown there — and the label put in front of the client — is resolved from
+   * that id server-side, so nothing here can be edited in the URL into text
+   * that reaches a notification. See lib/lead-context.ts.
+   */
+  const categoryPath = `/auction-items/${category.slug}`;
+  const requestHref = (id: string) =>
+    `/contact?interest=${encodeURIComponent(id)}&from=${encodeURIComponent(categoryPath)}`;
+
   return (
     <>
       <CategoryJsonLd category={category} />
@@ -109,7 +119,38 @@ export default async function AuctionCategoryRoute({
                     <div className="cat-card-body">
                       <h4>{item.name}</h4>
                       <p>{item.description}</p>
+
+                      {/* Rendered only when the client has supplied figures.
+                          Nothing here is derived from the photograph or the
+                          description — see ItemDetail in content/types.ts. */}
+                      {item.details && item.details.length > 0 && (
+                        <dl className="cat-card-details">
+                          {item.details.map((detail) => (
+                            <div key={detail.label}>
+                              <dt>{detail.label}</dt>
+                              <dd>{detail.value}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+
                       {item.note && <p className="cat-card-note">{item.note}</p>}
+
+                      {/* aria-label rather than the visible text alone: a page
+                          of identical "Request this item" links is useless to
+                          anyone navigating by link list. */}
+                      <Link
+                        className="cat-card-request"
+                        href={requestHref(item.id)}
+                        aria-label={`${
+                          category.generalOnly ? "Ask about" : "Request"
+                        } ${item.name}`}
+                      >
+                        {category.generalOnly
+                          ? "Ask about these"
+                          : "Request this item"}
+                        <span aria-hidden="true"> →</span>
+                      </Link>
                     </div>
                   </li>
                 ))}
@@ -123,11 +164,21 @@ export default async function AuctionCategoryRoute({
           </p>
 
           <div className="center" style={{ marginTop: "52px" }}>
+            {/* Carries the category itself as the interest, so someone who
+                wants the category rather than one lot still arrives at the
+                form with context attached.
+
+                Worded around availability rather than the free-plan offer:
+                this sits directly under the availability notice, at the end of
+                a page of specific lots, and by that point the question in the
+                reader's mind is whether these can be had for their date. The
+                free-plan wording stays on the home, FAQ and testimonial
+                surfaces, where the offer is the point. */}
             <Cta
               cta={{
                 id: `cta-category-${category.slug}`,
-                label: "Get Your Free Fundraising Plan",
-                href: "/contact",
+                label: "Check Availability for Your Event",
+                href: requestHref(category.id),
                 variant: "primary",
               }}
               onDark={false}

@@ -1,89 +1,85 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
 import { getPage } from "@/lib/content";
+import { resolveInterest } from "@/lib/interests";
+import {
+  buildContextSummary,
+  isLeadSource,
+  sanitizeContextValue,
+  sanitizeSourcePath,
+  type InterestType,
+  type LeadSource,
+} from "@/lib/lead-context";
 
 /**
- * Contact form endpoint.
+ * The single lead endpoint.
  *
- * Validates the submission against the field definitions in the content layer,
- * then forwards it to the lead pipeline, which files the lead in the
- * CharityWorks Leads sheet and starts the SMS follow-up.
+ * Every enquiry on the site posts here: the contact page form, the home page
+ * form, a request for a specific lot, a request for an auctioneer, and the
+ * auction planner quiz. They differ only in the context they carry, so there is
+ * one validation path, one payload shape and one delivery step — which is what
+ * keeps the downstream automation from needing a branch per surface.
+ *
+ * Delivery is a POST to `LEAD_WEBHOOK_URL`, the "CW — Website Lead Intake"
+ * workflow in n8n, authenticated with the shared secret in
+ * `LEAD_WEBHOOK_SECRET`. That workflow is live and already maps these fields,
+ * so its contract is the fixed point here: `eventDate` rather than `date`, and
+ * `leadId` in the `web:<surface>:<uuid>` shape it dedupes on.
+ *
+ * The console log predates the webhook and is kept deliberately: it is the
+ * fallback record if the webhook is unset, unreachable, or returns an error, so
+ * a lead is never lost to a delivery failure alone. Vercel retains function
+ * logs, which makes them recoverable by hand.
  */
 
-type Lead = {
-  leadId: string;
-  submittedAt: string;
-  name: string;
-  org: string;
-  email: string;
-  phone: string;
-  source: string;
-  sourcePath: string;
-  eventDate: string;
-  contextSummary: string;
+/** Ceiling for a single visible form value. The message box is the long one. */
+const MAX_FIELD_LENGTH = 5000;
+
+/**
+ * How long to wait on the webhook before giving up.
+ *
+ * The submitter is waiting on this request, so the budget is a UX number, not a
+ * reliability one. A slow n8n instance must not hold someone on a spinner; the
+ * console log covers the timeout case.
+ */
+const WEBHOOK_TIMEOUT_MS = 8000;
+
+/**
+ * Form field name -> the key the pipeline reads, where the two differ.
+ *
+ * n8n's Normalize node already reads `eventDate`. Renaming on the way out
+ * rather than renaming the form field leaves the field definition, its label
+ * and its `for` association untouched.
+ */
+const PAYLOAD_KEY: Record<string, string> = { date: "eventDate" };
+
+/**
+ * Lead id prefix per source.
+ *
+ * The pipeline dedupes on `leadId`, so a resubmission of the same enquiry is
+ * discarded rather than filed twice and texted twice. The `web:<surface>:`
+ * shape comes from the live workflow, which was built against `web:contact:`;
+ * extending it per source keeps that contract while making the surface a lead
+ * came from readable without parsing the rest of the row.
+ */
+const LEAD_ID_PREFIX: Record<LeadSource, string> = {
+  "contact-page": "contact",
+  home: "home",
+  "category-request": "category",
+  "item-request": "item",
+  "auctioneer-request": "auctioneer",
+  "partner-request": "partner",
+  quiz: "quiz",
 };
 
-const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
-
-/**
- * One-line description of what the lead asked about. The pipeline stores this
- * as the lead's notes and the first SMS quotes it, so it should read like a
- * human wrote it rather than a field dump.
- */
-function buildContextSummary(submission: Record<string, unknown>) {
-  const parts = ["Contact form"];
-  const org = text(submission.org);
-  const eventDate = text(submission.date);
-  const message = text(submission.message);
-
-  if (org) parts.push(`from ${org}`);
-  if (eventDate) parts.push(`event on ${eventDate}`);
-  if (message) parts.push(`- ${message}`);
-
-  return parts.join(" ");
-}
-
-/**
- * Hands the lead to the pipeline. A failure here must not fail the submission:
- * the visitor already did their part, and the payload stays recoverable from
- * the log line above. `leadId` is the pipeline's dedupe key, so a retry of the
- * same submission is discarded rather than texting the lead twice.
- */
-async function forwardLead(lead: Lead) {
-  // Narrowed into locals because both are `string | undefined` under strict TS.
-  const url = process.env.LEAD_WEBHOOK_URL;
-  const secret = process.env.LEAD_WEBHOOK_SECRET;
-
-  if (!url || !secret) {
-    console.error(
-      "[contact] LEAD_WEBHOOK_URL or LEAD_WEBHOOK_SECRET is unset; lead not forwarded",
-      lead.leadId
-    );
-    return;
-  }
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-grivo-secret": secret,
-      },
-      body: JSON.stringify(lead),
-    });
-
-    if (!response.ok) {
-      console.error(
-        "[contact] lead webhook rejected",
-        lead.leadId,
-        response.status,
-        await response.text()
-      );
-    }
-  } catch (error) {
-    console.error("[contact] lead webhook failed", lead.leadId, error);
-  }
-}
+/** Quiz answer keys, carried through verbatim after sanitising. */
+const QUIZ_KEYS = [
+  "quizEventType",
+  "quizAttendance",
+  "quizFormat",
+  "quizPriceBand",
+  "quizInterests",
+  "quizRecommended",
+] as const;
 
 export async function POST(request: Request) {
   let payload: Record<string, unknown>;
@@ -114,27 +110,131 @@ export async function POST(request: Request) {
     );
   }
 
-  // Only persist keys the form actually defines, so unexpected input is dropped.
-  const submission = Object.fromEntries(
-    form.fields
-      .map((field) => [field.name, payload[field.name]])
-      .filter(([, value]) => typeof value === "string" && value !== "")
+  /* ---------------------------------------------------------------- */
+  /* Visible fields                                                    */
+  /* ---------------------------------------------------------------- */
+  // Only keys the form actually defines, so unexpected input is dropped. Every
+  // defined key is present in the output even when empty: the destination is a
+  // spreadsheet, and a stable column set matters more than a compact payload.
+  const fields = Object.fromEntries(
+    form.fields.map((field) => {
+      const value = payload[field.name];
+      const text = typeof value === "string" ? value.trim() : "";
+      return [
+        PAYLOAD_KEY[field.name] ?? field.name,
+        text.slice(0, MAX_FIELD_LENGTH),
+      ];
+    })
   );
 
-  console.info("[contact] submission received", submission);
+  /* ---------------------------------------------------------------- */
+  /* Context                                                           */
+  /* ---------------------------------------------------------------- */
+  // The client sends an id; the label is resolved here. A crafted `interestId`
+  // that names nothing simply resolves to undefined and the lead is recorded as
+  // a general enquiry — it can never put chosen text in front of the client.
+  const interest = resolveInterest(payload.interestId);
+  const source = isLeadSource(payload.source) ? payload.source : "contact-page";
 
-  await forwardLead({
-    leadId: `web:contact:${randomUUID()}`,
+  const quiz = Object.fromEntries(
+    QUIZ_KEYS.map((key) => [key, sanitizeContextValue(payload[key])])
+  ) as Record<(typeof QUIZ_KEYS)[number], string>;
+
+  // Quiz leads are typed from the source, not from an interest id: the quiz
+  // recommends several categories rather than pointing at a single record.
+  const interestType: InterestType = interest
+    ? interest.type
+    : source === "quiz"
+      ? "quiz"
+      : "general";
+
+  const quizRecommendedLabels = quiz.quizRecommended
+    ? quiz.quizRecommended
+        .split(",")
+        .map((id) => resolveInterest(id.trim())?.label)
+        .filter((label): label is string => Boolean(label))
+    : [];
+
+  const context = {
+    source,
+    sourcePath: sanitizeSourcePath(payload.sourcePath),
+    interestType,
+    interestId: interest?.id ?? "",
+    interestLabel: interest?.label ?? "",
+    interestCategory: interest?.categoryLabel ?? "",
+    ...quiz,
+    contextSummary: buildContextSummary({
+      source,
+      interestType,
+      interestLabel: interest?.label,
+      interestCategory: interest?.categoryLabel,
+      quizRecommendedLabels,
+    }),
+  };
+
+  /* ---------------------------------------------------------------- */
+  /* Delivery                                                          */
+  /* ---------------------------------------------------------------- */
+  // Flat, not nested: this lands in a spreadsheet, where one key per column is
+  // the shape that needs no transform step in between.
+  const lead = {
+    leadId: `web:${LEAD_ID_PREFIX[source]}:${crypto.randomUUID()}`,
     submittedAt: new Date().toISOString(),
-    name: text(submission.name),
-    org: text(submission.org),
-    email: text(submission.email),
-    phone: text(submission.phone),
-    source: "contact",
-    sourcePath: "/contact",
-    eventDate: text(submission.date),
-    contextSummary: buildContextSummary(submission),
-  });
+    ...fields,
+    ...context,
+  };
 
-  return NextResponse.json({ ok: true });
+  const delivery = await deliver(lead);
+
+  // Always logged, whatever the webhook did. This is the fallback record.
+  console.info("[contact] lead", { delivery, ...lead });
+
+  // The submitter is told the enquiry succeeded even when the webhook failed:
+  // from their side it did, we hold their details, and an error here would only
+  // produce duplicate submissions. Delivery failures surface in the logs above.
+  //
+  // leadId goes back to the browser so the Calendly embed on the success state
+  // can carry it as utm_content. Calendly passes UTM parameters through to the
+  // booking record and its own webhooks, which is what lets a booking be joined
+  // to the lead that produced it rather than matched on email and hoped for.
+  return NextResponse.json({ ok: true, leadId: lead.leadId });
+}
+
+type DeliveryResult = "sent" | "not-configured" | "failed";
+
+async function deliver(lead: Record<string, unknown>): Promise<DeliveryResult> {
+  const url = process.env.LEAD_WEBHOOK_URL;
+  const secret = process.env.LEAD_WEBHOOK_SECRET;
+
+  // Both or neither, deliberately. The shared secret is what stops anyone who
+  // learns the webhook URL filing leads of their own — and those leads start an
+  // SMS follow-up to whatever number they carry. Posting without it would be
+  // rejected at the far end anyway; refusing here makes the reason explicit in
+  // the log rather than surfacing as an opaque 401.
+  if (!url || !secret) return "not-configured";
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-grivo-secret": secret,
+      },
+      body: JSON.stringify(lead),
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      console.error(
+        `[contact] webhook rejected the lead: ${response.status} ${response.statusText}`
+      );
+      return "failed";
+    }
+
+    return "sent";
+  } catch (error) {
+    // Covers the timeout, DNS failure and connection refusal cases alike.
+    console.error("[contact] webhook delivery failed", error);
+    return "failed";
+  }
 }

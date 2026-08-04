@@ -18,6 +18,7 @@ export type PageSlug =
   | "home"
   | "auction-info"
   | "auction-items"
+  | "auction-planner"
   | "auctioneers"
   | "faqs"
   | "testimonials"
@@ -73,6 +74,30 @@ export interface Step {
   body: string;
 }
 
+/**
+ * One labelled specific about a lot — "Certificate of Authenticity", "Framed
+ * size", "Includes", "Lead time" and so on.
+ *
+ * Deliberately a free-form label/value pair rather than fixed fields: what is
+ * known differs by category, and a fixed shape would either force empty rows or
+ * invite filling them in with guesses. A row that is not supplied is a row that
+ * is not shown.
+ *
+ * These are claims about goods a nonprofit will resell to its donors, so every
+ * value must come from the client. Nothing here may be inferred from a
+ * photograph or a description.
+ *
+ * Descriptive facts only — no prices, retail values or estimates. The site
+ * quotes no figure for any individual lot; pricing is a phone conversation.
+ * (The consignment terms elsewhere on the site — items at 75% of retail —
+ * describe how the arrangement works, which is a different thing from putting
+ * a number on a piece.)
+ */
+export interface ItemDetail {
+  label: string;
+  value: string;
+}
+
 /** A single lot within an auction category. */
 export interface CategoryItem {
   id: string;
@@ -82,6 +107,12 @@ export interface CategoryItem {
   image?: ImageRef;
   /** Per-item disclaimer, e.g. jersey availability wording required by the client. */
   note?: string;
+  /**
+   * Verified specifics, shown as a definition list on the item card. Optional
+   * throughout: the catalog ships with these empty pending the client's own
+   * figures, and the card simply renders without the block until they arrive.
+   */
+  details?: ItemDetail[];
 }
 
 /**
@@ -238,6 +269,24 @@ export interface SiteContent {
     offices: string;
     channels: ContactChannel[];
   };
+  /**
+   * Calendly scheduling, offered on the contact form's success state so a lead
+   * can book immediately instead of waiting on the follow-up.
+   *
+   * An empty `url` disables the widget and the success state falls back to the
+   * thank-you message alone, so the scheduling link can be changed or pulled
+   * without touching a component.
+   */
+  booking: {
+    /** Bare scheduling URL — no query string; params are added at embed time. */
+    url: string;
+    /** Heading above the widget. */
+    heading: string;
+    /** One line of context under the heading. */
+    lede: string;
+    /** Text of the plain link shown if the embed cannot load. */
+    fallbackLabel: string;
+  };
   footer: {
     exploreHeading: string;
     contactHeading: string;
@@ -341,10 +390,85 @@ export interface ContactPage extends BasePage {
   mobileNote: { heading: string; body: string };
 }
 
+/* ------------------------------------------------------------------ */
+/* Auction planner                                                     */
+/* ------------------------------------------------------------------ */
+
+/** The five questions, in the order they are asked. */
+export type PlannerQuestionId =
+  | "eventType"
+  | "attendance"
+  | "format"
+  | "priceBand"
+  | "interests";
+
+/**
+ * One selectable answer.
+ *
+ * `weights` maps an auction category id to the points this answer contributes.
+ * A category absent from the map scores nothing from this answer; an option
+ * with no map at all — every "Not sure" — is deliberately neutral, so saying
+ * so costs nothing rather than skewing the result.
+ */
+export interface PlannerOption {
+  id: string;
+  label: string;
+  /** Shown on the results screen as a chip echoing what was chosen. */
+  summaryLabel: string;
+  weights?: Record<string, number>;
+  /**
+   * Clears every other choice when picked, and cannot be combined. Used by the
+   * multi-select question's "Not sure" so it stays an answer rather than
+   * becoming one more thing to tick alongside three real preferences.
+   */
+  exclusive?: boolean;
+}
+
+export interface PlannerQuestion {
+  id: PlannerQuestionId;
+  prompt: string;
+  /** One clarifying line under the prompt. */
+  help?: string;
+  /** Present on multi-select questions; absent means pick exactly one. */
+  maxChoices?: number;
+  options: PlannerOption[];
+}
+
+export interface AuctionPlannerPage extends BasePage {
+  slug: "auction-planner";
+  intro: SectionHeader;
+  /** Copy on the opening screen, before the first question. */
+  start: { blurb: string; button: string; duration: string };
+  results: {
+    heading: string;
+    lede: string;
+    answersLabel: string;
+    /** Heading above the three recommended categories. */
+    picksHeading: string;
+    restart: string;
+  };
+  /**
+   * Shown only when the auction runs live, in whole or in part.
+   *
+   * The body states where the roster actually works. Seven of the nine publish
+   * a territory and six of those are Californian, while the catalog side of the
+   * business serves all 50 states — so a bare "book an auctioneer" would
+   * promise a reach this roster does not have.
+   */
+  auctioneerCard: {
+    heading: string;
+    body: string;
+    linkLabel: string;
+    href: string;
+  };
+  cta: CtaRef;
+}
+
 export type AnyPage =
   | HomePage
   | AuctionInfoPage
   | AuctionItemsPage
+  | AuctionPlannerPage
   | AuctioneersPage
   | FaqsPage
   | TestimonialsPage
@@ -355,6 +479,7 @@ export interface PageMap {
   home: HomePage;
   "auction-info": AuctionInfoPage;
   "auction-items": AuctionItemsPage;
+  "auction-planner": AuctionPlannerPage;
   auctioneers: AuctioneersPage;
   faqs: FaqsPage;
   testimonials: TestimonialsPage;

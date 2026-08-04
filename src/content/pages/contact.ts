@@ -84,7 +84,11 @@ export const contactPage: ContactPage = {
       },
     ],
     submitLabel: "Get My Free Plan",
-    successMessage: "✓ Thank you! We'll be in touch within one business day.",
+    // Points at the booking widget rendered directly beneath it rather than at
+    // a wait. Promising a callback next to a live calendar invites people to
+    // do nothing, which is the slower path for them and for us.
+    successMessage:
+      "✓ Got it — your details are with us. Now pick a time below and talk to Ira directly.",
     errorMessage: "Something went wrong. Please call (925) 250-6968 instead.",
   },
 

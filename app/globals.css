@@ -338,6 +338,72 @@ section { position: relative; }
 .field textarea { resize: vertical; min-height: 110px; }
 .form-msg { grid-column: span 2; text-align: center; font-size: 0.92rem; color: var(--gold-soft); min-height: 20px; }
 
+/* ---- "You're asking about ..." context note ----
+   Shown when the form is reached from a specific lot, category or auctioneer.
+   The matching id travels as a hidden field; this is the visible confirmation
+   that the context carried, so nobody has to retype it into the message box. */
+.lead-context {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: rgba(224, 168, 46, 0.12);
+  border: 1px solid rgba(224, 168, 46, 0.34);
+}
+.lead-context p { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lead-context-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+.lead-context strong { color: #fff; font-size: 1rem; line-height: 1.3; }
+.lead-context-parent { font-size: 0.84rem; color: rgba(255, 255, 255, 0.62); }
+.lead-context-clear {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.68);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lead-context-clear:hover { color: var(--gold-bright); }
+
+/* ---- Success state: thank-you + Calendly booking ----
+   Replaces the fields in place once a lead has been delivered, so the panel
+   keeps its size and the page does not jump. Nothing here carries `.reveal`:
+   RevealObserver snapshots `.reveal:not(.in)` once per navigation, and an
+   element mounted this late would never be observed — it would sit at
+   opacity 0 permanently. See BookingPanel and RevealObserver. */
+.form-success { display: flex; flex-direction: column; gap: 26px; }
+/* Focus is moved here on success. The ring would frame the whole panel for a
+   move the user did not make, and programmatic focus on a tabindex=-1 element
+   does not trigger :focus-visible, so keyboard focus rings are unaffected. */
+.form-success:focus { outline: none; }
+.form-success-msg { font-size: 1.06rem; line-height: 1.5; color: var(--gold-soft); }
+
+.booking { display: flex; flex-direction: column; gap: 10px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.14); }
+.booking-heading { font-family: "Playfair Display", serif; font-size: 1.28rem; color: #fff; }
+.booking-lede { font-size: 0.92rem; line-height: 1.55; color: rgba(255,255,255,0.7); }
+
+/* Calendly owns everything inside this element. It is given a background and a
+   fixed height because an inline embed does not size itself — the iframe fills
+   whatever box it is handed. `width` rather than Calendly's suggested
+   `min-width: 320px`: below that width their min-width would push the box wider
+   than the panel and scroll the whole page sideways, where 100% keeps any
+   overflow inside the iframe, which scrolls on its own. */
+.booking-embed { width: 100%; height: 700px; margin-top: 12px; border-radius: 12px; overflow: hidden; background: #fff; }
+.booking[data-state="failed"] .booking-embed { display: none; }
+
+.booking-note { font-size: 0.86rem; color: rgba(255,255,255,0.55); }
+.booking[data-state="ready"] .booking-note { display: none; }
+
+.booking-fallback { align-self: flex-start; font-size: 0.9rem; font-weight: 600; color: var(--gold-bright); text-decoration: underline; text-underline-offset: 4px; transition: color 0.3s; }
+.booking-fallback:hover { color: var(--gold-soft); }
+
 /* ============ FOOTER ============ */
 .footer { background: var(--green-deep); color: rgba(255,255,255,0.75); padding: 70px 0 30px; }
 .footer-top { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; padding-bottom: 44px; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -371,7 +437,11 @@ section { position: relative; }
   .bento { grid-auto-rows: 170px; }
   .b-wide, .b-tall { grid-column: span 1; grid-row: span 1; }
   .form-grid { grid-template-columns: 1fr; }
-  .field.full, .form-msg { grid-column: span 1; }
+  .field.full, .form-msg, .lead-context { grid-column: span 1; }
+  /* Claw back the form panel's 36px padding. The widget is the only thing on
+     the success panel at this width and needs every pixel available; the
+     calendar grid is what suffers first when it is squeezed. */
+  .booking-embed { width: auto; height: 880px; margin-inline: -36px; border-radius: 0; }
   .footer-top { grid-template-columns: 1fr; }
   .t-card { width: 300px; flex-basis: 300px; }
 }
@@ -752,6 +822,38 @@ main.is-transitioning {
   color: #7a6a48 !important;
 }
 
+/* Per-lot specifics. A definition list because that is what this is — the
+   label is the term and the figure is its definition — which also gives a
+   screen reader the pairing for free. Rows only exist when the client has
+   supplied them, so the block is absent rather than empty. */
+.cat-card-details { margin-top: 14px; display: flex; flex-direction: column; gap: 7px; }
+.cat-card-details > div { display: grid; grid-template-columns: minmax(0, 8.5em) 1fr; gap: 10px; align-items: baseline; }
+.cat-card-details dt {
+  font-size: 0.73rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8a7c5c;
+}
+.cat-card-details dd { font-size: 0.88rem; color: var(--green); }
+
+/* Pushed to the bottom of the card so the button sits on one line across a row
+   of cards whose descriptions differ in length. `margin-top: auto` needs the
+   body to be a column flex box, hence the display change here rather than on
+   .cat-card-body's original padding-only rule. */
+.cat-card-body { display: flex; flex-direction: column; flex: 1; }
+.cat-card-request {
+  margin-top: auto;
+  padding-top: 16px;
+  align-self: flex-start;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--gold);
+  transition: color 0.3s;
+}
+.cat-card-request:hover { color: var(--green); }
+.cat-card-request:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
+
 /* Availability disclosure. Visually distinct so it cannot be mistaken for
    catalog copy. */
 .cat-notice {
@@ -842,8 +944,256 @@ main.is-transitioning {
   color: var(--gold) !important;
 }
 
+/* Per-person request link. Sits after the bio rather than beside the name so
+   it reads as the end of the profile — you decide after reading, not before. */
+.auc-request {
+  display: inline-block;
+  margin-top: 18px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--gold);
+  transition: color 0.3s;
+}
+.auc-request:hover { color: var(--green); }
+.auc-request:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
+
 @media (max-width: 860px) {
   .auc-profile { grid-template-columns: 1fr; gap: 0; }
   .auc-portrait { min-height: 320px; }
   .auc-profile-body { padding: 26px 24px 28px; }
 }
+
+/* ============ AUCTION PLANNER ============ */
+/* Nothing in this feature uses `.reveal`: every screen after the first mounts
+   after RevealObserver has taken its snapshot, so a reveal here would never
+   receive `in` and would sit at opacity 0 permanently. */
+
+.wrap-narrow { max-width: 860px; }
+
+.planner {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  padding: clamp(26px, 5vw, 46px);
+}
+.planner-heading {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  color: var(--green);
+  line-height: 1.25;
+}
+/* Focus is moved here on every screen change. The ring would frame the whole
+   heading for a move the reader did not make, and programmatic focus on a
+   tabindex=-1 element does not trigger :focus-visible. */
+.planner-heading:focus { outline: none; }
+.planner-lede { margin-top: 12px; color: var(--muted); font-size: 1rem; line-height: 1.6; }
+.planner-blurb { margin-top: 18px; color: var(--muted); font-size: 0.94rem; line-height: 1.6; }
+.planner .btn { margin-top: 26px; }
+.planner-duration { margin-top: 12px; font-size: 0.84rem; color: #8a7c5c; }
+
+/* ---- progress ---- */
+.planner-progress {
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(7, 21, 46, 0.08);
+  overflow: hidden;
+}
+.planner-progress-bar {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  transition: width 0.4s var(--ease);
+}
+.planner-step {
+  margin-top: 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #8a7c5c;
+}
+
+/* ---- questions ---- */
+.planner-fieldset { border: 0; padding: 0; margin-top: 10px; }
+.planner-help { margin-top: 10px; color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
+.planner-options { margin-top: 22px; display: grid; gap: 10px; }
+
+/* The input stays in the accessibility tree and keeps its keyboard behaviour —
+   arrow keys within the radio group, space to toggle a checkbox — while the
+   label supplies the visible control. Hiding it with `display: none` would take
+   all of that away. */
+.planner-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.97rem;
+  color: var(--green);
+  transition: border-color 0.25s, background 0.25s, transform 0.25s var(--ease);
+}
+.planner-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.planner-option:hover { border-color: var(--gold-bright); background: rgba(224, 168, 46, 0.06); }
+.planner-option[data-selected="true"] {
+  border-color: var(--gold);
+  background: rgba(224, 168, 46, 0.12);
+  font-weight: 600;
+}
+.planner-option:has(input:focus-visible) {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+}
+
+.planner-nav {
+  margin-top: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.planner-nav .btn { margin-top: 0; }
+.planner-back {
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.25s;
+}
+.planner-back:hover { color: var(--green); }
+.planner-back:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
+
+/* ---- results ---- */
+.planner-answers { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.planner-answers h3 {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #8a7c5c;
+}
+.planner-answers ul { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; list-style: none; }
+.planner-answers li {
+  padding: 6px 13px;
+  border-radius: 99px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  font-size: 0.84rem;
+  color: var(--green);
+}
+
+.planner-picks-heading {
+  margin-top: 32px;
+  font-family: "Playfair Display", serif;
+  font-size: 1.2rem;
+  color: var(--green);
+}
+.planner-picks {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  list-style: none;
+  counter-reset: pick;
+}
+.planner-pick {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #fff;
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+.planner-pick:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+.planner-pick-media { position: relative; aspect-ratio: 4 / 3; background: var(--cream); }
+.planner-pick-body { display: flex; flex-direction: column; flex: 1; padding: 16px 18px 18px; }
+.planner-pick-body h4 { font-size: 1rem; color: var(--green); line-height: 1.25; }
+.planner-pick-note { margin-top: 8px; font-size: 0.87rem; color: var(--muted); line-height: 1.5; }
+.planner-pick-link {
+  margin-top: auto;
+  padding-top: 14px;
+  align-self: flex-start;
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--gold);
+  transition: color 0.3s;
+}
+.planner-pick-link:hover { color: var(--green); }
+.planner-pick-link:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
+
+.planner-cta {
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.planner-cta .btn { margin-top: 0; }
+.planner-cta-note { margin-top: 12px; font-size: 0.86rem; color: var(--muted); }
+.planner-cta-alt {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+}
+.planner-cta-alt a { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.planner-cta-alt a:hover { color: var(--green); }
+
+/* Entry point on the catalog index. */
+.planner-promo {
+  margin: 0 auto 44px;
+  max-width: 760px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 20px 26px;
+  border-radius: var(--radius-sm);
+  background: rgba(224, 168, 46, 0.1);
+  border: 1px solid rgba(224, 168, 46, 0.3);
+}
+.planner-promo p { color: var(--green); font-size: 0.97rem; }
+.planner-promo strong { display: block; font-size: 1.05rem; margin-bottom: 3px; }
+.planner-promo a { flex: 0 0 auto; font-weight: 600; color: var(--gold); }
+.planner-promo a:hover { color: var(--green); }
+
+@media (max-width: 860px) {
+  .planner-picks { grid-template-columns: 1fr; }
+  .planner-promo { flex-direction: column; align-items: flex-start; }
+}
+
+.home-planner-link { margin-top: 18px; font-size: 0.94rem; color: var(--muted); }
+.home-planner-link a { color: var(--gold); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.home-planner-link a:hover { color: var(--green); }
+
+/* Shown on the results screen only when the auction runs live in whole or in
+   part. Visually distinct from the category picks: it is an addition to the
+   plan, not a fourth thing competing with the three. */
+.planner-auctioneer {
+  margin-top: 18px;
+  padding: 20px 22px;
+  border-radius: var(--radius-sm);
+  background: var(--cream);
+  border: 1px solid var(--line);
+}
+.planner-auctioneer h3 { font-family: "Playfair Display", serif; font-size: 1.05rem; color: var(--green); }
+.planner-auctioneer p { margin-top: 8px; font-size: 0.9rem; color: var(--muted); line-height: 1.55; }
+.planner-auctioneer .planner-pick-link { margin-top: 0; padding-top: 12px; display: inline-block; }
