@@ -77,8 +77,22 @@ validation path, one payload shape and one delivery step downstream.
 
 1. **Delivers it** to `LEAD_WEBHOOK_URL` as flat JSON — one key per column,
    every key always present even when empty, so a spreadsheet destination gets a
-   stable column set. Set this in the Vercel project (Production *and* Preview)
-   to the n8n webhook trigger URL.
+   stable column set. That endpoint is the **CW — Website Lead Intake** workflow
+   in n8n, and the request carries the shared secret from
+   `LEAD_WEBHOOK_SECRET` in an `x-grivo-secret` header.
+
+   **Both variables are required.** With either missing the lead is logged and
+   not sent, rather than posted unauthenticated — anyone who learned the URL
+   could otherwise file leads, and a lead starts an SMS follow-up to whatever
+   number it carries. The log line records `delivery: 'not-configured'` so the
+   cause is visible.
+
+   Two details are the live workflow's contract rather than ours, and should
+   not be changed on this side alone: the event date is sent as **`eventDate`**
+   (the form field is still `date`; it is renamed on the way out), and
+   **`leadId`** is `web:<surface>:<uuid>` — `web:contact:`, `web:item:`,
+   `web:quiz:` and so on. n8n dedupes on `leadId`, so a resubmitted enquiry is
+   discarded instead of being filed and texted twice.
 2. **Logs it** with `console.info`, whatever the webhook did. This is the
    fallback record: if the webhook is unset, unreachable, times out or returns
    an error, the lead is still recoverable from the Vercel function logs.

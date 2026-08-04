@@ -7,6 +7,7 @@ import {
   sanitizeContextValue,
   sanitizeSourcePath,
   type InterestType,
+  type LeadSource,
 } from "@/lib/lead-context";
 
 /**
@@ -18,11 +19,16 @@ import {
  * one validation path, one payload shape and one delivery step — which is what
  * keeps the downstream automation from needing a branch per surface.
  *
- * Delivery is a POST to `LEAD_WEBHOOK_URL` (an n8n webhook trigger). The
- * console log predates the webhook and is kept deliberately: it is the fallback
- * record if the webhook is unset, unreachable, or returns an error, so a lead is
- * never lost to a delivery failure alone. Vercel retains function logs, which
- * makes them recoverable by hand.
+ * Delivery is a POST to `LEAD_WEBHOOK_URL`, the "CW — Website Lead Intake"
+ * workflow in n8n, authenticated with the shared secret in
+ * `LEAD_WEBHOOK_SECRET`. That workflow is live and already maps these fields,
+ * so its contract is the fixed point here: `eventDate` rather than `date`, and
+ * `leadId` in the `web:<surface>:<uuid>` shape it dedupes on.
+ *
+ * The console log predates the webhook and is kept deliberately: it is the
+ * fallback record if the webhook is unset, unreachable, or returns an error, so
+ * a lead is never lost to a delivery failure alone. Vercel retains function
+ * logs, which makes them recoverable by hand.
  */
 
 /** Ceiling for a single visible form value. The message box is the long one. */
@@ -36,6 +42,34 @@ const MAX_FIELD_LENGTH = 5000;
  * console log covers the timeout case.
  */
 const WEBHOOK_TIMEOUT_MS = 8000;
+
+/**
+ * Form field name -> the key the pipeline reads, where the two differ.
+ *
+ * n8n's Normalize node already reads `eventDate`. Renaming on the way out
+ * rather than renaming the form field leaves the field definition, its label
+ * and its `for` association untouched.
+ */
+const PAYLOAD_KEY: Record<string, string> = { date: "eventDate" };
+
+/**
+ * Lead id prefix per source.
+ *
+ * The pipeline dedupes on `leadId`, so a resubmission of the same enquiry is
+ * discarded rather than filed twice and texted twice. The `web:<surface>:`
+ * shape comes from the live workflow, which was built against `web:contact:`;
+ * extending it per source keeps that contract while making the surface a lead
+ * came from readable without parsing the rest of the row.
+ */
+const LEAD_ID_PREFIX: Record<LeadSource, string> = {
+  "contact-page": "contact",
+  home: "home",
+  "category-request": "category",
+  "item-request": "item",
+  "auctioneer-request": "auctioneer",
+  "partner-request": "partner",
+  quiz: "quiz",
+};
 
 /** Quiz answer keys, carried through verbatim after sanitising. */
 const QUIZ_KEYS = [
@@ -86,7 +120,10 @@ export async function POST(request: Request) {
     form.fields.map((field) => {
       const value = payload[field.name];
       const text = typeof value === "string" ? value.trim() : "";
-      return [field.name, text.slice(0, MAX_FIELD_LENGTH)];
+      return [
+        PAYLOAD_KEY[field.name] ?? field.name,
+        text.slice(0, MAX_FIELD_LENGTH),
+      ];
     })
   );
 
@@ -141,7 +178,7 @@ export async function POST(request: Request) {
   // Flat, not nested: this lands in a spreadsheet, where one key per column is
   // the shape that needs no transform step in between.
   const lead = {
-    leadId: crypto.randomUUID(),
+    leadId: `web:${LEAD_ID_PREFIX[source]}:${crypto.randomUUID()}`,
     submittedAt: new Date().toISOString(),
     ...fields,
     ...context,
@@ -167,12 +204,22 @@ type DeliveryResult = "sent" | "not-configured" | "failed";
 
 async function deliver(lead: Record<string, unknown>): Promise<DeliveryResult> {
   const url = process.env.LEAD_WEBHOOK_URL;
-  if (!url) return "not-configured";
+  const secret = process.env.LEAD_WEBHOOK_SECRET;
+
+  // Both or neither, deliberately. The shared secret is what stops anyone who
+  // learns the webhook URL filing leads of their own — and those leads start an
+  // SMS follow-up to whatever number they carry. Posting without it would be
+  // rejected at the far end anyway; refusing here makes the reason explicit in
+  // the log rather than surfacing as an opaque 401.
+  if (!url || !secret) return "not-configured";
 
   try {
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-grivo-secret": secret,
+      },
       body: JSON.stringify(lead),
       signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
     });
