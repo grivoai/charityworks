@@ -64,12 +64,12 @@ export const site: SiteContent = {
   },
 
   /**
-   * Ira's 30-minute scheduling link. Stored bare: ContactForm appends the
-   * embed's own parameters, and a query string saved here would be silently
-   * overwritten by them.
+   * Ira's scheduling link. Stored bare: ContactForm appends the embed's own
+   * parameters, and a query string saved here would be silently overwritten
+   * by them.
    */
   booking: {
-    url: "https://calendly.com/iraklein82/30min",
+    url: "https://calendly.com/iraklein82/new-meeting",
     heading: "Pick a time to talk with Ira",
     lede:
       "Thirty minutes, and you'll leave knowing what would work for your event and what it would raise.",
