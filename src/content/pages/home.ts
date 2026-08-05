@@ -1,7 +1,6 @@
 import type { HomePage } from "../types";
 import { valueProps } from "../collections/value-props";
 import { steps, donorPerks } from "../collections/steps";
-import { auctionItems } from "../collections/auction-items";
 
 export const homePage: HomePage = {
   slug: "home",
@@ -80,8 +79,6 @@ export const homePage: HomePage = {
       title: "Over 1,000 Items to Choose From",
       lede: "A curated catalog built to thrill every audience — and drive bids sky-high.",
     },
-    // A four-tile preview; the full catalog lives on /auction-items.
-    items: auctionItems.slice(0, 4),
     cta: {
       id: "cta-home-items",
       label: "View All Auction Items",

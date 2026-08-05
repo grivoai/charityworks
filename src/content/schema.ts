@@ -358,9 +358,15 @@ export const homePageSchema = z.object({
     steps: z.array(stepSchema),
     cta: ctaRefSchema,
   }),
+  /**
+   * No `items` here. The tiles are the first few catalog categories, read live
+   * from the catalog tables. Storing a copy in this record would freeze it: a
+   * category added in the admin would appear on its own page and be missing
+   * from the home page, which is the kind of bug the client finds rather than
+   * we do.
+   */
   itemsTeaser: z.object({
     header: sectionHeaderSchema,
-    items: z.array(auctionItemSchema),
     cta: ctaRefSchema,
   }),
   testimonialsTeaser: z.object({
@@ -392,11 +398,11 @@ export const auctionInfoPageSchema = z.object({
   cta: ctaRefSchema,
 });
 
+/** Also carries no `items` — the grid reads the catalog. See HomePage above. */
 export const auctionItemsPageSchema = z.object({
   ...basePage,
   slug: z.literal("auction-items"),
   intro: sectionHeaderSchema,
-  items: z.array(auctionItemSchema),
   note: text,
   cta: ctaRefSchema,
 });

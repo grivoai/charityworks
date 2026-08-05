@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getPage } from "@/lib/content";
+import { getAuctionCategories, getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
 import { BentoGrid } from "@/components/BentoGrid";
@@ -11,7 +11,10 @@ export function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AuctionItemsRoute() {
-  const page = await getPage("auction-items");
+  const [page, categories] = await Promise.all([
+    getPage("auction-items"),
+    getAuctionCategories(),
+  ]);
 
   return (
     <>
@@ -46,7 +49,7 @@ export default async function AuctionItemsRoute() {
             </Link>
           </div>
 
-          <BentoGrid items={page.items} />
+          <BentoGrid items={categories} />
           <p className="catalog-note reveal">{page.note}</p>
           <div className="center" style={{ marginTop: "40px" }}>
             <Cta cta={page.cta} onDark={false} />

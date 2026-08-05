@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getPage, getSite } from "@/lib/content";
+import { getAuctionCategories, getPage, getSite } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta, SectionHeading } from "@/components/Section";
 import { BentoGrid } from "@/components/BentoGrid";
@@ -13,15 +13,23 @@ export function generateMetadata(): Promise<Metadata> {
   return buildMetadata("home");
 }
 
+/** Tiles in the home page's catalog preview. The bento layout is built for four. */
+const HOME_TEASER_COUNT = 4;
+
 export default async function HomePage() {
   const page = await getPage("home");
   const { hero } = page;
   // The form definition lives with the contact page content; the home page
   // renders the same fields so there is one source of truth for both.
-  const [{ form: contactForm }, site] = await Promise.all([
+  const [{ form: contactForm }, site, categories] = await Promise.all([
     getPage("contact"),
     getSite(),
+    getAuctionCategories(),
   ]);
+
+  // A preview of the catalog rather than a stored copy of it, so a category
+  // added in the admin shows up here without anyone remembering to.
+  const teaserItems = categories.slice(0, HOME_TEASER_COUNT);
 
   return (
     <>
@@ -129,7 +137,7 @@ export default async function HomePage() {
             </h2>
             <p className="section-lede reveal">{page.itemsTeaser.header.lede}</p>
           </div>
-          <BentoGrid items={page.itemsTeaser.items} variant="uniform" />
+          <BentoGrid items={teaserItems} variant="uniform" />
           <div className="center" style={{ marginTop: "46px" }}>
             <Cta cta={page.itemsTeaser.cta} onDark={false} />
             <p className="home-planner-link reveal">

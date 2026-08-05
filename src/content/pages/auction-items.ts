@@ -1,5 +1,4 @@
 import type { AuctionItemsPage } from "../types";
-import { auctionItems } from "../collections/auction-items";
 
 export const auctionItemsPage: AuctionItemsPage = {
   slug: "auction-items",
@@ -23,8 +22,6 @@ export const auctionItemsPage: AuctionItemsPage = {
     title: "Over 1,000 Items to Choose From",
     lede: "A curated catalog built to thrill every audience — and drive bids sky-high.",
   },
-
-  items: auctionItems,
 
   note: "Every item is offered on consignment. Feature what you like at your event, return whatever does not sell, and pay only for the items that find a bidder.",
 

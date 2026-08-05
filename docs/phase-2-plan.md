@@ -13,7 +13,7 @@ file uploads and a form builder.
 ## Contents
 
 1. [What Phase 1 already gave us](#what-phase-1-already-gave-us)
-2. [Three collisions](#three-collisions)
+2. [Four collisions](#four-collisions)
 3. [The database decision](#the-database-decision)
 4. [Rendering](#rendering)
 5. [Data model](#data-model)
@@ -46,10 +46,10 @@ Two gaps closed during 2.0:
 
 ---
 
-## Three collisions
+## Four collisions
 
-Three things look like ordinary editable content but are load-bearing. All
-three are enforced in the schema, not just in the UI — a constraint that lives
+Four things look like ordinary editable content but are load-bearing. All
+of them are enforced in the schema, not just in the UI — a constraint that lives
 only in a form is a constraint that a future refactor removes by accident.
 
 ### 1. Contact form fields feed a live pipeline
@@ -83,6 +83,19 @@ positioning the audit removed.
 looks up. Ids are immutable after creation, and "remove" archives
 (`published = false`) rather than deleting — a hard delete turns any circulating
 link into an untyped "general enquiry".
+
+### 4. Two pages embedded a copy of the catalog
+
+Found while writing the seed. `HomePage.itemsTeaser.items` was
+`auctionItems.slice(0, 4)` and `AuctionItemsPage.items` was `auctionItems` —
+derived views, harmless when the catalog was a compiled-in constant. Stored as
+part of a page record they become a frozen snapshot, so a category added in the
+admin would appear on its own page and be silently missing from the home page
+and the catalog index.
+
+**Resolution.** Both fields are gone from the page schemas. The routes read the
+catalog through `getAuctionCategories()` and the home page takes the first
+`HOME_TEASER_COUNT`. Nothing about the rendered output changed.
 
 ---
 
@@ -158,181 +171,45 @@ be worse than a failed deploy, because nobody would notice.
 
 ## Data model
 
-```sql
--- ============================== auth ==============================
--- Supabase owns auth.users (password hashing, sessions, reset email).
-create table admin_users (
-  id           uuid primary key references auth.users(id) on delete cascade,
-  email        text not null unique,
-  name         text,
-  role         text not null default 'editor' check (role in ('owner','editor')),
-  created_at   timestamptz not null default now(),
-  last_seen_at timestamptz
-);
+The schema lives in [`supabase/migrations/0001_init.sql`](../supabase/migrations/0001_init.sql),
+which is the source of truth — it is what actually runs. Rather than keep a
+second copy here that drifts, this section records what the tables are for and
+why they are shaped that way.
 
--- ============================ content =============================
--- Pages are documents: edited whole, rendered whole, heterogeneous shapes.
--- Normalizing HomePage.hero.stats and AuctioneersPage.differentiators.items
--- into relational tables would mean ~20 tables and an unusable admin.
-create table pages (
-  slug       text primary key,          -- matches PageSlug
-  data       jsonb not null,            -- validated against the page's Zod schema
-  updated_at timestamptz not null default now(),
-  updated_by uuid references admin_users(id)
-);
+| Table | Holds | Why this shape |
+| --- | --- | --- |
+| `admin_users` | Role and profile per login | Supabase owns `auth.users`; this adds role without duplicating credentials |
+| `pages` | One `jsonb` document per page slug | Pages are edited whole and rendered whole. Normalizing `HomePage.hero.stats` and `AuctioneersPage.differentiators.items` into tables would mean ~20 tables and an unusable admin |
+| `site_settings` | Single row: nav, contact, footer, booking | One record, edited as one form |
+| `content_revisions` | Full snapshot per save | The replacement for git history, since the client edits live copy. Enables one-click restore |
+| `catalog_categories` / `catalog_groups` / `catalog_items` | The catalog, normalized | Independent lifecycles: adding a lot without a developer is requirement 5. Needs listing, reordering and concurrent edits that do not clobber a shared blob |
+| `uploads` | Media library, images and PDFs | Provenance and dedupe by checksum |
+| `document_links` | `/d/<slug>` → an upload | A stable public link that survives replacing the file, so next quarter's newsletter reuses the same URL |
+| `forms` / `form_fields` | The form builder's definitions | `locked` is the column that protects the n8n contract — see collision 1 |
+| `submissions` | Every lead, plus delivery state | `raw` + `webhook_status` make a failed delivery replayable |
+| `audit_log` | Who changed what | Useful the first time two people disagree about an edit |
 
-create table site_settings (
-  id         int primary key default 1 check (id = 1),   -- single row
-  data       jsonb not null,            -- SiteContent: nav, contact, booking, footer
-  updated_at timestamptz not null default now(),
-  updated_by uuid references admin_users(id)
-);
+Three decisions inside that file are worth stating plainly, because they are not
+the obvious choice:
 
--- The client edits live copy with no git safety net. This is the replacement.
-create table content_revisions (
-  id         bigserial primary key,
-  entity     text not null,             -- 'page' | 'site' | 'category' | 'item'
-  entity_id  text not null,
-  data       jsonb not null,            -- full snapshot, for one-click restore
-  created_at timestamptz not null default now(),
-  created_by uuid references admin_users(id)
-);
-create index on content_revisions (entity, entity_id, created_at desc);
+**Images are stored as `image_src` / `image_alt` columns, not as a required
+foreign key to `uploads`.** `ImageRef` is what the site renders, a `src` can be
+either a Phase 1 asset under `/images` or a Supabase storage URL, and requiring
+a join would have meant inventing 96 upload rows at seed time for files nobody
+uploaded. `image_upload_id` is an optional nullable reference kept purely for
+provenance, so "where is this file used?" stays answerable and deleting an
+upload can warn.
 
--- ============================ catalog =============================
--- Real tables, not JSONB: these have independent lifecycles (requirement 5 is
--- "add items without a developer") and need listing, reordering and concurrent
--- edits that do not clobber a shared blob.
-create table catalog_categories (
-  id           text primary key,        -- immutable; the lead pipeline references it
-  slug         text not null unique,
-  icon         text not null,
-  title        text not null,
-  blurb        text not null,           -- renders on 3 surfaces, see collision 2
-  heading      text not null,
-  intro        text not null,
-  image_id     uuid references uploads(id),
-  image_alt    text not null,
-  span         text check (span in ('wide','tall')),
-  general_only boolean not null default false,
-  seo          jsonb not null,          -- SeoMeta
-  position     int not null,
-  published    boolean not null default true,
-  updated_at   timestamptz not null default now()
-);
+**`submissions.raw` stores the exact payload that was posted.** This is what
+makes replay possible, and it closes a real gap: today a lead survives a webhook
+outage only in Vercel's function logs, recoverable by hand.
 
-create table catalog_groups (
-  id          text primary key,
-  category_id text not null references catalog_categories(id) on delete cascade,
-  title       text,
-  blurb       text,
-  position    int not null
-);
-
-create table catalog_items (
-  id          text primary key,         -- immutable; this is ?interest=<id>
-  group_id    text not null references catalog_groups(id) on delete cascade,
-  name        text not null,
-  description text not null,
-  image_id    uuid references uploads(id),
-  image_alt   text,
-  note        text,
-  details     jsonb not null default '[]',   -- ItemDetail[]; descriptive only, no pricing
-  position    int not null,
-  published   boolean not null default true, -- archive, never hard delete
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
-);
-create index on catalog_items (group_id, position);
-
--- ============================ uploads =============================
-create table uploads (
-  id          uuid primary key default gen_random_uuid(),
-  bucket      text not null check (bucket in ('images','documents')),
-  path        text not null,
-  filename    text not null,            -- original name as uploaded
-  mime_type   text not null,
-  bytes       bigint not null,
-  width       int, height int,          -- images only
-  alt         text,                     -- required for images on save
-  checksum    text,                     -- sha256, dedupe on re-upload
-  uploaded_by uuid references admin_users(id),
-  created_at  timestamptz not null default now(),
-  unique (bucket, path)
-);
-
--- A stable public link that survives replacing the file, so next quarter's
--- newsletter reuses the same URL instead of minting a new one.
-create table document_links (
-  slug       text primary key,          -- served at /d/<slug>
-  upload_id  uuid not null references uploads(id),
-  title      text not null,
-  updated_at timestamptz not null default now()
-);
-
--- ============================= forms ==============================
-create table forms (
-  id              text primary key,     -- 'contact'
-  name            text not null,
-  submit_label    text not null,
-  success_message text not null,
-  error_message   text not null,
-  updated_at      timestamptz not null default now()
-);
-
-create table form_fields (
-  id          text primary key,
-  form_id     text not null references forms(id) on delete cascade,
-  name        text not null,            -- submitted key
-  label       text not null,
-  type        text not null check (type in
-                ('text','email','tel','date','textarea','select','checkbox')),
-  placeholder text,
-  help        text,
-  required    boolean not null default false,
-  width       text not null default 'full' check (width in ('half','full')),
-  options     jsonb,                    -- select choices
-  position    int not null,
-  locked      boolean not null default false,  -- protects the n8n contract
-  unique (form_id, name)
-);
-
--- =========================== submissions ==========================
-create table submissions (
-  id               uuid primary key default gen_random_uuid(),
-  lead_id          text not null unique,   -- same web:<surface>:<uuid> sent to n8n
-  form_id          text references forms(id),
-  submitted_at     timestamptz not null default now(),
-  -- core fields as columns so the admin table can sort and filter
-  name text, org text, email text, phone text, event_date text, message text,
-  -- lead context, mirroring the existing payload
-  source           text not null,
-  source_path      text,
-  interest_type    text, interest_id text,
-  interest_label   text, interest_category text,
-  quiz             jsonb,
-  context_summary  text,
-  custom           jsonb not null default '{}',  -- admin-added fields
-  -- delivery, so a webhook outage is recoverable
-  webhook_status   text not null default 'pending'
-                     check (webhook_status in ('pending','sent','failed','not-configured')),
-  webhook_attempts int not null default 0,
-  webhook_last_error text,
-  raw              jsonb not null       -- exact payload, enables replay
-);
-create index on submissions (submitted_at desc);
-create index on submissions (source, submitted_at desc);
-
--- ============================ audit ===============================
-create table audit_log (
-  id         bigserial primary key,
-  actor_id   uuid references admin_users(id),
-  action     text not null,             -- 'page.update' | 'item.create' | ...
-  entity     text not null, entity_id text,
-  diff       jsonb,
-  created_at timestamptz not null default now()
-);
-```
+**RLS is enabled on every table with no policies at all.** That denies the anon
+and authenticated roles entirely. Reads and writes go through the service role
+from server-side code, gated by `requireAdmin()`. The policies are a backstop
+against a leaked anon key, not the mechanism — a per-table policy matrix would
+be ceremony for an admin with two users, and ceremony that looks like security
+is worse than none.
 
 `submissions.raw` plus `webhook_status` buys something the current site does not
 have: **replay**. Today a lead survives a webhook outage only in Vercel function
