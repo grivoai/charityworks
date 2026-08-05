@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Nav } from "@/components/Nav";
-import { Footer } from "@/components/Footer";
-import { RevealObserver } from "@/components/RevealObserver";
-import { AnimatedLayout } from "@/components/AnimatedLayout";
-import { OrganizationJsonLd } from "@/components/JsonLd";
 import { noindex, siteUrl } from "@/lib/site-config";
 import { getSite } from "@/lib/content";
+
+/**
+ * The document shell, and nothing else.
+ *
+ * Only `<html>` and `<body>` have to live in the root layout, so only they do.
+ * The public site's chrome — nav, footer, skip link, reveal observer — is in
+ * `(site)/layout.tsx`, because nested layouts compose rather than replace: if
+ * the nav were rendered here, `/admin` would inherit it and there would be no
+ * way to opt out.
+ *
+ * The two route groups, `(site)` and `(admin)`, do not appear in any URL.
+ * `app/(site)/contact/page.tsx` still serves `/contact`.
+ */
 
 /**
  * A function rather than a static object, because the brand name and tagline
@@ -25,21 +33,20 @@ export async function generateMetadata(): Promise<Metadata> {
     description: site.description,
     applicationName: site.name,
     authors: [{ name: site.name }],
-    // Set once here rather than per route: no page-level metadata sets `robots`,
-    // so this default applies to every route including the category pages.
+    // Set once here rather than per route: no public page sets `robots`, so
+    // this default applies to every route including the category pages. The
+    // admin layout overrides it with an unconditional noindex.
     robots: noindex
       ? { index: false, follow: false, nocache: true }
       : { index: true, follow: true },
   };
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const site = await getSite();
-
   return (
     <html lang="en">
       <head>
@@ -53,23 +60,13 @@ export default async function RootLayout({
           href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600;700;800;900&display=swap"
           rel="stylesheet"
         />
-        {/* Without JS the reveal observer never runs, so force content visible. */}
+        {/* Without JS the reveal observer never runs, so force content visible.
+            Inert on admin pages, which carry no `.reveal` elements. */}
         <noscript>
           <style>{`.reveal { opacity: 1 !important; transform: none !important; }`}</style>
         </noscript>
       </head>
-      <body>
-        <a className="skip-link" href="#main">
-          Skip to main content
-        </a>
-        <Nav logo={site.logo} links={site.nav} cta={site.navCta} />
-        <main id="main">
-          <AnimatedLayout>{children}</AnimatedLayout>
-        </main>
-        <Footer />
-        <RevealObserver />
-        <OrganizationJsonLd />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
