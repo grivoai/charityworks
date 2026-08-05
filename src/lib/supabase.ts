@@ -23,13 +23,17 @@ let client: SupabaseClient | null = null;
 export function getServiceClient(): SupabaseClient {
   if (client) return client;
 
-  const url = process.env.SUPABASE_URL;
+  // The URL is the same value the browser's auth client needs, so it is one
+  // NEXT_PUBLIC_ variable rather than a public copy and a private duplicate.
+  // The key is what must never be public, and it is not.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
     throw new Error(
-      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must both be set to use the " +
-        "database. Unset both to fall back to the seed content in src/content."
+      "NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must both be set " +
+        "to use the database. Unset the key to fall back to the seed content " +
+        "in src/content."
     );
   }
 

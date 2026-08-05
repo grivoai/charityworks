@@ -42,12 +42,12 @@ import { contactPage } from "../src/content/pages/contact";
 /* Connection                                                          */
 /* ------------------------------------------------------------------ */
 
-const url = process.env.SUPABASE_URL;
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!url || !key) {
   console.error(
-    "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.\n" +
+    "NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must both be set.\n" +
       "Put them in .env.local, then run: npm run seed"
   );
   process.exit(1);

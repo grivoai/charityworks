@@ -39,10 +39,17 @@ export interface ContentSource {
   getAuctionCategories(): Promise<AuctionItem[]>;
 }
 
-/** True when Supabase is configured well enough to be the source of truth. */
+/**
+ * True when Supabase is configured well enough to be the source of truth.
+ *
+ * Both are required. The URL alone is present as soon as the project exists,
+ * which would otherwise flip the site onto an empty database the moment
+ * somebody added one variable.
+ */
 export function isDatabaseConfigured(): boolean {
   return Boolean(
-    process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 }
 
@@ -61,9 +68,9 @@ export async function getContentSource(): Promise<ContentSource> {
   if (!warned) {
     warned = true;
     console.warn(
-      "[content] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set — " +
-        "reading content from the seed modules in src/content. Edits made in " +
-        "the admin panel will not appear."
+      "[content] NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not " +
+        "both set — reading content from the seed modules in src/content. " +
+        "Edits made in the admin panel will not appear."
     );
   }
 
