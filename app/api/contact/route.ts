@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPage } from "@/lib/content";
-import { resolveInterest } from "@/lib/interests";
+import { getInterestRegistry } from "@/lib/interests";
 import {
   buildContextSummary,
   isLeadSource,
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { form } = getPage("contact");
+  const { form } = await getPage("contact");
 
   const missing = form.fields
     .filter((field) => field.required)
@@ -133,7 +133,14 @@ export async function POST(request: Request) {
   // The client sends an id; the label is resolved here. A crafted `interestId`
   // that names nothing simply resolves to undefined and the lead is recorded as
   // a general enquiry — it can never put chosen text in front of the client.
-  const interest = resolveInterest(payload.interestId);
+  // The registry is read once and used for both the submitted interest and the
+  // quiz's recommended ids below. `resolveInterest` would rebuild it per call,
+  // and a quiz lead names four of them.
+  const registry = await getInterestRegistry();
+  const resolve = (id: unknown) =>
+    typeof id === "string" && id !== "" ? registry.get(id) : undefined;
+
+  const interest = resolve(payload.interestId);
   const source = isLeadSource(payload.source) ? payload.source : "contact-page";
 
   const quiz = Object.fromEntries(
@@ -151,7 +158,7 @@ export async function POST(request: Request) {
   const quizRecommendedLabels = quiz.quizRecommended
     ? quiz.quizRecommended
         .split(",")
-        .map((id) => resolveInterest(id.trim())?.label)
+        .map((id) => resolve(id.trim())?.label)
         .filter((label): label is string => Boolean(label))
     : [];
 

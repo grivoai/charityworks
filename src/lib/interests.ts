@@ -31,9 +31,18 @@ export interface InterestRecord {
   path?: string;
 }
 
-let cached: Map<string, InterestRecord> | null = null;
-
-function buildRegistry(): Map<string, InterestRecord> {
+/**
+ * Built on demand rather than memoised in a module variable.
+ *
+ * It used to be cached for the life of the process, which was free when the
+ * catalog was a compiled-in constant. It is not free now: an admin adding a lot
+ * revalidates the pages, but a module-level cache would survive that and keep
+ * resolving against the catalog as it was when the instance started — so a
+ * brand new lot's request link would come through as an untyped general
+ * enquiry. Caching belongs at the content reads, where revalidation can reach
+ * it, not here.
+ */
+async function buildRegistry(): Promise<Map<string, InterestRecord>> {
   const registry = new Map<string, InterestRecord>();
 
   const add = (record: InterestRecord) => {
@@ -48,7 +57,7 @@ function buildRegistry(): Map<string, InterestRecord> {
     registry.set(record.id, record);
   };
 
-  for (const category of getAuctionCategories()) {
+  for (const category of await getAuctionCategories()) {
     const path = `/auction-items/${category.slug}`;
     add({ id: category.id, type: "category", label: category.title, path });
 
@@ -68,7 +77,7 @@ function buildRegistry(): Map<string, InterestRecord> {
   // Auctioneers and partners share a page but not a trade: the featured partner
   // does event planning and catering. They are typed apart so the summary line
   // asks for the right thing.
-  const { auctioneers, partners } = getPage("auctioneers");
+  const { auctioneers, partners } = await getPage("auctioneers");
   for (const person of auctioneers) {
     add({
       id: person.id,
@@ -89,16 +98,17 @@ function buildRegistry(): Map<string, InterestRecord> {
   return registry;
 }
 
-/** The registry, built once per process. */
-export function getInterestRegistry(): Map<string, InterestRecord> {
-  cached ??= buildRegistry();
-  return cached;
+/** The registry of everything a lead can point at. */
+export function getInterestRegistry(): Promise<Map<string, InterestRecord>> {
+  return buildRegistry();
 }
 
 /** Resolve an id, or undefined when it names nothing in the catalog. */
-export function resolveInterest(id: unknown): InterestRecord | undefined {
+export async function resolveInterest(
+  id: unknown
+): Promise<InterestRecord | undefined> {
   if (typeof id !== "string" || id === "") return undefined;
-  return getInterestRegistry().get(id);
+  return (await getInterestRegistry()).get(id);
 }
 
 /**
@@ -113,9 +123,9 @@ export type InterestLookup = Record<
   { label: string; type: InterestRecord["type"]; categoryLabel?: string }
 >;
 
-export function getInterestLookup(): InterestLookup {
+export async function getInterestLookup(): Promise<InterestLookup> {
   const lookup: InterestLookup = {};
-  for (const [id, record] of getInterestRegistry()) {
+  for (const [id, record] of await getInterestRegistry()) {
     lookup[id] = {
       label: record.label,
       type: record.type,

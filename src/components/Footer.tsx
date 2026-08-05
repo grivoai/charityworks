@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { site } from "@/content/site";
+import { getSite } from "@/lib/content";
 
-export function Footer() {
+/** Server component, so it reads the content layer directly rather than taking props. */
+export async function Footer() {
+  const site = await getSite();
   const year = new Date().getFullYear();
 
   return (

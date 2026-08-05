@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import type { PageSlug } from "@/content/types";
-import { site, siteUrl } from "@/content/site";
-import { getPageSeo } from "./content";
+import { siteUrl } from "@/lib/site-config";
+import { getPageSeo, getSite } from "./content";
 
 /**
  * Builds the Metadata object for a route from its content-layer SEO block.
  * Every page gets a unique title, a unique description and a self-referencing
  * canonical URL.
  */
-export function buildMetadata(slug: PageSlug): Metadata {
-  const seo = getPageSeo(slug);
+export async function buildMetadata(slug: PageSlug): Promise<Metadata> {
+  const [seo, site] = await Promise.all([getPageSeo(slug), getSite()]);
   const url = `${siteUrl}${seo.path}`;
 
   return {

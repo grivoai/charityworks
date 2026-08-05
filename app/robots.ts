@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { noindex, siteUrl } from "@/content/site";
+import { noindex, siteUrl } from "@/lib/site-config";
 
 export default function robots(): MetadataRoute.Robots {
   if (noindex) {
@@ -16,13 +16,13 @@ export default function robots(): MetadataRoute.Robots {
      * the sitemap so nothing is actively advertised for indexing.
      */
     return {
-      rules: { userAgent: "*", allow: "/", disallow: ["/api/"] },
+      rules: { userAgent: "*", allow: "/", disallow: ["/api/", "/admin"] },
       host: siteUrl,
     };
   }
 
   return {
-    rules: { userAgent: "*", allow: "/", disallow: ["/api/"] },
+    rules: { userAgent: "*", allow: "/", disallow: ["/api/", "/admin"] },
     sitemap: `${siteUrl}/sitemap.xml`,
     host: siteUrl,
   };

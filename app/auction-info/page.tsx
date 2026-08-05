@@ -4,10 +4,12 @@ import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
-export const metadata: Metadata = buildMetadata("auction-info");
+export function generateMetadata(): Promise<Metadata> {
+  return buildMetadata("auction-info");
+}
 
-export default function AuctionInfoRoute() {
-  const page = getPage("auction-info");
+export default async function AuctionInfoRoute() {
+  const page = await getPage("auction-info");
 
   return (
     <>

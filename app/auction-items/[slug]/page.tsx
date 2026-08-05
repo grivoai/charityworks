@@ -7,15 +7,15 @@ import {
   availabilityNotice,
   generalCategoryNotice,
 } from "@/content/collections/auction-items";
-import { siteUrl } from "@/content/site";
+import { siteUrl } from "@/lib/site-config";
 import { Cta } from "@/components/Section";
 import { CategoryJsonLd } from "@/components/JsonLd";
 
 type Params = { slug: string };
 
 /** Every category is known at build time, so all of them prerender as static. */
-export function generateStaticParams(): Params[] {
-  return getAuctionCategories().map(({ slug }) => ({ slug }));
+export async function generateStaticParams(): Promise<Params[]> {
+  return (await getAuctionCategories()).map(({ slug }) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -24,7 +24,7 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const category = getAuctionCategory(slug);
+  const category = await getAuctionCategory(slug);
   if (!category) return {};
 
   const url = `${siteUrl}${category.seo.path}`;
@@ -48,7 +48,7 @@ export default async function AuctionCategoryRoute({
   params: Promise<Params>;
 }) {
   const { slug } = await params;
-  const category = getAuctionCategory(slug);
+  const category = await getAuctionCategory(slug);
   if (!category) notFound();
 
   const lotCount = category.groups.reduce((n, g) => n + g.items.length, 0);

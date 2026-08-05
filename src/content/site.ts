@@ -2,7 +2,19 @@ import type { SiteContent } from "./types";
 
 /**
  * Global site content — brand, navigation, contact details, footer.
- * In Phase 2 this becomes a single editable `site_settings` record.
+ *
+ * SEED FIXTURE. This is no longer read at runtime once the database holds a
+ * `site_settings` row; `scripts/seed.ts` inserts it and `getSite()` reads the
+ * row from then on. It stays in the repo for two reasons: it is what the seed
+ * inserts, and it is the documented fallback when the Supabase environment
+ * variables are absent, which is what lets the site build before the database
+ * exists. See `src/lib/content.ts`.
+ *
+ * Editing this file does not change the live site. Edit it in the admin.
+ *
+ * `siteUrl` and `noindex` used to live here and now live in
+ * `@/lib/site-config` — they are deployment configuration rather than content,
+ * and must not become editable.
  */
 export const site: SiteContent = {
   name: "CharityWorks",
@@ -82,25 +94,3 @@ export const site: SiteContent = {
     legal: "All rights reserved.",
   },
 };
-
-/**
- * Canonical origin, used for canonical tags, OpenGraph URLs and the sitemap.
- * Set NEXT_PUBLIC_SITE_URL in the Vercel project to the production domain.
- */
-export const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.charityworks.net"
-).replace(/\/$/, "");
-
-/**
- * Whether to tell search engines not to index this deployment.
- *
- * On while the site is served from a *.vercel.app URL: canonical tags point at
- * https://www.charityworks.net, which currently serves the client's legacy
- * site. Letting that get indexed would have every page declaring a canonical
- * on a domain that does not contain it — worse than not being indexed at all.
- *
- * TURN THIS OFF when DNS cuts over to Vercel. See README, "Launch checklist".
- * Defaults to false so a missing variable can never silently deindex a live
- * site; it has to be switched on deliberately.
- */
-export const noindex = process.env.SITE_NOINDEX === "true";

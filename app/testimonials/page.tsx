@@ -5,10 +5,12 @@ import { Cta } from "@/components/Section";
 import { TestimonialCard } from "@/components/TestimonialCard";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
-export const metadata: Metadata = buildMetadata("testimonials");
+export function generateMetadata(): Promise<Metadata> {
+  return buildMetadata("testimonials");
+}
 
-export default function TestimonialsRoute() {
-  const page = getPage("testimonials");
+export default async function TestimonialsRoute() {
+  const page = await getPage("testimonials");
 
   return (
     <>

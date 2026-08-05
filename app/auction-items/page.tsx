@@ -6,10 +6,12 @@ import { Cta } from "@/components/Section";
 import { BentoGrid } from "@/components/BentoGrid";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
-export const metadata: Metadata = buildMetadata("auction-items");
+export function generateMetadata(): Promise<Metadata> {
+  return buildMetadata("auction-items");
+}
 
-export default function AuctionItemsRoute() {
-  const page = getPage("auction-items");
+export default async function AuctionItemsRoute() {
+  const page = await getPage("auction-items");
 
   return (
     <>

@@ -6,15 +6,17 @@ import { AuctionPlanner } from "@/components/AuctionPlanner";
 import type { PlannerCategoryCard } from "@/components/AuctionPlanner";
 import { PLANNER_TIE_BREAK } from "@/content/collections/planner-rules";
 
-export const metadata: Metadata = buildMetadata("auction-planner");
+export function generateMetadata(): Promise<Metadata> {
+  return buildMetadata("auction-planner");
+}
 
-export default function AuctionPlannerRoute() {
-  const page = getPage("auction-planner");
+export default async function AuctionPlannerRoute() {
+  const page = await getPage("auction-planner");
 
   // Resolved here rather than in the client component so the catalog is not
   // shipped to the browser: only the eight scoring categories cross over, and
   // only the fields a result card renders.
-  const byId = new Map(getAuctionCategories().map((c) => [c.id, c]));
+  const byId = new Map((await getAuctionCategories()).map((c) => [c.id, c]));
   const categories: PlannerCategoryCard[] = PLANNER_TIE_BREAK.map((id) => {
     const category = byId.get(id);
     if (!category) {

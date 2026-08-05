@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getPage } from "@/lib/content";
+import { getPage, getSite } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta, SectionHeading } from "@/components/Section";
 import { BentoGrid } from "@/components/BentoGrid";
@@ -8,16 +8,20 @@ import { DonorIncentive } from "@/components/DonorIncentive";
 import { TestimonialMarquee } from "@/components/TestimonialMarquee";
 import { ContactForm } from "@/components/ContactForm";
 import { testimonials } from "@/content/collections/testimonials";
-import { site } from "@/content/site";
 
-export const metadata: Metadata = buildMetadata("home");
+export function generateMetadata(): Promise<Metadata> {
+  return buildMetadata("home");
+}
 
-export default function HomePage() {
-  const page = getPage("home");
+export default async function HomePage() {
+  const page = await getPage("home");
   const { hero } = page;
   // The form definition lives with the contact page content; the home page
   // renders the same fields so there is one source of truth for both.
-  const contactForm = getPage("contact").form;
+  const [{ form: contactForm }, site] = await Promise.all([
+    getPage("contact"),
+    getSite(),
+  ]);
 
   return (
     <>
@@ -212,7 +216,12 @@ export default function HomePage() {
 
           {/* No `interests` map: this form cannot carry a specific lot or
               auctioneer, so the lookup stays out of the home page bundle. */}
-          <ContactForm form={contactForm} idPrefix="home" source="home" />
+          <ContactForm
+            form={contactForm}
+            booking={site.booking}
+            idPrefix="home"
+            source="home"
+          />
         </div>
       </section>
     </>

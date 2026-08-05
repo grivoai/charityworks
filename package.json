@@ -2,24 +2,31 @@
   "name": "charityworks",
   "version": "1.0.0",
   "private": true,
-  "description": "CharityWorks — consignment auction items and fundraising consulting for nonprofits.",
+  "description": "CharityWorks \u2014 consignment auction items and fundraising consulting for nonprofits.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:content": "tsx scripts/check-content-parity.ts",
+    "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.0",
     "framer-motion": "^12.42.2",
     "next": "16.2.12",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "tsx": "^4.23.7",
     "typescript": "^5.7.2"
   }
 }

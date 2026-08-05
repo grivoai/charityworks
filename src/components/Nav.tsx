@@ -3,14 +3,28 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { site } from "@/content/site";
+import type { CtaRef, NavLink, SiteContent } from "@/content/types";
 
 /**
  * Fixed site navigation. Same markup and classes as the original single-page
  * nav; the anchor links are now real routes and the current route is marked
  * with aria-current for both users and crawlers.
+ *
+ * Takes its content as props rather than importing it. This is a client
+ * component — it needs `usePathname` and the scroll listener — and the content
+ * layer is server-only now that it reads a database. The root layout reads the
+ * site record and passes down the three pieces used here, rather than the
+ * whole record: everything handed to a client component ships in the bundle.
  */
-export function Nav() {
+export function Nav({
+  logo,
+  links,
+  cta,
+}: {
+  logo: SiteContent["logo"];
+  links: NavLink[];
+  cta: CtaRef;
+}) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,12 +47,12 @@ export function Nav() {
   return (
     <nav className={`nav${scrolled ? " scrolled" : ""}`} id="nav">
       <Link href="/" className="nav-logo">
-        {site.logo.lead}
-        <span>{site.logo.accent}</span>
+        {logo.lead}
+        <span>{logo.accent}</span>
       </Link>
 
       <ul className={`nav-links${menuOpen ? " open" : ""}`} id="navLinks">
-        {site.nav.map((link) => {
+        {links.map((link) => {
           const active = isActive(link.href);
           return (
             <li key={link.id}>
@@ -54,8 +68,8 @@ export function Nav() {
         })}
       </ul>
 
-      <Link href={site.navCta.href} className="btn btn-gold nav-cta">
-        {site.navCta.label}
+      <Link href={cta.href} className="btn btn-gold nav-cta">
+        {cta.label}
       </Link>
 
       <button

@@ -5,30 +5,41 @@ import { Footer } from "@/components/Footer";
 import { RevealObserver } from "@/components/RevealObserver";
 import { AnimatedLayout } from "@/components/AnimatedLayout";
 import { OrganizationJsonLd } from "@/components/JsonLd";
-import { noindex, site, siteUrl } from "@/content/site";
+import { noindex, siteUrl } from "@/lib/site-config";
+import { getSite } from "@/lib/content";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    // Each route supplies its own full title; this default covers the shell.
-    default: `${site.name} — ${site.tagline}`,
-    template: "%s",
-  },
-  description: site.description,
-  applicationName: site.name,
-  authors: [{ name: site.name }],
-  // Set once here rather than per route: no page-level metadata sets `robots`,
-  // so this default applies to every route including the category pages.
-  robots: noindex
-    ? { index: false, follow: false, nocache: true }
-    : { index: true, follow: true },
-};
+/**
+ * A function rather than a static object, because the brand name and tagline
+ * are editable content now and have to be read rather than imported.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSite();
 
-export default function RootLayout({
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      // Each route supplies its own full title; this default covers the shell.
+      default: `${site.name} — ${site.tagline}`,
+      template: "%s",
+    },
+    description: site.description,
+    applicationName: site.name,
+    authors: [{ name: site.name }],
+    // Set once here rather than per route: no page-level metadata sets `robots`,
+    // so this default applies to every route including the category pages.
+    robots: noindex
+      ? { index: false, follow: false, nocache: true }
+      : { index: true, follow: true },
+  };
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const site = await getSite();
+
   return (
     <html lang="en">
       <head>
@@ -51,7 +62,7 @@ export default function RootLayout({
         <a className="skip-link" href="#main">
           Skip to main content
         </a>
-        <Nav />
+        <Nav logo={site.logo} links={site.nav} cta={site.navCta} />
         <main id="main">
           <AnimatedLayout>{children}</AnimatedLayout>
         </main>

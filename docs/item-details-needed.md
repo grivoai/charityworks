@@ -48,7 +48,7 @@ A spreadsheet is fine. One row per lot, columns for whichever labels apply:
 
 ## Lots awaiting details
 
-77 lots across 9 categories. Named lots are in the catalog files under
+89 lots across 9 categories. Named lots are in the catalog files under
 `src/content/collections/`; the two general categories describe a type rather
 than specific stock, so they need category-level wording rather than per-lot
 figures.
@@ -59,18 +59,30 @@ figures.
 | Bucket List Trips | 11 | `catalog-trips.ts` → `bucketListItems` |
 | Meet & Greets | 2 | `catalog-trips.ts` → `meetGreetItems` |
 | Hand-Signed Guitars | 9 | `catalog-guitars.ts` |
-| Sports & Celebrity Memorabilia | 15 | `catalog-memorabilia.ts` |
+| Sports & Celebrity Memorabilia | 27 | `catalog-memorabilia.ts` |
 | Gold Album Showcases | 21 | `catalog-gold-albums.ts` |
 | Taylor Swift Signed Guitar | 2 | `auction-items.ts` (inline) |
 | Gemstone & Costume Jewelry | 2 (general) | `auction-items.ts` (inline) |
 | Swarovski Handbags | 1 (general) | `auction-items.ts` (inline) |
 
+Memorabilia is the only category split into tiers, and the split matters — a
+hand-signed piece and a laser-signature reproduction are different products and
+need different answers:
+
+| Tier | Lots | What it most needs |
+| --- | --- | --- |
+| Hand-signed jerseys | 12 | Authenticator name and certificate number |
+| Hand-signed music | 4 | Authenticator name, where and when signed |
+| Reproduction / laser signature | 11 | Plain wording that it is a reproduction |
+
 ### Priority
 
 Travel and the signed guitars are the highest-value lots and the ones a
-committee is most likely to ask about before committing, so those 34 are worth
-collecting first. The gold albums are the largest block but the most uniform —
-one set of answers may well cover all 21.
+committee is most likely to ask about before committing, so those 38 are worth
+collecting first. The 12 hand-signed jerseys come next: they are the lots where
+a buyer is most likely to ask who authenticated the signature. The gold albums
+are the largest single block but the most uniform — one set of answers may well
+cover all 21.
 
 ## How to add them
 

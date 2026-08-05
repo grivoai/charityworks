@@ -6,10 +6,12 @@ import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
-export const metadata: Metadata = buildMetadata("auctioneers");
+export function generateMetadata(): Promise<Metadata> {
+  return buildMetadata("auctioneers");
+}
 
-export default function AuctioneersRoute() {
-  const page = getPage("auctioneers");
+export default async function AuctioneersRoute() {
+  const page = await getPage("auctioneers");
 
   /**
    * Requests carry only the person's id; /api/contact resolves the name from

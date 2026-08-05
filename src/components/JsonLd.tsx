@@ -1,5 +1,6 @@
 import type { AuctionItem, FaqItem } from "@/content/types";
-import { site, siteUrl } from "@/content/site";
+import { siteUrl } from "@/lib/site-config";
+import { getSite } from "@/lib/content";
 
 /** Serializes structured data, escaping `<` so the payload cannot break out of the script tag. */
 function LdScript({ data }: { data: Record<string, unknown> }) {
@@ -14,7 +15,8 @@ function LdScript({ data }: { data: Record<string, unknown> }) {
 }
 
 /** Organization + LocalBusiness data. Rendered once, in the root layout. */
-export function OrganizationJsonLd() {
+export async function OrganizationJsonLd() {
+  const site = await getSite();
   return (
     <LdScript
       data={{

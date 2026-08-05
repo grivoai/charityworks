@@ -4,8 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { BookingPanel } from "@/components/BookingPanel";
-import { site } from "@/content/site";
-import type { ContactPage } from "@/content/types";
+import type { ContactPage, SiteContent } from "@/content/types";
 // Type-only, so the server-side registry module is never pulled into this
 // client bundle — only the plain lookup object the page passes as a prop.
 import type { InterestLookup } from "@/lib/interests";
@@ -32,11 +31,19 @@ type Status = "idle" | "submitting" | "success" | "error";
  */
 export function ContactForm({
   form,
+  booking,
   idPrefix = "",
   source = "contact-page",
   interests,
 }: {
   form: ContactPage["form"];
+  /**
+   * Passed in rather than imported. This is a client component and the content
+   * layer is server-only, so the booking settings are read by the server
+   * component that renders this and handed down. An empty `url` switches the
+   * widget off and the success state falls back to the message alone.
+   */
+  booking: SiteContent["booking"];
   /**
    * Namespaces the generated field ids. The form renders on both / and
    * /contact, and duplicate ids would break every label's `for` association if
@@ -118,9 +125,9 @@ export function ContactForm({
           {/* No `.reveal` anywhere in here. RevealObserver takes its snapshot
               of `.reveal:not(.in)` once per navigation, so an element mounted
               this late is never observed and would sit at opacity 0 forever. */}
-          {site.booking.url && (
+          {booking.url && (
             <BookingPanel
-              booking={site.booking}
+              booking={booking}
               name={lead.name}
               email={lead.email}
               leadId={lead.leadId}

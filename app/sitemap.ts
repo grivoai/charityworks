@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getAllPages, getAuctionCategories } from "@/lib/content";
-import { siteUrl } from "@/content/site";
+import { siteUrl } from "@/lib/site-config";
 
 /** Priority per route — the home page and the two commercial pages rank highest. */
 const priorities: Record<string, number> = {
@@ -13,10 +13,11 @@ const priorities: Record<string, number> = {
   "/testimonials": 0.7,
 };
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
 
-  const pages = getAllPages().map((page) => ({
+  // Only the public site. /admin is never listed, and robots.txt disallows it.
+  const pages = (await getAllPages()).map((page) => ({
     url: `${siteUrl}${page.seo.path}`,
     lastModified,
     changeFrequency: "monthly" as const,
@@ -25,7 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // Category pages carry the long-tail terms ("celebrity signed guitar
   // fundraiser"), so they rank just below the top-level commercial pages.
-  const categories = getAuctionCategories().map((category) => ({
+  const categories = (await getAuctionCategories()).map((category) => ({
     url: `${siteUrl}${category.seo.path}`,
     lastModified,
     changeFrequency: "monthly" as const,

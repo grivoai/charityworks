@@ -5,10 +5,12 @@ import { Cta } from "@/components/Section";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/JsonLd";
 
-export const metadata: Metadata = buildMetadata("faqs");
+export function generateMetadata(): Promise<Metadata> {
+  return buildMetadata("faqs");
+}
 
-export default function FaqsRoute() {
-  const page = getPage("faqs");
+export default async function FaqsRoute() {
+  const page = await getPage("faqs");
 
   return (
     <>

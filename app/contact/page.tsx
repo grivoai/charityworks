@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { getPage } from "@/lib/content";
+import { getPage, getSite } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { ContactForm } from "@/components/ContactForm";
 import { getInterestLookup } from "@/lib/interests";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
-import { site } from "@/content/site";
 
-export const metadata: Metadata = buildMetadata("contact");
+export function generateMetadata(): Promise<Metadata> {
+  return buildMetadata("contact");
+}
 
-export default function ContactRoute() {
-  const page = getPage("contact");
+export default async function ContactRoute() {
+  const [page, site] = await Promise.all([getPage("contact"), getSite()]);
 
   return (
     <>
@@ -67,8 +68,9 @@ export default function ContactRoute() {
               statically rendered. */}
           <ContactForm
             form={page.form}
+            booking={site.booking}
             source="contact-page"
-            interests={getInterestLookup()}
+            interests={await getInterestLookup()}
           />
         </div>
       </section>
