@@ -261,9 +261,9 @@ async function main() {
   await seedContactForm();
 
   console.log(
-    "\n  Done. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the app's\n" +
-      "  environment and it will read from the database instead of the seed\n" +
-      "  modules. Verify with: npm run build\n"
+    "\n  Done. With NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY both\n" +
+      "  set, the app reads from the database instead of the seed modules.\n" +
+      "  Verify with: npm run build — it should log no fallback warning.\n"
   );
 }
 

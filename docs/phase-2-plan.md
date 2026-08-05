@@ -167,6 +167,28 @@ When the variables are **present but a query fails**, the build throws. It does
 not fall back. Silently serving seed content over the client's own edits would
 be worse than a failed deploy, because nobody would notice.
 
+### Next's build cache does not know the content changed
+
+Found while verifying 2.0. A round trip proved the point: a category title was
+changed in Postgres and nowhere else, then `npm run build` was run. The
+rendered HTML still carried the old title — 17 occurrences of it, none of the
+new one. Deleting `.next` and rebuilding produced the new title on all five
+pages that render it.
+
+So a rebuild reuses prerendered HTML when no *source file* has changed, and a
+database-only edit is invisible to that check. Vercel restores `.next/cache`
+between deployments, so a deploy triggered by a code push could in principle
+ship pages built from older content.
+
+This does not affect the normal editing path — a save calls `revalidateTag()`,
+which regenerates the affected routes directly and does not consult the build
+cache. It matters for the deploy path, and it is the reason the content reads
+need to be wrapped in tagged cache entries rather than left as bare async
+functions. Tracked as part of the revalidation work.
+
+Until that lands, a deploy made shortly after a content edit should be
+spot-checked, or forced with a cache-skipping redeploy.
+
 ---
 
 ## Data model
