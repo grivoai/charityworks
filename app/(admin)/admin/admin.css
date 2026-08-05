@@ -1,0 +1,246 @@
+/* ============================================================
+   Admin panel.
+
+   Scoped to /admin by being imported only from its layout. Reuses the site's
+   tokens from globals.css — same palette, so the client is not asked to
+   context-switch between two visual languages — but none of its layout, which
+   is built for marketing pages rather than forms and tables.
+   ============================================================ */
+
+.admin {
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* ---------------- top bar ---------------- */
+
+.admin-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 28px;
+  height: 62px;
+  background: var(--green);
+  color: var(--cream);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.admin-logo {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: 0.2px;
+}
+.admin-logo span { color: var(--gold-bright); }
+
+.admin-badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 245, 236, 0.28);
+  color: var(--gold-soft);
+}
+
+.admin-bar-spacer { flex: 1; }
+
+.admin-who {
+  font-size: 13px;
+  color: rgba(248, 245, 236, 0.72);
+}
+
+.admin-signout {
+  background: none;
+  border: 1px solid rgba(248, 245, 236, 0.3);
+  color: var(--cream);
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s var(--ease), border-color 0.18s var(--ease);
+}
+.admin-signout:hover {
+  background: rgba(248, 245, 236, 0.1);
+  border-color: rgba(248, 245, 236, 0.55);
+}
+
+/* ---------------- page frame ---------------- */
+
+.admin-main { padding: 40px 28px 80px; }
+.admin-wrap { max-width: 980px; margin: 0 auto; }
+
+.admin-head { margin-bottom: 32px; }
+.admin-head h1 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(26px, 4vw, 34px);
+  line-height: 1.15;
+  margin-bottom: 6px;
+}
+.admin-head p { color: var(--muted); max-width: 62ch; }
+
+/* ---------------- cards ---------------- */
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: 16px;
+}
+
+.admin-card {
+  display: block;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+a.admin-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.admin-card h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-card p { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.admin-card[data-soon="true"] { opacity: 0.58; }
+
+.admin-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--cream);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.admin-soon {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--gold);
+  border: 1px solid rgba(184, 134, 11, 0.35);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-left: auto;
+}
+
+/* ---------------- login ---------------- */
+
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(1100px 600px at 50% -10%, rgba(42, 82, 152, 0.35), transparent),
+    var(--green-deep);
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 36px 32px 30px;
+}
+
+.admin-login-card .admin-logo {
+  color: var(--ink);
+  font-size: 24px;
+  display: block;
+  margin-bottom: 4px;
+}
+.admin-login-lede {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.admin-field { margin-bottom: 16px; }
+.admin-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.admin-field input {
+  width: 100%;
+  font: inherit;
+  font-size: 15px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.admin-field input:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 1px;
+  background: #fff;
+}
+
+.admin-submit {
+  width: 100%;
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #1c1403;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.admin-submit:disabled { opacity: 0.6; cursor: default; }
+
+.admin-error {
+  background: #fdeceb;
+  border: 1px solid #f3c2be;
+  color: #8d2018;
+  font-size: 13.5px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.admin-note {
+  margin-top: 20px;
+  font-size: 12.5px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.55;
+}
+.admin-note a { color: var(--green-soft); }
+
+/* ---------------- misc ---------------- */
+
+.admin-empty {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  padding: 28px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 560px) {
+  .admin-bar { padding: 0 16px; gap: 12px; }
+  .admin-who { display: none; }
+  .admin-main { padding: 28px 16px 60px; }
+}
