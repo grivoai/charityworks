@@ -202,6 +202,13 @@ So the two paths need two different answers, and it is worth being blunt about
 which is which. **Tags fix the editing path. Only skipping the build cache fixes
 the deploy path.**
 
+`VERCEL_FORCE_NO_BUILD_CACHE=1` is therefore set on the project for Production.
+Every deploy now re-reads Postgres instead of trusting HTML it prerendered
+earlier. It costs roughly ten seconds of build time — 33s to 43s on the deploy
+that introduced it — against the alternative of silently shipping the client's
+previous wording, which is not a close trade. Nothing needs to be remembered at
+deploy time any more, which was the real cost of the manual checkbox.
+
 **Confirmed on Vercel, 2026-08-06.** The editing path was verified end to end
 against production: a save through the deployed admin panel had the new wording
 on the live page **1.3 seconds** later, with no redeploy, and restoring it put
