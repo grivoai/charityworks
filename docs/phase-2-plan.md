@@ -187,7 +187,24 @@ need to be wrapped in tagged cache entries rather than left as bare async
 functions. Tracked as part of the revalidation work.
 
 Until that lands, a deploy made shortly after a content edit should be
-spot-checked, or forced with a cache-skipping redeploy.
+spot-checked, or forced with a cache-skipping redeploy — on Vercel, Deployments
+→ ⋯ → Redeploy with **Use existing Build Cache** unticked.
+
+**Confirmed on Vercel, 2026-08-06.** The editing path was verified end to end
+against production: a save through the deployed admin panel had the new wording
+on the live page **1.3 seconds** later, with no redeploy, and restoring it put
+the page back just as quickly. This was the one link local testing could not
+reach — `next dev` re-renders every request, so there is no cache there to
+invalidate, and the earlier "live without a rebuild" result proved the write and
+the render rather than the invalidation. It is now proven. The build-cache
+problem above is unaffected by this: it belongs to the deploy path, not the
+editing path.
+
+Also confirmed by the same deploy: a save made in a *local* admin panel does not
+reach production. `revalidatePath()` instructs the server that runs it, and
+nothing is sent over the network — so a local edit lands in the shared database
+while the live site keeps serving what it last built. Editing has to be done in
+the deployed admin panel for the live site to follow.
 
 ---
 
