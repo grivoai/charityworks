@@ -360,6 +360,51 @@ migration applied by hand. The ordering is chosen so the only reachable failure 
 the recoverable one — content saved with a gap in its history, reported as such —
 rather than history claiming a save that never landed.
 
+### Pointing at the page instead of naming the field (2.1b)
+
+The form asks the client to hold a translation in their head: they see
+*"Everything you need to know before your next fundraiser"* and have to work out
+that it is called `intro.lede`. So the editor gained a second column showing the
+real page. Hovering outlines what is editable; clicking scrolls the form to that
+input and focuses it. Focusing an input does the reverse.
+
+It is a locator, not a second editor. No content is written from it — the same
+`PageEditor`, `savePage`, coercion, locks, validation and history. Delete
+`PagePreview.tsx` and the editor is exactly what it was.
+
+**How an element knows which field it is.** `editable("intro.lede")` spreads a
+`data-cw` attribute onto the innermost element whose text *is* that field.
+Matching rendered text back to the JSON was rejected: two fields holding the same
+words are indistinguishable that way, and it fails silently and only sometimes.
+Shared components take an optional path *prefix* (`<FaqAccordion path="faqs">`)
+and build `faqs.3.question` from it; passing no prefix emits no markers, which is
+how a component rendering something that is not page content stays correctly
+inert. The attributes ship in the public HTML — a few KB, and field names visible
+in view-source — which buys keeping every public page statically prerendered with
+no JavaScript added.
+
+**`npm run check:visual`** closes both directions, because hand-applied markers
+rot silently: every editable field is marked or listed in `visual-map.ts` with a
+reason it is not on the page (`seo.**`, a button's `href`), and every marker
+resolves to a real field. A missing marker looks like the feature is broken; a
+stale one clicks through to nothing.
+
+**In edit mode a transparent sheet takes the pointer** and the preview decides
+what reaches the page: buttons are forwarded — a collapsed FAQ answer cannot be
+pointed at until its accordion opens — links never are. Listening inside the
+frame and cancelling link clicks does not work, and the reason is worth keeping:
+Next's router does not navigate from the anchor's default action, so
+`preventDefault()` does not stop it, and it navigates from a listener registered
+during hydration, ahead of anything added later, so `stopPropagation()` does not
+reach it. Cancelling at the Navigation API instead leaves the URL saying `/faqs`
+while React has already rendered the contact page into the frame — a preview
+lying about what it shows, which is worse than the problem.
+
+**The frame renders at 1280px and is scaled to fit**, with a phone toggle at
+390px. Sized to the column instead, it would show the tablet layout, and the
+client would be editing one page while looking at a version almost none of their
+visitors see.
+
 ---
 
 ## Build phases
@@ -395,6 +440,10 @@ Storing submissions is additive, on the same discipline as the Calendly work.
 | Admin forms | Derived from the Zod schema at runtime | Hand-built form per page |
 | Editor submission | One JSON document per save | Named inputs with encoded paths |
 | Entry `id`s | Carried through saves, never shown | Editable, or regenerated on save |
+| Element → field map | Declared with `data-cw` markers in the markup | Matching rendered text against the JSON |
+| Markers in public HTML | Shipped, so pages stay static | Admin-only render of every page |
+| Clicks in the preview | Intercepted by a sheet over the frame | Cancelling link clicks inside it |
+| Preview width | Real 1280px, scaled to fit, with a phone toggle | Whatever width the column happens to have |
 
 ---
 

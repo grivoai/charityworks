@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { CtaRef, SectionHeader as SectionHeaderData } from "@/content/types";
+import { at, editable } from "@/lib/editable";
 
 /** Maps a content-layer button variant onto the stylesheet's button classes. */
 export function ctaClassName(variant: CtaRef["variant"], onDark = true): string {
@@ -21,12 +22,25 @@ export function ctaClassName(variant: CtaRef["variant"], onDark = true): string 
 export function Cta({
   cta,
   onDark = true,
+  path,
 }: {
   cta: CtaRef;
   onDark?: boolean;
+  /**
+   * Where this CTA sits in the page document, e.g. `"cta"` or
+   * `"process.cta"`. Omitted when the button is not page content, in which
+   * case nothing is marked and it is not clickable in the admin preview.
+   */
+  path?: string;
 }) {
   return (
-    <Link href={cta.href} className={ctaClassName(cta.variant, onDark)}>
+    <Link
+      href={cta.href}
+      className={ctaClassName(cta.variant, onDark)}
+      // The label, not the whole CTA: `href` and `variant` are not visible as
+      // text, so they stay in the form and are listed in visual-map.ts.
+      {...editable(at(path, "label"))}
+    >
       {cta.label}
       {cta.variant === "secondary" && (
         <span className="arrow" aria-hidden="true">
@@ -44,17 +58,31 @@ export function Cta({
 export function SectionHeading({
   header,
   as: Tag = "h2",
+  path,
 }: {
   header: SectionHeaderData;
   as?: "h1" | "h2" | "h3";
+  /** Where this header sits in the page document, e.g. `"why.header"`. */
+  path?: string;
 }) {
   return (
     <>
-      {header.eyebrow && <span className="eyebrow reveal">{header.eyebrow}</span>}
-      <Tag className={Tag === "h1" ? "reveal" : "section-title reveal"}>
+      {header.eyebrow && (
+        <span className="eyebrow reveal" {...editable(at(path, "eyebrow"))}>
+          {header.eyebrow}
+        </span>
+      )}
+      <Tag
+        className={Tag === "h1" ? "reveal" : "section-title reveal"}
+        {...editable(at(path, "title"))}
+      >
         {header.title}
       </Tag>
-      {header.lede && <p className="section-lede reveal">{header.lede}</p>}
+      {header.lede && (
+        <p className="section-lede reveal" {...editable(at(path, "lede"))}>
+          {header.lede}
+        </p>
+      )}
     </>
   );
 }

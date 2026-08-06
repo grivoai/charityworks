@@ -12,9 +12,16 @@ import type { AdminUser } from "@/lib/auth";
 export function AdminShell({
   admin,
   children,
+  wide = false,
 }: {
   admin: AdminUser;
   children: React.ReactNode;
+  /**
+   * Widens the content column for the page editor's side-by-side preview.
+   * A prop rather than a `:has()` selector on the stylesheet, so the layout
+   * does not depend on the browser and does not reflow after hydration.
+   */
+  wide?: boolean;
 }) {
   return (
     <>
@@ -41,7 +48,7 @@ export function AdminShell({
       </header>
 
       <main className="admin-main">
-        <div className="admin-wrap">{children}</div>
+        <div className={`admin-wrap${wide ? " is-wide" : ""}`}>{children}</div>
       </main>
     </>
   );

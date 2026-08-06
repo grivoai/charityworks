@@ -90,6 +90,21 @@ export function PageEditor({
       const stored = state.data as Record<string, unknown>;
       setValue(stored);
       setBaseline(stored);
+
+      /**
+       * Tell the preview column, if there is one, that the page it is showing
+       * has moved on and should be re-fetched.
+       *
+       * An event rather than a prop or shared state: the preview is optional
+       * and neither column renders the other. Announced only from here — the
+       * one place a save is known to have succeeded — so a refused save cannot
+       * reload the frame and make it look as though something was published.
+       * The stored document travels with it, because the hidden input holding
+       * it has not been re-rendered yet at this point.
+       */
+      window.dispatchEvent(
+        new CustomEvent("cw:saved", { detail: JSON.stringify(stored) })
+      );
     }
   }, [state]);
 

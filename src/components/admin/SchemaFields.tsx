@@ -8,6 +8,7 @@ import type {
   ImageNode,
   ObjectNode,
 } from "@/lib/admin/field-node";
+import { FIELD_PATH_ATTR, domId } from "@/lib/admin/dom";
 
 /**
  * Renders an editable form from a field tree.
@@ -37,8 +38,18 @@ interface FieldProps {
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
-function domId(path: string): string {
-  return `f-${path.replace(/[^\w]/g, "-")}` || "f-root";
+/**
+ * Every field carries its own path on its wrapper.
+ *
+ * The preview column uses this to find the input for an element the client
+ * clicked, and to know which element to highlight when an input is focused.
+ * It has to be the path rather than the DOM id because `domId` is one-way —
+ * it flattens dots to hyphens, so an id cannot be turned back into a path —
+ * and it has to be on the wrapper rather than the input because two field
+ * kinds (checkboxes and images) do not have a single input to hang it on.
+ */
+function marker(path: string): Record<string, string> {
+  return { [FIELD_PATH_ATTR]: path };
 }
 
 /** A short, human summary of a list entry, for its header row. */
@@ -113,7 +124,7 @@ function FieldFrame({
 }) {
   const error = errors[path];
   return (
-    <div className={`admin-f${error ? " is-invalid" : ""}`}>
+    <div className={`admin-f${error ? " is-invalid" : ""}`} {...marker(path)}>
       <label htmlFor={domId(path)}>
         {node.label}
         {node.locked && <span className="admin-lock">fixed</span>}
@@ -186,7 +197,7 @@ function NumberField({ node, value, onChange, path, errors }: FieldProps) {
 function BooleanField({ node, value, onChange, path, errors }: FieldProps) {
   if (node.kind !== "boolean") return null;
   return (
-    <div className="admin-f admin-f-check">
+    <div className="admin-f admin-f-check" {...marker(path)}>
       <label>
         <input
           type="checkbox"
@@ -243,7 +254,7 @@ function ImageField({
 
   if (!image) {
     return (
-      <div className="admin-f">
+      <div className="admin-f" {...marker(path)}>
         <label>{node.label}</label>
         <button
           type="button"
@@ -260,7 +271,7 @@ function ImageField({
   const set = (patch: Record<string, unknown>) => onChange({ ...image, ...patch });
 
   return (
-    <fieldset className="admin-sub admin-image-field">
+    <fieldset className="admin-sub admin-image-field" {...marker(path)}>
       <legend>{node.label}</legend>
 
       <div className="admin-image-row">

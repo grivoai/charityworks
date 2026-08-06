@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "check:content": "tsx scripts/check-content-parity.ts",
     "check:admin": "tsx --conditions=react-server scripts/check-admin-forms.ts",
+    "check:visual": "tsx --conditions=react-server scripts/check-visual-map.ts",
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
   },
   "dependencies": {

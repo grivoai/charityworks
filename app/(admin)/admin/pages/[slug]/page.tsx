@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { pageSchemas } from "@/content/schema";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PageEditor } from "@/components/admin/PageEditor";
+import { PagePreview } from "@/components/admin/PagePreview";
 import { requireAdmin } from "@/lib/auth";
 import { getPage } from "@/lib/content";
 import { getServiceClient } from "@/lib/supabase";
@@ -13,10 +14,12 @@ import { locksForPage } from "@/lib/admin/locks";
 import { countRevisions } from "@/lib/admin/revisions";
 import {
   PAGE_LABELS,
+  PAGE_ORDER,
   PAGE_PATHS,
   formatWhen,
   isPageSlug,
 } from "@/lib/admin/page-meta";
+import { MARKED_UP } from "@/lib/admin/visual-map";
 
 export const metadata: Metadata = {
   title: "Edit page | CharityWorks Admin",
@@ -61,6 +64,8 @@ export default async function EditPageRoute({
 
   const tree = buildFieldTree(pageSchemas[slug], locksForPage(slug));
 
+  const showPreview = MARKED_UP.includes(slug);
+
   const editor = meta.data?.admin_users;
   const updatedLabel = meta.data?.updated_at
     ? `Last edited ${formatWhen(meta.data.updated_at)}` +
@@ -68,7 +73,7 @@ export default async function EditPageRoute({
     : "Not edited since the site was set up";
 
   return (
-    <AdminShell admin={admin}>
+    <AdminShell admin={admin} wide={showPreview}>
       <nav className="admin-crumbs">
         <Link href="/admin">Site content</Link>
         <span aria-hidden="true">›</span>
@@ -88,14 +93,34 @@ export default async function EditPageRoute({
         </p>
       </div>
 
-      <PageEditor
-        slug={slug}
-        tree={tree}
-        initial={content as unknown as Record<string, unknown>}
-        historyCount={historyCount}
-        updatedLabel={updatedLabel}
-        restored={restored === "1"}
-      />
+      {/* Two columns where the page has been marked up for it, one where it has
+          not. The preview is a shortcut into this form, so a page without
+          markers simply does not get the shortcut — the form is unaffected. */}
+      <div className={`admin-split${showPreview ? " has-preview" : ""}`}>
+        <div className="admin-split-editor">
+          <PageEditor
+            slug={slug}
+            tree={tree}
+            initial={content as unknown as Record<string, unknown>}
+            historyCount={historyCount}
+            updatedLabel={updatedLabel}
+            restored={restored === "1"}
+          />
+        </div>
+
+        {showPreview && (
+          <PagePreview
+            slug={slug}
+            path={PAGE_PATHS[slug]}
+            label={PAGE_LABELS[slug]}
+            pages={PAGE_ORDER.map((s) => ({
+              slug: s,
+              label: PAGE_LABELS[s],
+              path: PAGE_PATHS[s],
+            }))}
+          />
+        )}
+      </div>
     </AdminShell>
   );
 }
