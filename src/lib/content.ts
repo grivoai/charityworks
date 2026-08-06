@@ -1,5 +1,7 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
 import type {
   AnyPage,
   AuctionItem,
@@ -9,6 +11,7 @@ import type {
   SiteContent,
 } from "@/content/types";
 import { getContentSource } from "@/lib/content-source";
+import { CATALOG_TAG, PAGES_TAG, SITE_TAG, pageTag } from "@/lib/content-tags";
 
 /**
  * The content access layer.
@@ -28,7 +31,27 @@ import { getContentSource } from "@/lib/content-source";
  * `server-only` is not decoration: the source can hold a Supabase service-role
  * key, and a client component importing this file would bundle it. The import
  * turns that into a build error rather than a leak.
+ *
+ * ---
+ *
+ * Every read is wrapped in a tagged cache entry. That is not for speed — these
+ * run at build and revalidation time, not per request — but so that a write can
+ * say "the contact record changed" and have every route that read it regenerate,
+ * without anyone maintaining a list of which routes those are. See
+ * `content-tags.ts` for why that list was the wrong thing to maintain.
  */
+
+/**
+ * Part of every cache key, so a new deployment never reads another
+ * deployment's cached content.
+ *
+ * Vercel restores `.next/cache` between builds, and a content edit changes no
+ * source file — so without this, a build can be handed the database as it
+ * looked at some earlier deploy. Keying on the commit means a deploy of new
+ * code starts from a cold cache and reads Postgres for real.
+ */
+const BUILD_KEY =
+  process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.NEXT_BUILD_ID ?? "local";
 
 /* ------------------------------------------------------------------ */
 /* Site globals                                                        */
@@ -41,22 +64,58 @@ import { getContentSource } from "@/lib/content-source";
  * server component that renders them and pass down what they need, which is
  * what `Nav` and `ContactForm` do.
  */
+const readSite = unstable_cache(
+  async () => (await getContentSource()).getSite(),
+  ["site", BUILD_KEY],
+  { tags: [SITE_TAG] }
+);
+
 export async function getSite(): Promise<SiteContent> {
-  return (await getContentSource()).getSite();
+  return readSite();
 }
 
 /* ------------------------------------------------------------------ */
 /* Pages                                                               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * One cached reader per page, built on first use.
+ *
+ * `unstable_cache` takes its tags when the wrapper is created, not when it is
+ * called, so a single wrapper shared by all eight pages could only carry one
+ * tag between them — and invalidating `page:faqs` would regenerate the other
+ * seven along with it. One wrapper per slug is what makes the tag mean the page
+ * it names.
+ */
+const pageReaders = new Map<string, () => Promise<unknown>>();
+
+function readerFor(slug: PageSlug): () => Promise<unknown> {
+  let reader = pageReaders.get(slug);
+  if (!reader) {
+    reader = unstable_cache(
+      async () => (await getContentSource()).getPage(slug),
+      ["page", slug, BUILD_KEY],
+      { tags: [pageTag(slug)] }
+    );
+    pageReaders.set(slug, reader);
+  }
+  return reader;
+}
+
 /** Fetch a page by slug. The return type narrows to the concrete page shape. */
 export async function getPage<S extends PageSlug>(slug: S): Promise<PageMap[S]> {
-  return (await getContentSource()).getPage(slug);
+  return (await readerFor(slug)()) as PageMap[S];
 }
+
+const readAllPages = unstable_cache(
+  async () => (await getContentSource()).getAllPages(),
+  ["pages", BUILD_KEY],
+  { tags: [PAGES_TAG] }
+);
 
 /** Every page, used by the sitemap. */
 export async function getAllPages(): Promise<AnyPage[]> {
-  return (await getContentSource()).getAllPages();
+  return readAllPages();
 }
 
 /** Convenience accessor for a page's SEO block. */
@@ -73,9 +132,15 @@ export async function getPageSeo(slug: PageSlug): Promise<SeoMeta> {
  * they are their own tables rather than a field on a page record.
  */
 
+const readCategories = unstable_cache(
+  async () => (await getContentSource()).getAuctionCategories(),
+  ["catalog", BUILD_KEY],
+  { tags: [CATALOG_TAG] }
+);
+
 /** Every published auction category, used by the grid, the routes and the sitemap. */
 export async function getAuctionCategories(): Promise<AuctionItem[]> {
-  return (await getContentSource()).getAuctionCategories();
+  return readCategories();
 }
 
 /** One category by URL slug, or undefined so the route can render notFound(). */

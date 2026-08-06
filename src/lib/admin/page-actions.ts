@@ -1,12 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import type { $ZodIssue } from "zod/v4/core";
 
 import { pageSchemas } from "@/content/schema";
 import type { PageSlug } from "@/content/types";
-import { isPageSlug, pathsFor } from "@/lib/admin/page-meta";
+import { PAGE_PATHS, isPageSlug } from "@/lib/admin/page-meta";
+import { tagsForPage } from "@/lib/content-tags";
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
 import { coerceToTree, deepEqual } from "@/lib/admin/coerce";
@@ -74,6 +75,37 @@ function toFieldErrors(issues: readonly $ZodIssue[]): FieldErrors {
     if (!(key in errors)) errors[key] = humanizeIssue(issue);
   }
   return errors;
+}
+
+/* ------------------------------------------------------------------ */
+/* Publishing                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Makes a saved page visible on the live site.
+ *
+ * By tag, not by path. A page record does not render only on its own route —
+ * the home page builds its enquiry form from the CONTACT record — and the list
+ * of derived routes was previously maintained by hand, which is a list that is
+ * wrong the first time someone reuses content and forgets to add a line. The
+ * tag is declared by the read in `content.ts`, so every route that read this
+ * page is invalidated whether or not anyone remembered it.
+ *
+ * `revalidatePath` stays for the page's own route. It is the one route that is
+ * certain, it is proven working in production, and it costs a single call —
+ * cheap insurance against the tag mechanism failing silently, which would
+ * otherwise look exactly like "the admin panel does nothing".
+ *
+ * `updateTag` rather than `revalidateTag`: in Next 16 the latter now wants a
+ * cache-life profile and warns without one, while `updateTag` keeps the
+ * expire-immediately behaviour and adds read-your-own-writes. It may only be
+ * called from a Server Action, which is what both callers here are — if either
+ * ever becomes a route handler, this has to go back to
+ * `revalidateTag(tag, "max")`.
+ */
+function publish(slug: PageSlug): void {
+  for (const tag of tagsForPage(slug)) updateTag(tag);
+  revalidatePath(PAGE_PATHS[slug]);
 }
 
 /* ------------------------------------------------------------------ */
@@ -233,7 +265,7 @@ export async function savePage(
       "so it cannot be rolled back to later.";
   }
 
-  for (const path of pathsFor(slug)) revalidatePath(path);
+  publish(slug);
 
   return { ok: true, savedAt, data: next, ...(warning ? { warning } : {}) };
 }
@@ -326,7 +358,7 @@ export async function restorePageRevision(
     // The restore itself succeeded; a missing history row must not read as failure.
   }
 
-  for (const path of pathsFor(slug)) revalidatePath(path);
+  publish(slug);
 
   // Land on the editor so the restored wording is the first thing seen.
   redirect(`/admin/pages/${slug}?restored=1`);

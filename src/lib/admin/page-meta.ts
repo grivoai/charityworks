@@ -45,26 +45,6 @@ export const PAGE_PATHS: Record<PageSlug, string> = {
   contact: "/contact",
 };
 
-/**
- * Pages whose content also renders somewhere other than their own route.
- *
- * The home page builds its enquiry form from the CONTACT page's record —
- * `app/(site)/page.tsx` calls `getPage("contact")` — so revalidating only
- * `/contact` after a contact edit would update the form at the bottom of the
- * contact page and leave the identical form on the home page showing the old
- * wording. Exactly the sort of half-applied change that reads as "the admin
- * panel does not work".
- */
-export const ALSO_RENDERS: Partial<Record<PageSlug, string[]>> = {
-  contact: ["/"],
-};
-
-/** Every path whose cached HTML is stale once this page changes. */
-export function pathsFor(slug: PageSlug): string[] {
-  // The sitemap is built from every page's SEO block, so it is always affected.
-  return [PAGE_PATHS[slug], ...(ALSO_RENDERS[slug] ?? []), "/sitemap.xml"];
-}
-
 export function isPageSlug(value: unknown): value is PageSlug {
   return typeof value === "string" && value in pageSchemas;
 }

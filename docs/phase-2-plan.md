@@ -190,6 +190,18 @@ Until that lands, a deploy made shortly after a content edit should be
 spot-checked, or forced with a cache-skipping redeploy — on Vercel, Deployments
 → ⋯ → Redeploy with **Use existing Build Cache** unticked.
 
+**Measured again after tagging, 2026-08-06.** Wrapping the content reads in
+tagged cache entries does **not** fix this. Two builds with only a database
+change between them still emitted the old heading: the reuse happens at the
+prerendered-HTML level, above the data cache, so what the reads are keyed or
+tagged on never comes into it. Dropping `.next/cache` alone *is* sufficient —
+the same experiment with the cache removed emitted the new heading — which is
+exactly what `VERCEL_FORCE_NO_BUILD_CACHE=1` does on the project.
+
+So the two paths need two different answers, and it is worth being blunt about
+which is which. **Tags fix the editing path. Only skipping the build cache fixes
+the deploy path.**
+
 **Confirmed on Vercel, 2026-08-06.** The editing path was verified end to end
 against production: a save through the deployed admin panel had the new wording
 on the live page **1.3 seconds** later, with no redeploy, and restoring it put
@@ -457,6 +469,8 @@ Storing submissions is additive, on the same discipline as the Calendly work.
 | Admin forms | Derived from the Zod schema at runtime | Hand-built form per page |
 | Editor submission | One JSON document per save | Named inputs with encoded paths |
 | Entry `id`s | Carried through saves, never shown | Editable, or regenerated on save |
+| Revalidation | By tag, declared by the read | By path, with a hand-kept list of derived routes |
+| Cache API | `unstable_cache` + `updateTag` | `'use cache'`, which needs `cacheComponents` app-wide |
 | Element → field map | Declared with `data-cw` markers in the markup | Matching rendered text against the JSON |
 | Markers in public HTML | Shipped, so pages stay static | Admin-only render of every page |
 | Clicks in the preview | Intercepted by a sheet over the frame | Cancelling link clicks inside it |
