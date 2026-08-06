@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -49,14 +50,14 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="admin-grid">
-        <div className="admin-card" data-soon="true">
+        <Link href="/admin/pages" className="admin-card">
           <h2>
             Page text <span className="admin-count">{show(pages)}</span>
           </h2>
           <p>
             Headings, intros and button wording for each of the eight pages.
           </p>
-        </div>
+        </Link>
 
         <div className="admin-card" data-soon="true">
           <h2>
@@ -113,8 +114,8 @@ export default async function AdminDashboard() {
 
       <p className="admin-note" style={{ textAlign: "left", marginTop: "28px" }}>
         The counts above come from the live database, so this page working at
-        all confirms the connection. Editing arrives section by section — the
-        catalog first, since that is where the waiting work is.
+        all confirms the connection. Editing arrives section by section — page
+        text first, then the catalog, where the waiting work is.
       </p>
     </AdminShell>
   );

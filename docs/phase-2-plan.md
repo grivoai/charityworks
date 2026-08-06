@@ -291,6 +291,77 @@ runtime source of truth once the database is populated.
 
 ---
 
+## Editing content (2.1)
+
+### Forms are derived from the schema, not written by hand
+
+Eight pages have eight different shapes. Hand-building eight forms would create a
+second description of the content model that agrees with `content/schema.ts` the
+day it is written and drifts the first time a field is added to one of them.
+
+Instead `lib/admin/schema-tree.ts` walks a Zod schema and returns a plain,
+serializable tree of field descriptions; `components/admin/SchemaFields.tsx`
+renders it. Adding a field to a schema adds it to the admin with no other change.
+The `.describe()` text already in `content/schema.ts` becomes the help shown under
+the input, which is what it was always written to be.
+
+That module is the one place that touches Zod's internals. They are not a public
+API, so the shapes it relies on were established by probing the installed version
+rather than from memory, and they are documented at the top of the file.
+
+### The whitelist, and why a no-op save is the check that matters
+
+A submitted document is rebuilt against the field tree before validation. Keys the
+tree does not declare are dropped, and fixed values — a page's `slug` above all —
+are taken from the server rather than the request, so no submission can change
+which page it claims to be.
+
+The consequence is that **a field the tree fails to describe is a field that
+saving silently deletes**. So `npm run check:admin` passes the real content of all
+eight pages through the same coercion a save performs and requires the result to be
+identical. It currently covers 206 editable fields. If that check passes, saving
+without editing cannot lose anything, which is the property everything else rests
+on.
+
+### Locked fields
+
+Not everything in a schema is safe to edit, and the unsafe places are exactly
+those where an edit breaks something the client cannot see:
+
+| Locked | Why |
+|---|---|
+| `contact.form.fields[].name` | The lead pipeline reads these exact keys (collision 1). Renaming `email` errors nowhere and quietly files enquiries with an empty email column. |
+| `contact.form.fields` length | Adding or removing a question changes what n8n receives. That belongs in the form builder (2.4). |
+| `seo.path` | The page's address comes from file-based routing. Editing it only makes the sitemap disagree with reality. |
+| every `id` | Structural, not editorial. Carried through every save and never drawn — a duplicate would collide React keys and break links that point at it. |
+
+A locked field is shown read-only with its reason, not hidden. Hiding it would
+leave the client hunting for where a value they can see on the site is set.
+
+### Cross-page dependencies
+
+Revalidating a page's own path is not always enough. The home page builds its
+enquiry form from the **contact** page's record, so a contact edit revalidates
+`/contact`, `/` and `/sitemap.xml`. `ALSO_RENDERS` in `lib/admin/page-meta.ts`
+holds these; each one is a half-applied change waiting to happen.
+
+### History
+
+Every save records the full state, not a diff. The first edit to a page also
+records the state *before* it, unattributed — without that the seeded original is
+the one version never written down, and "put it back how it was" would reach one
+edit too few. A save that changes nothing records nothing, so the history stays
+navigable. Restoring is an ordinary save of an old value: the version being
+replaced is kept, so a restore can itself be undone.
+
+Content and history are two statements rather than one transaction, because
+supabase-js has no multi-statement transaction and a stored procedure would be a
+migration applied by hand. The ordering is chosen so the only reachable failure is
+the recoverable one — content saved with a gap in its history, reported as such —
+rather than history claiming a save that never landed.
+
+---
+
 ## Build phases
 
 | Phase | Delivers | Verified by |
@@ -302,7 +373,7 @@ runtime source of truth once the database is populated.
 | **2.4 Forms + submissions** | Field editor with locked core fields, submissions table, replay (req 3) | Submit, row appears in admin **and** n8n still receives it unchanged |
 
 2.0 first because it is the only phase that can break the live site; everything
-after is additive. 2.2 before 2.4 because 77 lots are waiting on
+after is additive. 2.2 before 2.4 because 89 lots are waiting on
 `docs/item-details-needed.md`, which is the bottleneck for real content.
 
 Throughout, the n8n lead pipeline keeps working exactly as it does today.
@@ -321,6 +392,9 @@ Storing submissions is additive, on the same discipline as the Calendly work.
 | Core form fields | Locked (key and existence immutable) | Fully free-form builder |
 | Category `blurb` | One field across all three surfaces | Separate quiz-card field |
 | Removing catalog items | Archive (`published = false`) | Hard delete |
+| Admin forms | Derived from the Zod schema at runtime | Hand-built form per page |
+| Editor submission | One JSON document per save | Named inputs with encoded paths |
+| Entry `id`s | Carried through saves, never shown | Editable, or regenerated on save |
 
 ---
 
