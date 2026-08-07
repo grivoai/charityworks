@@ -41,6 +41,18 @@ export const PAGES_TAG = "pages";
  */
 export const CATALOG_TAG = "catalog";
 
+/**
+ * Every shareable document link.
+ *
+ * One tag for all of them rather than `document:<slug>`, and for a reason the
+ * per-page case does not have: the slug comes from the URL a stranger typed. A
+ * per-slug tag means a per-slug cache wrapper, and building one of those per
+ * distinct slug requested is unbounded growth driven by whoever is scanning the
+ * site. There will be a handful of documents, so invalidating all of their
+ * lookups when one changes costs a query nobody notices.
+ */
+export const DOCUMENTS_TAG = "documents";
+
 /** One page record, e.g. `page:faqs`. */
 export function pageTag(slug: string): string {
   return `page:${slug}`;

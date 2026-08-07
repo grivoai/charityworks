@@ -443,6 +443,45 @@ visitors see.
 
 ---
 
+## Documents: a link that outlives the file behind it
+
+Requirement 4 is "put a PDF on the site and send people to it". The part that
+makes it worth building rather than emailing an attachment is the second half:
+next quarter the file is replaced, and the link in every newsletter already sent
+has to keep working. So the durable thing is the address, `/d/<slug>`, and the
+file behind it is not. `document_links.upload_id` is the indirection, replacing
+a file repoints it, and the previous upload is kept — which means undoing a
+replacement is the same action as making one.
+
+**The bytes never pass through this application.** Vercel caps a function's
+request body at 4.5 MB, so a server action cannot receive a 10 MB brochure; it
+fails with a 413 that says nothing useful, and only in production. The browser
+therefore PUTs straight at Supabase Storage using a URL the server signs, and
+the server inspects the object afterwards. That is safe only because a signed
+upload URL is one-shot and bound to one path, so `npm run check:documents`
+asserts both rather than trusting them.
+
+**The consequence is that for a moment an unchecked object exists**, and every
+path in `uploads.ts` that refuses a file also deletes it. Refusal is on the
+bytes, not the name: `%PDF-` is evidence, `application/pdf` is a claim the
+browser makes. The bucket carries a 25 MB limit and a PDF-only mime list
+([`0002_document_storage.sql`](../supabase/migrations/0002_document_storage.sql)),
+because that is the only check that runs *before* storage — nothing server-side
+can stop a transfer that has already happened.
+
+**`/d/<slug>` is a page, not a route handler,** so a dead link renders the
+site's own 404 with a way onward rather than an empty body — the person clicking
+it is reading an email from a year ago. It is `force-dynamic` on purpose: it
+returns a redirect whose target changes, and a Full Route Cache entry for it
+would be a link permanently resolving to the file that was there when the cache
+was filled. The lookup underneath is still tagged and cached.
+
+**Identical bytes are one row.** Uploading the same PDF twice deletes the
+duplicate object and reuses the existing upload, and the admin is told so rather
+than shown a silent no-op.
+
+---
+
 ## Build phases
 
 | Phase | Delivers | Verified by |
@@ -482,6 +521,11 @@ Storing submissions is additive, on the same discipline as the Calendly work.
 | Markers in public HTML | Shipped, so pages stay static | Admin-only render of every page |
 | Clicks in the preview | Intercepted by a sheet over the frame | Cancelling link clicks inside it |
 | Preview width | Real 1280px, scaled to fit, with a phone toggle | Whatever width the column happens to have |
+| Document uploads | Browser PUTs straight to storage with a signed URL | Through a server action, which Vercel caps at 4.5 MB |
+| What a document may be | PDF only, sniffed on `%PDF-` | Any file the browser calls a PDF |
+| `/d/<slug>` | A dynamic page that redirects | A route handler, or streaming the bytes through the function |
+| Replacing a file | The previous upload is kept | Delete the old object once nothing points at it |
+| The same file twice | One row; the duplicate object is deleted | A second row per upload |
 
 ---
 
@@ -489,5 +533,6 @@ Storing submissions is additive, on the same discipline as the Calendly work.
 
 - **The old site's newsletter/trips page.** The reference copies in `reference/`
   contain no PDF or download pattern, only the word "Trips". A URL or screenshot
-  would let 2.3 match the existing behaviour; without one it ships the general
-  upload → permanent link design above.
+  would still let the documents page match the existing behaviour; without one it
+  shipped the general upload → permanent link design above, which is the shape
+  every use of it so far wants anyway.

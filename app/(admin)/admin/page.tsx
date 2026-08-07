@@ -28,12 +28,14 @@ async function countOf(table: string): Promise<number | null> {
 export default async function AdminDashboard() {
   const admin = await requireAdmin();
 
-  const [pages, categories, lots, submissions, uploads] = await Promise.all([
+  const [pages, categories, lots, submissions, documents] = await Promise.all([
     countOf("pages"),
     countOf("catalog_categories"),
     countOf("catalog_items"),
     countOf("submissions"),
-    countOf("uploads"),
+    // The links, not the uploads: what the card offers is an address to hand
+    // out, and superseded files are not that.
+    countOf("document_links"),
   ]);
 
   const show = (n: number | null) => (n === null ? "—" : String(n));
@@ -82,15 +84,15 @@ export default async function AdminDashboard() {
           </p>
         </Link>
 
-        <div className="admin-card" data-soon="true">
+        <Link href="/admin/documents" className="admin-card">
           <h2>
-            Files <span className="admin-count">{show(uploads)}</span>
+            Documents <span className="admin-count">{show(documents)}</span>
           </h2>
           <p>
-            Photographs and PDFs. Uploading a document gives you a link that
-            keeps working when you replace the file.
+            PDFs with a link you can put in an email. Replace the file later and
+            the link keeps working.
           </p>
-        </div>
+        </Link>
 
         <div className="admin-card" data-soon="true">
           <h2>
