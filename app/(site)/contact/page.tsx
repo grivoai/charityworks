@@ -3,6 +3,7 @@ import { getPage, getSite } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { ContactForm } from "@/components/ContactForm";
 import { getInterestLookup } from "@/lib/interests";
+import { editable } from "@/lib/editable";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export function generateMetadata(): Promise<Metadata> {
@@ -22,13 +23,20 @@ export default async function ContactRoute() {
       >
         <div className="wrap">
           <div>
-            <span className="eyebrow reveal">{page.intro.eyebrow}</span>
-            <h1 className="section-title reveal" id="contact-heading">
+            <span className="eyebrow reveal" {...editable("intro.eyebrow")}>
+              {page.intro.eyebrow}
+            </span>
+            <h1
+              className="section-title reveal"
+              id="contact-heading"
+              {...editable("heading")}
+            >
               {page.heading}
             </h1>
             <p
               className="section-lede reveal"
               style={{ color: "rgba(255,255,255,0.8)" }}
+              {...editable("intro.lede")}
             >
               {page.intro.lede}
             </p>
@@ -59,7 +67,11 @@ export default async function ContactRoute() {
 
             <p className="mobile-note reveal d3">
               <span aria-hidden="true">📱</span>{" "}
-              <strong>{page.mobileNote.heading}</strong> — {page.mobileNote.body}
+              {/* The ` — ` stays one text node, exactly as it was. Splitting it
+                  reshapes the glyphs either side and the paragraph rasterises a
+                  few pixels differently — invisible, but it is not nothing, and
+                  keeping it whole costs only a long line. */}
+              <strong {...editable("mobileNote.heading")}>{page.mobileNote.heading}</strong> — <span {...editable("mobileNote.body")}>{page.mobileNote.body}</span>
             </p>
           </div>
 
@@ -71,6 +83,7 @@ export default async function ContactRoute() {
             booking={site.booking}
             source="contact-page"
             interests={await getInterestLookup()}
+            path="form"
           />
         </div>
       </section>

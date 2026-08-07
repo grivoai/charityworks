@@ -7,6 +7,7 @@ import { BentoGrid } from "@/components/BentoGrid";
 import { DonorIncentive } from "@/components/DonorIncentive";
 import { TestimonialMarquee } from "@/components/TestimonialMarquee";
 import { ContactForm } from "@/components/ContactForm";
+import { editable } from "@/lib/editable";
 import { testimonials } from "@/content/collections/testimonials";
 
 export function generateMetadata(): Promise<Metadata> {
@@ -41,25 +42,37 @@ export default async function HomePage() {
           <div className="hero-content">
             <div className="hero-pill">
               <span className="dot" aria-hidden="true" />
-              {hero.pill}
+              {/* A span so the pill's own text can be pointed at without
+                  selecting the status dot beside it. The container is already
+                  an inline-flex with a gap, where a bare text node is an
+                  anonymous flex item, so wrapping it changes no layout. */}
+              <span {...editable("hero.pill")}>{hero.pill}</span>
             </div>
             <h1>
-              {hero.headingLead}
+              <span {...editable("hero.headingLead")}>{hero.headingLead}</span>
               <br />
-              <span className="accent">{hero.headingAccent}</span>
+              <span className="accent" {...editable("hero.headingAccent")}>
+                {hero.headingAccent}
+              </span>
             </h1>
-            <p className="sub">{hero.sub}</p>
+            <p className="sub" {...editable("hero.sub")}>
+              {hero.sub}
+            </p>
             <div className="hero-btns">
-              <Cta cta={hero.primaryCta} />
-              <Cta cta={hero.secondaryCta} />
+              <Cta cta={hero.primaryCta} path="hero.primaryCta" />
+              <Cta cta={hero.secondaryCta} path="hero.secondaryCta" />
             </div>
           </div>
 
           <div className="hero-stats">
             {hero.stats.map((stat, index) => (
               <div key={stat.id} className={`stat-card s${index + 1}`}>
-                <div className="num">{stat.value}</div>
-                <div className="lbl">{stat.label}</div>
+                <div className="num" {...editable(`hero.stats.${index}.value`)}>
+                  {stat.value}
+                </div>
+                <div className="lbl" {...editable(`hero.stats.${index}.label`)}>
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>
@@ -70,25 +83,40 @@ export default async function HomePage() {
       <section className="pad" aria-labelledby="why-heading">
         <div className="wrap">
           <div className="center">
-            <span className="eyebrow reveal">{page.why.header.eyebrow}</span>
-            <h2 className="section-title reveal" id="why-heading">
+            <span className="eyebrow reveal" {...editable("why.header.eyebrow")}>
+              {page.why.header.eyebrow}
+            </span>
+            <h2
+              className="section-title reveal"
+              id="why-heading"
+              {...editable("why.header.title")}
+            >
               {page.why.header.title}
             </h2>
-            <p className="section-lede reveal">{page.why.header.lede}</p>
+            <p className="section-lede reveal" {...editable("why.header.lede")}>
+              {page.why.header.lede}
+            </p>
           </div>
           <div className="why-grid">
-            {page.why.items.map((item, index) => (
-              <div
-                key={item.id}
-                className={`why-card reveal${index % 3 > 0 ? ` d${index % 3}` : ""}`}
-              >
-                <div className="why-ico" aria-hidden="true">
-                  {item.icon}
+            {page.why.items.map((item, index) => {
+              const entry = `why.items.${index}`;
+              return (
+                <div
+                  key={item.id}
+                  className={`why-card reveal${index % 3 > 0 ? ` d${index % 3}` : ""}`}
+                >
+                  <div
+                    className="why-ico"
+                    aria-hidden="true"
+                    {...editable(`${entry}.icon`)}
+                  >
+                    {item.icon}
+                  </div>
+                  <h3 {...editable(`${entry}.title`)}>{item.title}</h3>
+                  <p {...editable(`${entry}.body`)}>{item.body}</p>
                 </div>
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -100,27 +128,42 @@ export default async function HomePage() {
         aria-labelledby="process-heading"
       >
         <div className="wrap center">
-          <span className="eyebrow reveal">{page.process.header.eyebrow}</span>
-          <h2 className="section-title reveal" id="process-heading">
+          <span className="eyebrow reveal" {...editable("process.header.eyebrow")}>
+            {page.process.header.eyebrow}
+          </span>
+          <h2
+            className="section-title reveal"
+            id="process-heading"
+            {...editable("process.header.title")}
+          >
             {page.process.header.title}
           </h2>
-          <p className="section-lede reveal">{page.process.header.lede}</p>
+          <p className="section-lede reveal" {...editable("process.header.lede")}>
+            {page.process.header.lede}
+          </p>
           <div className="steps">
-            {page.process.steps.map((step, index) => (
-              <div key={step.id} className={`step reveal d${index + 1}`}>
-                <div className="step-num" aria-hidden="true">
-                  {step.number}
+            {page.process.steps.map((step, index) => {
+              const entry = `process.steps.${index}`;
+              return (
+                <div key={step.id} className={`step reveal d${index + 1}`}>
+                  <div
+                    className="step-num"
+                    aria-hidden="true"
+                    {...editable(`${entry}.number`)}
+                  >
+                    {step.number}
+                  </div>
+                  <div className="ico" aria-hidden="true" {...editable(`${entry}.icon`)}>
+                    {step.icon}
+                  </div>
+                  <h3 {...editable(`${entry}.title`)}>{step.title}</h3>
+                  <p {...editable(`${entry}.body`)}>{step.body}</p>
                 </div>
-                <div className="ico" aria-hidden="true">
-                  {step.icon}
-                </div>
-                <h3>{step.title}</h3>
-                <p>{step.body}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div style={{ marginTop: "52px" }}>
-            <Cta cta={page.process.cta} onDark={false} />
+            <Cta cta={page.process.cta} onDark={false} path="process.cta" />
           </div>
         </div>
       </section>
@@ -129,17 +172,23 @@ export default async function HomePage() {
       <section className="pad" aria-labelledby="items-heading">
         <div className="wrap">
           <div className="center">
-            <span className="eyebrow reveal">
+            <span className="eyebrow reveal" {...editable("itemsTeaser.header.eyebrow")}>
               {page.itemsTeaser.header.eyebrow}
             </span>
-            <h2 className="section-title reveal" id="items-heading">
+            <h2
+              className="section-title reveal"
+              id="items-heading"
+              {...editable("itemsTeaser.header.title")}
+            >
               {page.itemsTeaser.header.title}
             </h2>
-            <p className="section-lede reveal">{page.itemsTeaser.header.lede}</p>
+            <p className="section-lede reveal" {...editable("itemsTeaser.header.lede")}>
+              {page.itemsTeaser.header.lede}
+            </p>
           </div>
           <BentoGrid items={teaserItems} variant="uniform" />
           <div className="center" style={{ marginTop: "46px" }}>
-            <Cta cta={page.itemsTeaser.cta} onDark={false} />
+            <Cta cta={page.itemsTeaser.cta} onDark={false} path="itemsTeaser.cta" />
             <p className="home-planner-link reveal">
               Or{" "}
               <Link href="/auction-planner">
@@ -157,25 +206,35 @@ export default async function HomePage() {
         aria-labelledby="testimonials-heading"
       >
         <div className="wrap center">
-          <span className="eyebrow reveal">
+          <span
+            className="eyebrow reveal"
+            {...editable("testimonialsTeaser.header.eyebrow")}
+          >
             {page.testimonialsTeaser.header.eyebrow}
           </span>
-          <h2 className="section-title reveal" id="testimonials-heading">
+          <h2
+            className="section-title reveal"
+            id="testimonials-heading"
+            {...editable("testimonialsTeaser.header.title")}
+          >
             {page.testimonialsTeaser.header.title}
           </h2>
-          <p className="section-lede reveal">
+          <p
+            className="section-lede reveal"
+            {...editable("testimonialsTeaser.header.lede")}
+          >
             {page.testimonialsTeaser.header.lede}
           </p>
         </div>
         <TestimonialMarquee testimonials={testimonials} />
         <div className="wrap center" style={{ marginTop: "40px" }}>
-          <Cta cta={page.testimonialsTeaser.cta} />
+          <Cta cta={page.testimonialsTeaser.cta} path="testimonialsTeaser.cta" />
         </div>
       </section>
 
       {/* ---------- DONOR INCENTIVE ----------
           Secondary hook, deliberately placed after the testimonials. */}
-      <DonorIncentive donor={page.donor} />
+      <DonorIncentive donor={page.donor} path="donor" />
 
       {/* ---------- CLOSING: THE REAL CONTACT FORM ----------
           The form itself rather than another button, so the home page carries
@@ -185,15 +244,23 @@ export default async function HomePage() {
       <section className="pad contact" aria-labelledby="closing-heading">
         <div className="wrap">
           <div>
-            <span className="eyebrow reveal">{page.closing.header.eyebrow}</span>
-            <h2 className="section-title reveal" id="closing-heading">
+            <span className="eyebrow reveal" {...editable("closing.header.eyebrow")}>
+              {page.closing.header.eyebrow}
+            </span>
+            <h2
+              className="section-title reveal"
+              id="closing-heading"
+              {...editable("closing.header.title")}
+            >
               {page.closing.header.title}
             </h2>
             <p
               className="section-lede reveal"
               style={{ color: "rgba(255,255,255,0.8)" }}
             >
-              {page.closing.header.lede}
+              <span {...editable("closing.header.lede")}>
+                {page.closing.header.lede}
+              </span>
             </p>
 
             <div className="contact-info">
@@ -224,11 +291,15 @@ export default async function HomePage() {
 
           {/* No `interests` map: this form cannot carry a specific lot or
               auctioneer, so the lookup stays out of the home page bundle. */}
+          {/* The record prefix, because this form's wording lives on the
+              CONTACT page. Clicking it in the preview offers that editor
+              rather than hunting for a field this document does not have. */}
           <ContactForm
             form={contactForm}
             booking={site.booking}
             idPrefix="home"
             source="home"
+            path="contact:form"
           />
         </div>
       </section>

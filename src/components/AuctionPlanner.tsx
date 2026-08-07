@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { editable } from "@/lib/editable";
 import Image from "next/image";
 import Link from "next/link";
 import { plannerQuestions } from "@/content/collections/planner-rules";
@@ -142,11 +143,20 @@ export function AuctionPlanner({
   if (screen === "start") {
     return (
       <div className="planner">
-        <h2 className="planner-heading" tabIndex={-1} ref={setHeading}>
+        <h2
+          className="planner-heading"
+          tabIndex={-1}
+          ref={setHeading}
+          {...editable("intro.title")}
+        >
           {page.intro.title}
         </h2>
-        <p className="planner-lede">{page.intro.lede}</p>
-        <p className="planner-blurb">{page.start.blurb}</p>
+        <p className="planner-lede" {...editable("intro.lede")}>
+          {page.intro.lede}
+        </p>
+        <p className="planner-blurb" {...editable("start.blurb")}>
+          {page.start.blurb}
+        </p>
         <button
           type="button"
           className="btn btn-gold"
@@ -155,9 +165,11 @@ export function AuctionPlanner({
             focusHeading();
           }}
         >
-          {page.start.button}
+          <span {...editable("start.button")}>{page.start.button}</span>
         </button>
-        <p className="planner-duration">{page.start.duration}</p>
+        <p className="planner-duration" {...editable("start.duration")}>
+          {page.start.duration}
+        </p>
       </div>
     );
   }
@@ -250,16 +262,23 @@ export function AuctionPlanner({
 
   return (
     <div className="planner planner-results">
-      <h2 className="planner-heading" tabIndex={-1} ref={setHeading}>
+      <h2
+        className="planner-heading"
+        tabIndex={-1}
+        ref={setHeading}
+        {...editable("results.heading")}
+      >
         {page.results.heading}
       </h2>
-      <p className="planner-lede">{page.results.lede}</p>
+      <p className="planner-lede" {...editable("results.lede")}>
+        {page.results.lede}
+      </p>
 
       {/* Chips rather than a written sentence. With "Not sure yet" available on
           three of the five questions, generated prose reads as broken English
           often enough that echoing the labels plainly is simply better. */}
       <div className="planner-answers">
-        <h3>{page.results.answersLabel}</h3>
+        <h3 {...editable("results.answersLabel")}>{page.results.answersLabel}</h3>
         <ul>
           {plannerQuestions.map((q) => {
             const selected = answers[q.id] ?? [];
@@ -273,7 +292,9 @@ export function AuctionPlanner({
         </ul>
       </div>
 
-      <h3 className="planner-picks-heading">{page.results.picksHeading}</h3>
+      <h3 className="planner-picks-heading" {...editable("results.picksHeading")}>
+        {page.results.picksHeading}
+      </h3>
       {/* Rendered from the format answer rather than the score, because it is
           not competing with the categories — a live auction needs someone to
           run it whichever lots are in the room. */}
@@ -310,9 +331,13 @@ export function AuctionPlanner({
 
       {isLiveAuction && (
         <div className="planner-auctioneer">
-          <h3>{page.auctioneerCard.heading}</h3>
-          <p>{page.auctioneerCard.body}</p>
-          <Link href={page.auctioneerCard.href} className="planner-pick-link">
+          <h3 {...editable("auctioneerCard.heading")}>{page.auctioneerCard.heading}</h3>
+          <p {...editable("auctioneerCard.body")}>{page.auctioneerCard.body}</p>
+          <Link
+            href={page.auctioneerCard.href}
+            className="planner-pick-link"
+            {...editable("auctioneerCard.linkLabel")}
+          >
             {page.auctioneerCard.linkLabel}
             <span aria-hidden="true"> →</span>
           </Link>
@@ -320,13 +345,13 @@ export function AuctionPlanner({
       )}
 
       <div className="planner-cta">
-        <Link href={contactHref} className="btn btn-gold">
+        <Link href={contactHref} className="btn btn-gold" {...editable("cta.label")}>
           {page.cta.label}
         </Link>
         <p className="planner-cta-note">Your answers come with you.</p>
         <div className="planner-cta-alt">
           <button type="button" className="planner-back" onClick={restart}>
-            {page.results.restart}
+            <span {...editable("results.restart")}>{page.results.restart}</span>
           </button>
           <Link href="/auction-items">Browse all items</Link>
         </div>

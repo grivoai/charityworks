@@ -32,6 +32,7 @@ import { locksForPage } from "@/lib/admin/locks";
 import { PAGE_ORDER, PAGE_PATHS } from "@/lib/admin/page-meta";
 import {
   MARKED_UP,
+  deferredReason,
   normalizeIndices,
   notVisibleReason,
   parseMark,
@@ -143,10 +144,14 @@ async function main(): Promise<void> {
     const unexplained: string[] = [];
     let reachable = 0;
     let explained = 0;
+    let deferred = 0;
 
     for (const pattern of expected) {
       if (marked.has(pattern)) {
         reachable += 1;
+      } else if (deferredReason(slug, pattern)) {
+        // Marked up, but behind an interaction, so not in the served HTML.
+        deferred += 1;
       } else if (notVisibleReason(slug, pattern)) {
         explained += 1;
       } else {
@@ -187,6 +192,7 @@ async function main(): Promise<void> {
     console.log(
       `  ${clean ? "ok  " : "FAIL"}  ${slug.padEnd(16)} ` +
         `${String(reachable).padStart(3)} clickable, ` +
+        `${String(deferred).padStart(2)} after an interaction, ` +
         `${String(explained).padStart(2)} not on the page, ` +
         `${marks.length} markers rendered`
     );

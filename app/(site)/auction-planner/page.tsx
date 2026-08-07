@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getAuctionCategories, getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
+import { editable } from "@/lib/editable";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 import { AuctionPlanner } from "@/components/AuctionPlanner";
 import type { PlannerCategoryCard } from "@/components/AuctionPlanner";
@@ -43,9 +44,13 @@ export default async function AuctionPlannerRoute() {
 
       <header className="page-hero center">
         <div className="wrap">
-          <span className="eyebrow">{page.intro.eyebrow}</span>
-          <h1>{page.heading}</h1>
-          <p className="lede">{page.intro.lede}</p>
+          <span className="eyebrow" {...editable("intro.eyebrow")}>
+            {page.intro.eyebrow}
+          </span>
+          <h1 {...editable("heading")}>{page.heading}</h1>
+          <p className="lede" {...editable("intro.lede")}>
+            {page.intro.lede}
+          </p>
         </div>
       </header>
 

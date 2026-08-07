@@ -21,7 +21,8 @@ import { matchesPattern } from "@/lib/admin/locks";
 export interface NotVisibleRule {
   /**
    * Dotted path. `*` matches one segment (an array index); a trailing `**`
-   * matches the rest of the path, however deep.
+   * matches the rest of the path, however deep; a leading `**` matches any
+   * prefix, so `**.href` covers `cta.href` and `hero.primaryCta.href` alike.
    */
   pattern: string;
   reason: string;
@@ -35,7 +36,16 @@ export interface NotVisibleRule {
  * reasons nobody is acting on, and a red check nobody acts on is not a check.
  * Adding a slug here turns the check on for that page.
  */
-export const MARKED_UP: PageSlug[] = ["faqs"];
+export const MARKED_UP: PageSlug[] = [
+  "home",
+  "auction-items",
+  "auction-info",
+  "auction-planner",
+  "auctioneers",
+  "testimonials",
+  "faqs",
+  "contact",
+];
 
 /** Applies to every page. */
 export const COMMON_NOT_VISIBLE: NotVisibleRule[] = [
@@ -45,9 +55,76 @@ export const COMMON_NOT_VISIBLE: NotVisibleRule[] = [
       "The search listing. It is what Google shows, not something on the page, " +
       "so there is nothing to click.",
   },
+  {
+    pattern: "**.href",
+    reason:
+      "Where a link goes. The words on the button are clickable; its destination " +
+      "is not something on the page.",
+  },
+  {
+    pattern: "**.variant",
+    reason: "A button's style. Visible as an appearance rather than as text.",
+  },
 ];
 
 export const PAGE_NOT_VISIBLE: Partial<Record<PageSlug, NotVisibleRule[]>> = {
+  /**
+   * The home page's `heading` is part of every page's shape but this route
+   * never renders it — its headline comes from the two hero lines. Locked in
+   * `locks.ts` for the same reason.
+   */
+  home: [
+    {
+      pattern: "heading",
+      reason:
+        "Not shown on the home page — the headline is the two lines in the " +
+        "hero. Locked in the form for the same reason.",
+    },
+    {
+      pattern: "donor.header.eyebrow",
+      reason: "That block renders its tag, title and lede, but no eyebrow.",
+    },
+    {
+      pattern: "closing.cta.label",
+      reason: "The closing section ends with the enquiry form, not a button.",
+    },
+  ],
+  auctioneers: [
+    {
+      pattern: "intro.title",
+      reason: "A duplicate of the h1 that this page never renders.",
+    },
+    {
+      pattern: "differentiators.header.lede",
+      reason: "That section renders its eyebrow and title but no lede.",
+    },
+  ],
+  contact: [
+    {
+      pattern: "intro.title",
+      reason: "This page renders its heading and lede, but no section title.",
+    },
+    {
+      pattern: "form.fields.*.name",
+      reason:
+        "The key each answer is filed under in the enquiry pipeline. Never " +
+        "shown to a visitor — and fixed, for the reason given in the form.",
+    },
+    {
+      pattern: "form.fields.*.type",
+      reason:
+        "What kind of box this is — a line, a paragraph, an email address. " +
+        "Visible as a behaviour rather than as text.",
+    },
+    {
+      pattern: "form.fields.*.required",
+      reason: "Whether the question must be answered. Enforced, not displayed.",
+    },
+    {
+      pattern: "form.fields.*.width",
+      reason: "How wide the box sits in the grid. Layout, not wording.",
+    },
+  ],
   faqs: [
     {
       pattern: "cta.href",
@@ -65,6 +142,73 @@ export function notVisibleRules(slug: PageSlug): NotVisibleRule[] {
 }
 
 /**
+ * Marked up, and reachable — but not in the HTML the server sends.
+ *
+ * A third answer was needed once the planner was marked up. Its results screen
+ * only exists after the five questions are answered, so the check cannot find
+ * those markers by reading the page, yet they are there and they work: click
+ * through the quiz in the preview and the fields are as clickable as any other.
+ * The same applies to anything rendered only in a fallback branch.
+ *
+ * Recording them here rather than lumping them in with "not on the page" keeps
+ * the distinction the client would notice. "Not on the page" means never
+ * clickable, and the form is the only way in. This means "it is there once the
+ * page is in the right state". Collapsing the two would quietly turn a working
+ * field into one documented as broken.
+ */
+export const PAGE_DEFERRED: Partial<Record<PageSlug, NotVisibleRule[]>> = {
+  /**
+   * Both of these replace the form once it has been submitted, so neither is
+   * in the page as served. Deliberately not exercised by any automated check:
+   * submitting this form files a real lead and sends Ira a text message.
+   */
+  contact: [
+    {
+      pattern: "form.successMessage",
+      reason:
+        "Replaces the form after someone sends it. Visible in the preview only " +
+        "after an actual submission, which is not something to test against.",
+    },
+    {
+      pattern: "form.errorMessage",
+      reason: "Shown only if a submission fails to send.",
+    },
+  ],
+  auctioneers: [
+    {
+      pattern: "auctioneers.*.initials",
+      reason:
+        "The initials stand in for a missing photograph, so they only appear " +
+        "for an auctioneer who has none. Every one currently has a photograph.",
+    },
+  ],
+  "auction-planner": [
+    {
+      pattern: "results.**",
+      reason: "The results screen, which appears once the five questions are answered.",
+    },
+    {
+      pattern: "auctioneerCard.**",
+      reason:
+        "Shown on the results screen, and only when the answers point at a live auction.",
+    },
+    {
+      pattern: "cta.label",
+      reason: "The button at the end of the results screen.",
+    },
+  ],
+};
+
+export function deferredReason(
+  slug: PageSlug,
+  path: string
+): string | undefined {
+  return (PAGE_DEFERRED[slug] ?? []).find((rule) =>
+    matchesVisualPattern(path, rule.pattern)
+  )?.reason;
+}
+
+/**
  * `*` for one segment, `**` for everything remaining.
  *
  * Deliberately a separate matcher rather than an extension of the one in
@@ -73,6 +217,10 @@ export function notVisibleRules(slug: PageSlug): NotVisibleRule[] {
  * stops matching the thing it was written to protect.
  */
 export function matchesVisualPattern(path: string, pattern: string): boolean {
+  if (pattern.startsWith("**.")) {
+    const suffix = pattern.slice(3);
+    return path === suffix || path.endsWith(`.${suffix}`);
+  }
   if (pattern.endsWith(".**")) {
     const prefix = pattern.slice(0, -3);
     return path === prefix || path.startsWith(`${prefix}.`);

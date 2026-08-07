@@ -31,6 +31,41 @@ export const COMMON_LOCKS: LockRule[] = [
 
 export const PAGE_LOCKS: Partial<Record<PageSlug, LockRule[]>> = {
   /**
+   * The home page has a `heading` because every page does — it is part of the
+   * shared base schema — but the home route never renders it. Its headline is
+   * built from the two hero lines instead. Found while marking the page up for
+   * the preview: nothing on screen could be tied to this field, because nothing
+   * on screen comes from it.
+   *
+   * Left editable it would be the worst kind of field: one the client changes,
+   * saves successfully, and then cannot find on the site.
+   */
+  home: [
+    {
+      pattern: "heading",
+      mode: "readonly",
+      reason:
+        "The home page's headline is the two lines in the Hero section below — " +
+        "'First line of the heading' and 'Second line'. Every page carries a " +
+        "heading field, but this one is not shown anywhere.",
+    },
+    {
+      pattern: "donor.header.eyebrow",
+      mode: "readonly",
+      reason:
+        "That block shows its tag, title and lede, but no eyebrow. Editing " +
+        "this would change nothing on the page.",
+    },
+    {
+      pattern: "closing.cta.label",
+      mode: "readonly",
+      reason:
+        "The closing section ends with the enquiry form rather than a button, " +
+        "so this label is never shown.",
+    },
+  ],
+
+  /**
    * The contact form's field *names* are the lead pipeline's contract.
    *
    * `app/api/contact/route.ts` checks required answers against this list and
@@ -41,6 +76,33 @@ export const PAGE_LOCKS: Partial<Record<PageSlug, LockRule[]>> = {
    * The wording of a label, its placeholder, whether it is required and where it
    * sits are all safe, and all editable.
    */
+  /**
+   * Two more fields that render nowhere, found the same way — by trying to
+   * point at them on the page and finding nothing to point at.
+   *
+   * `intro.title` holds a copy of the h1 and is never read; the differentiators
+   * block renders its eyebrow and title but not its lede. Both are locked
+   * rather than deleted: removing them means a migration, and the schema is
+   * shared. If either was meant to appear, showing it is a small change to the
+   * route — say so and it can be unlocked.
+   */
+  auctioneers: [
+    {
+      pattern: "intro.title",
+      mode: "readonly",
+      reason:
+        "Not shown on this page. The heading at the top is the field above, " +
+        "and this one duplicates it without ever being rendered.",
+    },
+    {
+      pattern: "differentiators.header.lede",
+      mode: "readonly",
+      reason:
+        "This section shows its eyebrow and title, but not a lede. Editing " +
+        "this would change nothing on the page.",
+    },
+  ],
+
   contact: [
     {
       pattern: "form.fields.*.name",

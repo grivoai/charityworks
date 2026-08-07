@@ -164,6 +164,31 @@ export function PagePreview({
 
   const doc = () => frameRef.current?.contentDocument ?? null;
 
+  /**
+   * The frame may already have finished loading before this component hydrates.
+   *
+   * `onLoad` is a React prop, so it is only attached once the client bundle has
+   * run. A statically served page inside the frame can finish before that, and
+   * then the load event has already been and gone — leaving `ready` false, no
+   * listeners on the sheet, and a preview that highlights nothing. It looks
+   * exactly like a broken feature and depends on timing, so it appears and
+   * disappears with how fast the page happens to render.
+   *
+   * Found when tagged caching made the frame load faster than hydration. The
+   * race was always there; the cache only made it reliable.
+   */
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    try {
+      if (frame.contentDocument?.readyState === "complete") setReady(true);
+    } catch {
+      // Cross-origin, which cannot happen for our own routes — but a thrown
+      // error here would take the whole panel down, and a preview that cannot
+      // be pointed at is still better than an admin page that will not render.
+    }
+  }, [reloadKey]);
+
   /* Fit the chosen viewport width into whatever the column actually has. */
   useEffect(() => {
     const stage = stageRef.current;

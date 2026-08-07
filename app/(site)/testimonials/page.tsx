@@ -3,6 +3,7 @@ import { getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
 import { TestimonialCard } from "@/components/TestimonialCard";
+import { editable } from "@/lib/editable";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export function generateMetadata(): Promise<Metadata> {
@@ -18,9 +19,13 @@ export default async function TestimonialsRoute() {
 
       <header className="page-hero center">
         <div className="wrap">
-          <span className="eyebrow">{page.intro.eyebrow}</span>
-          <h1>{page.heading}</h1>
-          <p className="lede">{page.intro.lede}</p>
+          <span className="eyebrow" {...editable("intro.eyebrow")}>
+            {page.intro.eyebrow}
+          </span>
+          <h1 {...editable("heading")}>{page.heading}</h1>
+          <p className="lede" {...editable("intro.lede")}>
+            {page.intro.lede}
+          </p>
         </div>
       </header>
 
@@ -29,17 +34,22 @@ export default async function TestimonialsRoute() {
       <section className="pad" aria-labelledby="results-heading">
         <div className="wrap">
           <div className="center" style={{ marginBottom: "48px" }}>
-            <h2 className="section-title reveal" id="results-heading">
+            <h2 className="section-title reveal" id="results-heading"
+              {...editable("intro.title")}>
               {page.intro.title}
             </h2>
           </div>
           <div className="t-grid">
-            {page.testimonials.map((testimonial) => (
-              <TestimonialCard key={testimonial.id} testimonial={testimonial} />
+            {page.testimonials.map((testimonial, index) => (
+              <TestimonialCard
+                key={testimonial.id}
+                testimonial={testimonial}
+                path={`testimonials.${index}`}
+              />
             ))}
           </div>
           <div className="center" style={{ marginTop: "52px" }}>
-            <Cta cta={page.cta} onDark={false} />
+            <Cta cta={page.cta} onDark={false} path="cta" />
           </div>
         </div>
       </section>

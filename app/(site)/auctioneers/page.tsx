@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
+import { at, editable } from "@/lib/editable";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export function generateMetadata(): Promise<Metadata> {
@@ -27,9 +28,13 @@ export default async function AuctioneersRoute() {
 
       <header className="page-hero center">
         <div className="wrap">
-          <span className="eyebrow">{page.intro.eyebrow}</span>
-          <h1>{page.heading}</h1>
-          <p className="lede">{page.intro.lede}</p>
+          <span className="eyebrow" {...editable("intro.eyebrow")}>
+            {page.intro.eyebrow}
+          </span>
+          <h1 {...editable("heading")}>{page.heading}</h1>
+          <p className="lede" {...editable("intro.lede")}>
+            {page.intro.lede}
+          </p>
         </div>
       </header>
 
@@ -37,33 +42,52 @@ export default async function AuctioneersRoute() {
       <section className="pad" aria-labelledby="diff-heading">
         <div className="wrap">
           <div className="center">
-            <p className="section-lede reveal">{page.positioning}</p>
-            <span className="eyebrow reveal" style={{ marginTop: "34px" }}>
+            <p className="section-lede reveal" {...editable("positioning")}>
+              {page.positioning}
+            </p>
+            <span
+              className="eyebrow reveal"
+              style={{ marginTop: "34px" }}
+              {...editable("differentiators.header.eyebrow")}
+            >
               {page.differentiators.header.eyebrow}
             </span>
-            <h2 className="section-title reveal" id="diff-heading">
+            <h2
+              className="section-title reveal"
+              id="diff-heading"
+              {...editable("differentiators.header.title")}
+            >
               {page.differentiators.header.title}
             </h2>
           </div>
 
           <div className="why-grid">
-            {page.differentiators.items.map((item, index) => (
-              <div
-                key={item.id}
-                className={`why-card reveal${index % 3 > 0 ? ` d${index % 3}` : ""}`}
-              >
-                <div className="why-ico" aria-hidden="true">
-                  {item.icon}
+            {page.differentiators.items.map((item, index) => {
+              const entry = `differentiators.items.${index}`;
+              return (
+                <div
+                  key={item.id}
+                  className={`why-card reveal${index % 3 > 0 ? ` d${index % 3}` : ""}`}
+                >
+                  <div
+                    className="why-ico"
+                    aria-hidden="true"
+                    {...editable(`${entry}.icon`)}
+                  >
+                    {item.icon}
+                  </div>
+                  <h3 {...editable(`${entry}.title`)}>{item.title}</h3>
+                  <p {...editable(`${entry}.body`)}>{item.body}</p>
                 </div>
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <p className="auc-offer reveal">
-            <span className="big">{page.offer.headline}</span>
-            <span>{page.offer.detail}</span>
+            <span className="big" {...editable("offer.headline")}>
+              {page.offer.headline}
+            </span>
+            <span {...editable("offer.detail")}>{page.offer.detail}</span>
           </p>
         </div>
       </section>
@@ -76,18 +100,24 @@ export default async function AuctioneersRoute() {
       >
         <div className="wrap">
           <div className="center">
-            <h2 className="section-title reveal" id="roster-heading">
+            <h2
+              className="section-title reveal"
+              id="roster-heading"
+              {...editable("rosterHeading")}
+            >
               {page.rosterHeading}
             </h2>
           </div>
 
           <div className="auc-list">
-            {page.auctioneers.map((auctioneer, index) => (
-              <article
-                key={auctioneer.id}
-                className={`auc-profile reveal${index % 2 ? " d1" : ""}`}
-              >
-                <div className="auc-portrait">
+            {page.auctioneers.map((auctioneer, index) => {
+              const who = `auctioneers.${index}`;
+              return (
+                <article
+                  key={auctioneer.id}
+                  className={`auc-profile reveal${index % 2 ? " d1" : ""}`}
+                >
+                <div className="auc-portrait" {...editable(at(who, "image"))}>
                   {auctioneer.image ? (
                     <Image
                       src={auctioneer.image.src}
@@ -97,37 +127,55 @@ export default async function AuctioneersRoute() {
                       style={{ objectFit: "cover" }}
                     />
                   ) : (
-                    <span className="auc-avatar" aria-hidden="true">
+                    <span
+                      className="auc-avatar"
+                      aria-hidden="true"
+                      {...editable(at(who, "initials"))}
+                    >
                       {auctioneer.initials}
                     </span>
                   )}
                 </div>
 
                 <div className="auc-profile-body">
-                  <h3 className="auc-name">{auctioneer.name}</h3>
+                  <h3 className="auc-name" {...editable(at(who, "name"))}>
+                    {auctioneer.name}
+                  </h3>
 
                   <div className="auc-meta">
                     {auctioneer.territory && (
-                      <span className="auc-badge">{auctioneer.territory}</span>
+                      <span className="auc-badge" {...editable(at(who, "territory"))}>
+                        {auctioneer.territory}
+                      </span>
                     )}
                     {auctioneer.credential && (
-                      <span className="auc-badge auc-badge-role">
+                      <span
+                        className="auc-badge auc-badge-role"
+                        {...editable(at(who, "credential"))}
+                      >
                         {auctioneer.credential}
                       </span>
                     )}
                     {auctioneer.accolade && (
                       <span className="auc-badge auc-badge-award">
-                        <span aria-hidden="true">★</span> {auctioneer.accolade}
+                        <span aria-hidden="true">★</span>{" "}
+                        <span {...editable(at(who, "accolade"))}>
+                          {auctioneer.accolade}
+                        </span>
                       </span>
                     )}
                   </div>
 
                   {auctioneer.tagline && (
-                    <p className="auc-tagline">{auctioneer.tagline}</p>
+                    <p className="auc-tagline" {...editable(at(who, "tagline"))}>
+                      {auctioneer.tagline}
+                    </p>
                   )}
 
                   {auctioneer.bio.map((para, i) => (
-                    <p key={i}>{para}</p>
+                    <p key={i} {...editable(at(who, "bio", i))}>
+                      {para}
+                    </p>
                   ))}
 
                   {/* Named in the accessible label: a page of nine identical
@@ -142,8 +190,9 @@ export default async function AuctioneersRoute() {
                     <span aria-hidden="true"> →</span>
                   </Link>
                 </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -153,16 +202,24 @@ export default async function AuctioneersRoute() {
         <div className="wrap">
           <div className="center">
             <span className="eyebrow reveal">Partner</span>
-            <h2 className="section-title reveal" id="partners-heading">
+            <h2
+              className="section-title reveal"
+              id="partners-heading"
+              {...editable("partners.title")}
+            >
               {page.partners.title}
             </h2>
-            <p className="section-lede reveal">{page.partners.blurb}</p>
+            <p className="section-lede reveal" {...editable("partners.blurb")}>
+              {page.partners.blurb}
+            </p>
           </div>
 
           <div className="auc-list">
-            {page.partners.items.map((partner) => (
-              <article key={partner.id} className="auc-profile reveal">
-                <div className="auc-portrait">
+            {page.partners.items.map((partner, index) => {
+              const who = `partners.items.${index}`;
+              return (
+                <article key={partner.id} className="auc-profile reveal">
+                <div className="auc-portrait" {...editable(at(who, "image"))}>
                   {partner.image && (
                     <Image
                       src={partner.image.src}
@@ -174,17 +231,26 @@ export default async function AuctioneersRoute() {
                   )}
                 </div>
                 <div className="auc-profile-body">
-                  <h3 className="auc-name">{partner.name}</h3>
+                  <h3 className="auc-name" {...editable(at(who, "name"))}>
+                    {partner.name}
+                  </h3>
                   <div className="auc-meta">
-                    <span className="auc-badge auc-badge-role">
+                    <span
+                      className="auc-badge auc-badge-role"
+                      {...editable(at(who, "role"))}
+                    >
                       {partner.role}
                     </span>
                   </div>
                   {partner.bio.map((para, i) => (
-                    <p key={i}>{para}</p>
+                    <p key={i} {...editable(at(who, "bio", i))}>
+                      {para}
+                    </p>
                   ))}
                   {partner.closer && (
-                    <p className="auc-closer">{partner.closer}</p>
+                    <p className="auc-closer" {...editable(at(who, "closer"))}>
+                      {partner.closer}
+                    </p>
                   )}
 
                   {/* Not "request this auctioneer": the partner does event
@@ -199,12 +265,13 @@ export default async function AuctioneersRoute() {
                     <span aria-hidden="true"> →</span>
                   </Link>
                 </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
 
           <div className="center" style={{ marginTop: "52px" }}>
-            <Cta cta={page.cta} onDark={false} />
+            <Cta cta={page.cta} onDark={false} path="cta" />
           </div>
         </div>
       </section>

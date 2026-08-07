@@ -4,6 +4,7 @@ import { getAuctionCategories, getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
 import { BentoGrid } from "@/components/BentoGrid";
+import { editable } from "@/lib/editable";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export function generateMetadata(): Promise<Metadata> {
@@ -22,16 +23,21 @@ export default async function AuctionItemsRoute() {
 
       <header className="page-hero center">
         <div className="wrap">
-          <span className="eyebrow">{page.intro.eyebrow}</span>
-          <h1>{page.heading}</h1>
-          <p className="lede">{page.intro.lede}</p>
+          <span className="eyebrow" {...editable("intro.eyebrow")}>
+            {page.intro.eyebrow}
+          </span>
+          <h1 {...editable("heading")}>{page.heading}</h1>
+          <p className="lede" {...editable("intro.lede")}>
+            {page.intro.lede}
+          </p>
         </div>
       </header>
 
       <section className="pad" aria-labelledby="catalog-heading">
         <div className="wrap">
           <div className="center">
-            <h2 className="section-title reveal" id="catalog-heading">
+            <h2 className="section-title reveal" id="catalog-heading"
+              {...editable("intro.title")}>
               {page.intro.title}
             </h2>
           </div>
@@ -50,9 +56,11 @@ export default async function AuctionItemsRoute() {
           </div>
 
           <BentoGrid items={categories} />
-          <p className="catalog-note reveal">{page.note}</p>
+          <p className="catalog-note reveal" {...editable("note")}>
+            {page.note}
+          </p>
           <div className="center" style={{ marginTop: "40px" }}>
-            <Cta cta={page.cta} onDark={false} />
+            <Cta cta={page.cta} onDark={false} path="cta" />
           </div>
         </div>
       </section>

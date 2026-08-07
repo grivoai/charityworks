@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { at, editable } from "@/lib/editable";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { BookingPanel } from "@/components/BookingPanel";
@@ -35,6 +36,7 @@ export function ContactForm({
   idPrefix = "",
   source = "contact-page",
   interests,
+  path,
 }: {
   form: ContactPage["form"];
   /**
@@ -57,6 +59,13 @@ export function ContactForm({
    * carry an interest (the home page form), which keeps it out of that bundle.
    */
   interests?: InterestLookup;
+  /**
+   * Where this form's wording sits, e.g. `"form"` on the contact page and
+   * `"contact:form"` on the home page — which renders the same record without
+   * owning it, so a click there has to offer the contact editor rather than
+   * look for a field the home document does not have.
+   */
+  path?: string;
 }) {
   const [status, setStatus] = useState<Status>("idle");
   /** What came back from a successful submission, used to set up the booking. */
@@ -120,7 +129,9 @@ export function ContactForm({
           ref={successRef}
           tabIndex={-1}
         >
-          <p className="form-success-msg">{form.successMessage}</p>
+          <p className="form-success-msg" {...editable(at(path, "successMessage"))}>
+            {form.successMessage}
+          </p>
 
           {/* No `.reveal` anywhere in here. RevealObserver takes its snapshot
               of `.reveal:not(.in)` once per navigation, so an element mounted
@@ -144,12 +155,15 @@ export function ContactForm({
           <LeadContextFields source={source} interests={interests} />
         </Suspense>
 
-        {form.fields.map((field) => (
+        {form.fields.map((field, index) => (
           <div
             key={field.id}
             className={`field${field.width === "full" ? " full" : ""}`}
           >
-            <label htmlFor={fieldId(field.id)}>
+            <label
+              htmlFor={fieldId(field.id)}
+              {...editable(at(path, "fields", index, "label"))}
+            >
               {field.label}
               {field.required && <span className="sr-only"> (required)</span>}
             </label>
@@ -158,6 +172,7 @@ export function ContactForm({
                 id={fieldId(field.id)}
                 name={field.name}
                 placeholder={field.placeholder}
+                {...editable(at(path, "fields", index, "placeholder"))}
                 required={field.required}
               />
             ) : (
@@ -166,6 +181,7 @@ export function ContactForm({
                 name={field.name}
                 type={field.type}
                 placeholder={field.placeholder}
+                {...editable(at(path, "fields", index, "placeholder"))}
                 required={field.required}
               />
             )}
@@ -178,11 +194,19 @@ export function ContactForm({
           style={{ gridColumn: "span 2" }}
           disabled={status === "submitting"}
         >
-          {status === "submitting" ? "Sending…" : form.submitLabel}
+          {status === "submitting" ? (
+            "Sending…"
+          ) : (
+            <span {...editable(at(path, "submitLabel"))}>{form.submitLabel}</span>
+          )}
         </button>
 
         <div className="form-msg" role="status" aria-live="polite">
-          {status === "error" ? form.errorMessage : ""}
+          {status === "error" ? (
+            <span {...editable(at(path, "errorMessage"))}>{form.errorMessage}</span>
+          ) : (
+            ""
+          )}
         </div>
       </div>
       )}
