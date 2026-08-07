@@ -73,6 +73,18 @@ export interface ArrayNode extends NodeBase {
   template: unknown;
   /** Set when items may be edited but not added or removed, holding the reason. */
   fixedLength?: string;
+  /**
+   * Set when the list can grow, but some of its entries cannot be removed.
+   *
+   * Data rather than a predicate, because this tree is serialised to the
+   * browser — a function cannot cross that boundary. An entry whose `key` field
+   * holds one of `values` keeps its remove button hidden and shows the reason.
+   *
+   * The contact form is what this exists for: the six questions the enquiry
+   * pipeline reads are fixed, and any question the client adds is theirs to
+   * remove. "Fixed length" could not express that.
+   */
+  protect?: { key: string; values: string[]; reason: string };
 }
 
 /**

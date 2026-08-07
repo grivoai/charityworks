@@ -7,7 +7,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { PageEditor } from "@/components/admin/PageEditor";
 import { PagePreview } from "@/components/admin/PagePreview";
 import { requireAdmin } from "@/lib/auth";
-import { getPage } from "@/lib/content";
+import { readPageDocument } from "@/lib/admin/page-read";
 import { getServiceClient } from "@/lib/supabase";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { locksForPage } from "@/lib/admin/locks";
@@ -47,13 +47,33 @@ export default async function EditPageRoute({
   if (!isPageSlug(slug)) notFound();
 
   /**
-   * Read through the same content layer the site uses, so the editor is
-   * populated with exactly the value the pages render — validated by the same
-   * schema, from the same row. A separate read here could differ from what is
-   * live, and the difference would only show up as a mystery.
+   * Read straight from the table, not through the cached content layer.
+   *
+   * The editor has to show the document it is about to overwrite. `getPage()`
+   * is tagged and cached, which is right for the site and wrong here: on a
+   * stale entry the client would edit a copy and save it back, quietly undoing
+   * whatever the cache had not caught up with. The catalog editor already reads
+   * this way for the same reason.
+   *
+   * Validated against the page's own schema afterwards, so what is rendered is
+   * still exactly what the site would render from this row.
    */
-  const [content, historyCount, meta] = await Promise.all([
-    getPage(slug),
+  const stored = await readPageDocument(slug);
+  if (stored === null) notFound();
+
+  const parsed = pageSchemas[slug].safeParse(stored);
+  if (!parsed.success) {
+    throw new Error(
+      `[admin] the stored ${slug} page does not match its schema: ` +
+        parsed.error.issues
+          .slice(0, 3)
+          .map((i) => `${i.path.map(String).join(".")}: ${i.message}`)
+          .join("; ")
+    );
+  }
+  const content = parsed.data;
+
+  const [historyCount, meta] = await Promise.all([
     countRevisions("page", slug),
     getServiceClient()
       .from("pages")

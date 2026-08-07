@@ -79,9 +79,11 @@ export async function recordSubmission(lead: LeadRecord): Promise<boolean> {
       },
       context_summary: text(lead.contextSummary),
 
-      // Whatever the payload carried that is not a column of its own. Keeps the
-      // row complete without the table having to grow a column per question.
-      custom: {},
+      // Answers to questions the client added, which have no column of their
+      // own and are not written to the spreadsheet either. This row is where
+      // they live, which is what makes adding a question safe to offer.
+      custom:
+        lead.custom && typeof lead.custom === "object" ? lead.custom : {},
 
       webhook_status: "pending",
       // The exact thing posted, which is what makes a replay possible rather

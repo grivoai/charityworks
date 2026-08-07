@@ -443,6 +443,52 @@ visitors see.
 
 ---
 
+## The form builder: adding a question without losing the answers
+
+Requirement 3 is "reword the fields, add your own, and change what people see
+after they submit". Two of those three already worked — the contact form lives
+in the contact page document, so labels, placeholders, whether an answer is
+required, the order, the submit button and the success message were all ordinary
+editable fields from the day the pages editor shipped. What was missing was
+adding a question, and the list was locked to a fixed length because of what
+adding one would have done.
+
+**The failure to avoid is not the pipeline breaking.** n8n writes six fixed
+spreadsheet columns and ignores every other key, so a question the client adds
+would have been answered by visitors and then silently dropped — no error, no
+row, nothing to notice. So the answer had to have somewhere to live before the
+question could be offered, and `submissions` is it: core answers stay in their
+own columns, and anything else goes in `custom`, which the enquiries inbox reads
+back under the question as the client worded it.
+
+**The key is generated, never typed.** Nobody adding "How did you hear about
+us?" should have to think about `custom_how_did_you_hear_about_us`, and nobody
+should be able to type `email` into it either. `form-write.ts` derives it from
+the label once and then it is locked like the other six. The prefix is doing
+real work: the payload posted to n8n is flat, so a question keyed `source` or
+`interestId` would land on top of the context the endpoint adds — prefixing
+makes that collision impossible to express rather than merely unlikely.
+
+**The six core questions are protected entries, not a fixed-length list.** The
+list grows; those six have no remove button and a save that would drop one is
+refused with the reason. `email` is the one that matters most — it is how anyone
+gets replied to.
+
+**A lock had to become a constraint first.** Until then `locked` only rendered
+an input read-only, and the coercion rebuilt the value from the request like any
+other string. A server action is an HTTP endpoint, so that was a statement to
+whoever was using the page rather than a rule about what could be saved. Locked
+values now come from the stored document, with list entries matched by `id`
+rather than position — reordering a list is an ordinary edit, and handing a
+locked value to the wrong entry would be worse than not enforcing it at all.
+
+**The page editor reads uncached**, like the catalog editor already did. It has
+to show the document it is about to overwrite; populated from a tagged cache, a
+stale entry would mean editing a copy and saving it back over whatever the cache
+had missed.
+
+---
+
 ## Documents: a link that outlives the file behind it
 
 Requirement 4 is "put a PDF on the site and send people to it". The part that
@@ -490,7 +536,7 @@ than shown a silent no-op.
 | **2.1 Content editing** | Page and site copy forms, revision history, restore | Edit a field, live in seconds, no rebuild |
 | **2.2 Catalog CRUD** | Add/edit/reorder categories, groups, items, item details (req 2, 5) | Add a lot, it appears with a working request link |
 | **2.3 Uploads** | Image and PDF upload, `/d/<slug>` links (req 4) | Upload, share, replace the file, link still resolves |
-| **2.4 Forms + submissions** | Field editor with locked core fields, submissions table, replay (req 3) | Submit, row appears in admin **and** n8n still receives it unchanged |
+| **2.4 Forms + submissions** | Field editor with protected core fields, submissions table, replay (req 3) | Submit, row appears in admin **and** n8n still receives the six core keys unchanged |
 
 2.0 first because it is the only phase that can break the live site; everything
 after is additive. 2.2 before 2.4 because 89 lots are waiting on
@@ -521,6 +567,11 @@ Storing submissions is additive, on the same discipline as the Calendly work.
 | Markers in public HTML | Shipped, so pages stay static | Admin-only render of every page |
 | Clicks in the preview | Intercepted by a sheet over the frame | Cancelling link clicks inside it |
 | Preview width | Real 1280px, scaled to fit, with a phone toggle | Whatever width the column happens to have |
+| Locked fields | Taken from the stored document on save | Rendered read-only and trusted |
+| Core form fields | Protected entries in a list that can still grow | A fixed-length list, or a free-form builder |
+| A new question's key | Generated from its wording, prefixed `custom_` | Typed by the client |
+| Custom answers | Nested under `custom`, kept in `submissions`, shown in the admin | Flattened into the payload beside the core keys |
+| Editor reads | Straight from the table, uncached | Through the same cached content layer the site uses |
 | Document uploads | Browser PUTs straight to storage with a signed URL | Through a server action, which Vercel caps at 4.5 MB |
 | What a document may be | PDF only, sniffed on `%PDF-` | Any file the browser calls a PDF |
 | `/d/<slug>` | A dynamic page that redirects | A route handler, or streaming the bytes through the function |

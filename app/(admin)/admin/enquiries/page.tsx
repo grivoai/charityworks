@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/auth";
+import { getPage } from "@/lib/content";
+import { isCoreField } from "@/lib/admin/form-write";
 import { getServiceClient } from "@/lib/supabase";
 import { formatWhen, formatExact } from "@/lib/admin/page-meta";
 
@@ -29,6 +31,8 @@ interface SubmissionRow {
   context_summary: string | null;
   webhook_status: "pending" | "sent" | "failed" | "not-configured";
   webhook_last_error: string | null;
+  /** Answers to questions the client added. Keyed by the field's own name. */
+  custom: Record<string, string> | null;
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -69,12 +73,31 @@ const DELIVERY: Record<
 export default async function EnquiriesRoute() {
   const admin = await requireAdmin();
 
+  /**
+   * The wording of any question the client added, so their answers read as
+   * questions rather than as keys.
+   *
+   * Looked up from the form as it stands now, and deliberately tolerant of not
+   * finding a match: a question that has since been reworded or removed still
+   * has answers sitting in rows, and those must not disappear from view because
+   * their label did. The key is humanised as a fallback.
+   */
+  const { form } = await getPage("contact");
+  const labels = new Map(
+    form.fields
+      .filter((field) => !isCoreField(field.name))
+      .map((field) => [field.name, field.label])
+  );
+  const askedAs = (key: string) =>
+    labels.get(key) ??
+    key.replace(/^custom_/, "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+
   const { data, error } = await getServiceClient()
     .from("submissions")
     .select(
       "id, lead_id, submitted_at, name, org, email, phone, event_date, message, " +
         "source, interest_label, interest_category, context_summary, " +
-        "webhook_status, webhook_last_error"
+        "webhook_status, webhook_last_error, custom"
     )
     .order("submitted_at", { ascending: false })
     .limit(100)
@@ -145,6 +168,20 @@ export default async function EnquiriesRoute() {
               </div>
 
               {row.message && <p className="admin-enquiry-message">{row.message}</p>}
+
+              {row.custom &&
+                Object.entries(row.custom).filter(([, v]) => v !== "").length > 0 && (
+                  <dl className="admin-enquiry-custom">
+                    {Object.entries(row.custom)
+                      .filter(([, value]) => value !== "")
+                      .map(([key, value]) => (
+                        <div key={key}>
+                          <dt>{askedAs(key)}</dt>
+                          <dd>{value}</dd>
+                        </div>
+                      ))}
+                  </dl>
+                )}
 
               <p className="admin-enquiry-meta">
                 {SOURCE_LABELS[row.source] ?? row.source}

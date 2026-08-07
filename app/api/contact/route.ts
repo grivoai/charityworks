@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { recordDelivery, recordSubmission } from "@/lib/submissions";
+import { isCoreField } from "@/lib/admin/form-write";
 import { getPage } from "@/lib/content";
 import { getInterestRegistry } from "@/lib/interests";
 import {
@@ -114,19 +115,36 @@ export async function POST(request: Request) {
   /* ---------------------------------------------------------------- */
   /* Visible fields                                                    */
   /* ---------------------------------------------------------------- */
-  // Only keys the form actually defines, so unexpected input is dropped. Every
-  // defined key is present in the output even when empty: the destination is a
-  // spreadsheet, and a stable column set matters more than a compact payload.
-  const fields = Object.fromEntries(
-    form.fields.map((field) => {
-      const value = payload[field.name];
-      const text = typeof value === "string" ? value.trim() : "";
-      return [
-        PAYLOAD_KEY[field.name] ?? field.name,
-        text.slice(0, MAX_FIELD_LENGTH),
-      ];
-    })
-  );
+  /**
+   * Only keys the form actually defines, so unexpected input is dropped. Every
+   * defined key is present in the output even when empty: the destination is a
+   * spreadsheet, and a stable column set matters more than a compact payload.
+   *
+   * Split in two, and the split is the whole reason the form can be edited at
+   * all. The six core answers stay flat and keep their exact keys, because the
+   * n8n workflow writes them to fixed columns. A question the client added goes
+   * inside `custom` — nested, so a question worded into the key `source` or
+   * `interestId` cannot land on top of the context added below, which is a
+   * collision no amount of care in the admin could rule out.
+   *
+   * n8n does not read `custom` and does not need to. Those answers are kept in
+   * `submissions` and shown in the admin, which is what the client is told when
+   * they add a question.
+   */
+  const fields: Record<string, string> = {};
+  const custom: Record<string, string> = {};
+
+  for (const field of form.fields) {
+    const value = payload[field.name];
+    const text = typeof value === "string" ? value.trim() : "";
+    const answer = text.slice(0, MAX_FIELD_LENGTH);
+
+    if (isCoreField(field.name)) {
+      fields[PAYLOAD_KEY[field.name] ?? field.name] = answer;
+    } else {
+      custom[field.name] = answer;
+    }
+  }
 
   /* ---------------------------------------------------------------- */
   /* Context                                                           */
@@ -190,6 +208,10 @@ export async function POST(request: Request) {
     submittedAt: new Date().toISOString(),
     ...fields,
     ...context,
+    // Always present, empty or not, for the same reason the core keys are: a
+    // shape that changes with the form is a shape nothing downstream can rely
+    // on.
+    custom,
   };
 
   /**

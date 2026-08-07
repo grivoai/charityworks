@@ -1049,3 +1049,31 @@ a.admin-card:hover {
   font-size: 13px;
   background: #fff;
 }
+
+/* An entry that cannot be removed, where its remove button would have been.
+   A gap there would read as a button that failed to render. */
+.admin-icon.is-held {
+  cursor: help;
+  color: var(--muted);
+  opacity: 0.7;
+  border-color: transparent;
+  font-size: 10px;
+}
+
+/* Answers to questions the client added themselves. */
+.admin-enquiry-custom {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
+}
+/* Not uppercased, deliberately: this is the question the client typed, and
+   restyling their wording is how "How did you hear about us?" becomes
+   something they did not write. */
+.admin-enquiry-custom dt {
+  font-size: 12.5px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.admin-enquiry-custom dd { font-size: 14px; line-height: 1.5; }

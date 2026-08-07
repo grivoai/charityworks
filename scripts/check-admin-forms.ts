@@ -20,7 +20,12 @@ import { pageSchemas } from "@/content/schema";
 import type { PageSlug } from "@/content/types";
 import type { FieldNode } from "@/lib/admin/field-node";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
-import { locksForPage } from "@/lib/admin/locks";
+import { CORE_FORM_FIELDS, locksForPage } from "@/lib/admin/locks";
+import {
+  FormWriteError,
+  applyContactFormRules,
+  isCoreField,
+} from "@/lib/admin/form-write";
 import { coerceToTree, stableStringify } from "@/lib/admin/coerce";
 
 import { homePage } from "@/content/pages/home";
@@ -166,11 +171,7 @@ const contactTree = buildFieldTree(pageSchemas.contact, locksForPage("contact"))
 const contactSurvey = { fields: 0, opaque: [] as string[], locked: [] as string[] };
 survey(contactTree, "", contactSurvey);
 
-for (const expected of [
-  "form.fields.*.name",
-  "form.fields (fixed length)",
-  "seo.path",
-]) {
+for (const expected of ["form.fields.*.name", "seo.path"]) {
   if (!contactSurvey.locked.includes(expected)) {
     fail(
       `the contact page is missing the lock on "${expected}" — ` +
@@ -220,6 +221,77 @@ if (failures === 0) {
 }
 
 console.log(`\n  ${totalFields} editable fields across 8 pages`);
+
+/* 6. Adding a question is offered, so the rules that make it safe must hold.
+ *
+ * Pure functions, so every case runs here rather than needing a browser and a
+ * database. Each one is a way the enquiry pipeline breaks without erroring:
+ * a question that loses its answers, two questions filed under one key, or a
+ * core question quietly going missing. */
+const contactNow = contactPage as unknown as {
+  form: { fields: { id: string; name: string; label: string }[] };
+};
+type ContactField = (typeof contactNow)["form"]["fields"][number];
+const clone = () => JSON.parse(JSON.stringify(contactNow)) as typeof contactNow;
+
+/* An unchanged save must leave every key exactly as it was. */
+const untouched = applyContactFormRules(clone(), contactNow) as typeof contactNow;
+if (
+  untouched.form.fields.map((f) => f.name).join(",") !==
+  contactNow.form.fields.map((f) => f.name).join(",")
+) {
+  fail("saving the contact form without editing it would change a field name");
+}
+
+/* A new question gets a key from its wording, prefixed so it can never collide
+   with a core key or with the context the endpoint adds to every lead. */
+const added = clone();
+added.form.fields.push({
+  id: "field-new",
+  name: "",
+  label: "How did you hear about us?",
+} as ContactField);
+const withNew = applyContactFormRules(added, contactNow) as typeof contactNow;
+const generated = withNew.form.fields[withNew.form.fields.length - 1].name;
+if (generated !== "custom_how_did_you_hear_about_us") {
+  fail(`a new question was keyed "${generated}"`);
+}
+if (isCoreField(generated)) {
+  fail(`a new question was keyed as a core field: "${generated}"`);
+}
+
+/* Two questions worded the same must not be filed under one key: the second
+   answer would overwrite the first, and nothing would say so. */
+const twice = clone();
+twice.form.fields.push(
+  { id: "field-a", name: "", label: "Anything else?" } as ContactField,
+  { id: "field-b", name: "", label: "Anything else?" } as ContactField
+);
+const deduped = applyContactFormRules(twice, contactNow) as typeof contactNow;
+const keys = deduped.form.fields.map((f) => f.name);
+if (new Set(keys).size !== keys.length) {
+  fail(`two questions ended up under one key: ${keys.join(", ")}`);
+}
+
+/* Losing one of the six must be refused outright. */
+for (const core of CORE_FORM_FIELDS) {
+  const without = clone();
+  without.form.fields = without.form.fields.filter((f) => f.name !== core);
+  let refused = false;
+  try {
+    applyContactFormRules(without, contactNow);
+  } catch (error) {
+    refused = error instanceof FormWriteError;
+  }
+  if (!refused) {
+    fail(`removing the "${core}" question was allowed — the pipeline reads it`);
+  }
+}
+if (failures === 0) {
+  console.log(
+    "  ok    a question can be added, and the six core ones cannot be lost"
+  );
+}
 
 if (failures > 0) {
   console.error(`\n  ${failures} check(s) failed\n`);

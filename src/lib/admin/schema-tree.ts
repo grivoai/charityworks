@@ -7,7 +7,7 @@ import type {
   ObjectNode,
   StringNode,
 } from "@/lib/admin/field-node";
-import { findLock, type LockRule } from "@/lib/admin/locks";
+import { findLock, findRule, type LockRule } from "@/lib/admin/locks";
 
 /**
  * Turns a Zod schema into a tree of plain field descriptions the admin can render.
@@ -290,12 +290,22 @@ function toNode(schema: Internal, ctx: Context): FieldNode {
         locks: ctx.locks,
       });
       const fixedLength = findLock(ctx.shapePath, "fixed-length", ctx.locks);
+      const protectRule = findRule(ctx.shapePath, "protected-entries", ctx.locks);
+      const protect =
+        protectRule?.key && protectRule.values
+          ? {
+              key: protectRule.key,
+              values: [...protectRule.values],
+              reason: protectRule.reason,
+            }
+          : undefined;
       const node: ArrayNode = {
         ...base,
         kind: "array",
         element,
         template: blankFor(element),
         ...(fixedLength ? { fixedLength } : {}),
+        ...(protect ? { protect } : {}),
       };
       return node;
     }

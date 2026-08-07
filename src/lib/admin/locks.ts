@@ -14,9 +14,32 @@ import type { PageSlug } from "@/content/types";
 export interface LockRule {
   /** Dotted path, with `*` matching any array index. */
   pattern: string;
-  mode: "readonly" | "fixed-length";
+  mode: "readonly" | "fixed-length" | "protected-entries";
   reason: string;
+  /**
+   * For `protected-entries`: an entry whose `key` field holds one of `values`
+   * cannot be removed. The list can still grow, and everything else about a
+   * protected entry stays editable.
+   */
+  key?: string;
+  values?: string[];
 }
+
+/**
+ * The six questions the enquiry pipeline reads, by the key each is filed under.
+ *
+ * The one list, imported by the lock below, by the save that refuses to lose
+ * one, and by the endpoint that separates these answers from the client's own.
+ * Three copies of six strings is how they come to disagree.
+ */
+export const CORE_FORM_FIELDS = [
+  "name",
+  "org",
+  "email",
+  "phone",
+  "date",
+  "message",
+] as const;
 
 /** Applies to every page. */
 export const COMMON_LOCKS: LockRule[] = [
@@ -108,16 +131,26 @@ export const PAGE_LOCKS: Partial<Record<PageSlug, LockRule[]>> = {
       pattern: "form.fields.*.name",
       mode: "readonly",
       reason:
-        "The name this answer is filed under. The enquiry pipeline reads these " +
-        "exact keys, so it is fixed — the label above it is what visitors see, " +
-        "and that is yours to change.",
+        "The name this answer is filed under. It is set when the question is " +
+        "added and then fixed, because the enquiry pipeline reads these exact " +
+        "keys — the label above it is what visitors see, and that is yours.",
     },
     {
+      /**
+       * The list grows; six of its entries do not go away.
+       *
+       * Those six are the enquiry pipeline's contract — n8n writes them to
+       * fixed spreadsheet columns and `email` is how anyone gets replied to.
+       * Everything else about them is editable: wording, placeholder, whether
+       * an answer is required, and where they sit.
+       */
       pattern: "form.fields",
-      mode: "fixed-length",
+      mode: "protected-entries",
+      key: "name",
+      values: [...CORE_FORM_FIELDS],
       reason:
-        "Adding or removing a question changes what the enquiry pipeline " +
-        "receives, so it is done in the form builder rather than here.",
+        "These six questions are the ones the enquiry system expects, so they " +
+        "cannot be removed. Reword them freely, and add your own below.",
     },
   ],
 };
@@ -181,6 +214,14 @@ export function findLock(
   mode: LockRule["mode"],
   locks: LockRule[]
 ): string | undefined {
-  return locks.find((l) => l.mode === mode && matchesPattern(path, l.pattern))
-    ?.reason;
+  return findRule(path, mode, locks)?.reason;
+}
+
+/** The rule itself, for the modes that carry more than a reason. */
+export function findRule(
+  path: string,
+  mode: LockRule["mode"],
+  locks: LockRule[]
+): LockRule | undefined {
+  return locks.find((l) => l.mode === mode && matchesPattern(path, l.pattern));
 }

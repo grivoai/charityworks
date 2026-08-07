@@ -14,6 +14,8 @@ import { coerceToTree, deepEqual } from "@/lib/admin/coerce";
 import type { FieldErrors } from "@/lib/admin/field-node";
 import { locksForPage } from "@/lib/admin/locks";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
+import { readPageDocument } from "@/lib/admin/page-read";
+import { FormWriteError, applyContactFormRules } from "@/lib/admin/form-write";
 import {
   ensureBaseline,
   getRevision,
@@ -130,20 +132,6 @@ export interface SaveState {
 /** One page's content is a JSON document; a megabyte is far more than any of them. */
 const MAX_PAYLOAD_BYTES = 512 * 1024;
 
-interface PageRow {
-  data: unknown;
-}
-
-async function readPage(slug: PageSlug): Promise<PageRow | null> {
-  const { data, error } = await getServiceClient()
-    .from("pages")
-    .select("data")
-    .eq("slug", slug)
-    .maybeSingle<PageRow>();
-
-  if (error) throw new Error(`could not read the page: ${error.message}`);
-  return data;
-}
 
 /**
  * Validates, stores and publishes one page.
@@ -189,13 +177,13 @@ export async function savePage(
    * not just a disabled input. `seo.path` is the one that matters most on a
    * page — the sitemap is built from it.
    */
-  let current: PageRow | null;
+  let current: unknown;
   try {
-    current = await readPage(slug);
+    current = await readPageDocument(slug);
   } catch (error) {
     return { message: (error as Error).message };
   }
-  if (!current) {
+  if (current === null) {
     return { message: "That page is missing from the database." };
   }
 
@@ -205,7 +193,24 @@ export async function savePage(
    * the page's `slug` above all — from the server rather than the request.
    */
   const tree = buildFieldTree(pageSchemas[slug], locksForPage(slug));
-  const coerced = coerceToTree(submitted, tree, current.data);
+  let coerced = coerceToTree(submitted, tree, current);
+
+  /**
+   * One page has rules a schema cannot state.
+   *
+   * The contact form is the enquiry pipeline's contract, so a save has to give
+   * a newly added question a key and refuse one that would drop a question the
+   * pipeline reads. Before validation, because a new question has no key yet
+   * and would otherwise fail on an input nobody was shown.
+   */
+  if (slug === "contact") {
+    try {
+      coerced = applyContactFormRules(coerced, current);
+    } catch (error) {
+      if (error instanceof FormWriteError) return { message: error.message };
+      throw error;
+    }
+  }
 
   const parsed = pageSchemas[slug].safeParse(coerced);
   if (!parsed.success) {
@@ -220,7 +225,7 @@ export async function savePage(
   // A save that changes nothing should not add a version. Otherwise the history
   // fills with identical entries and stops being useful for finding the edit
   // someone actually wants back.
-  if (deepEqual(current.data, next)) {
+  if (deepEqual(current, next)) {
     return { ok: true, unchanged: true, data: next, savedAt: new Date().toISOString() };
   }
 
@@ -229,7 +234,7 @@ export async function savePage(
     await ensureBaseline({
       entity: "page",
       entityId: slug,
-      data: current.data,
+      data: current,
       adminId: admin.id,
     });
   } catch (error) {
@@ -331,17 +336,19 @@ export async function restorePageRevision(
     };
   }
 
-  const current = await readPage(slug);
-  if (!current) return { message: "That page is missing from the database." };
+  const current = await readPageDocument(slug);
+  if (current === null) {
+    return { message: "That page is missing from the database." };
+  }
 
-  if (deepEqual(current.data, parsed.data)) {
+  if (deepEqual(current, parsed.data)) {
     return { message: "That version is already the one showing on the site." };
   }
 
   await ensureBaseline({
     entity: "page",
     entityId: slug,
-    data: current.data,
+    data: current,
     adminId: admin.id,
   });
 

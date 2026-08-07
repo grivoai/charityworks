@@ -346,6 +346,18 @@ function ArrayField({
   const items = Array.isArray(value) ? value : [];
   const editable = !node.fixedLength;
 
+  /**
+   * Which entries cannot be removed.
+   *
+   * Read off the entry itself rather than its position, so reordering the list
+   * cannot move the protection onto a different entry.
+   */
+  const protectedEntry = (item: unknown): boolean => {
+    if (!node.protect || !item || typeof item !== "object") return false;
+    const held = (item as Record<string, unknown>)[node.protect.key];
+    return node.protect.values.includes(String(held));
+  };
+
   const replace = (index: number, next: unknown) =>
     onChange(items.map((item, i) => (i === index ? next : item)));
 
@@ -368,6 +380,9 @@ function ArrayField({
       {node.description && <p className="admin-help">{node.description}</p>}
       {node.fixedLength && (
         <p className="admin-help admin-help-lock">{node.fixedLength}</p>
+      )}
+      {node.protect && (
+        <p className="admin-help admin-help-lock">{node.protect.reason}</p>
       )}
 
       {items.length === 0 && <p className="admin-list-empty">Nothing here yet.</p>}
@@ -408,7 +423,7 @@ function ArrayField({
                     >
                       ↓
                     </button>
-                    {editable && (
+                    {editable && !protectedEntry(item) && (
                       <button
                         type="button"
                         className="admin-icon admin-icon-danger"
@@ -420,6 +435,15 @@ function ArrayField({
                       >
                         ✕
                       </button>
+                    )}
+                    {editable && protectedEntry(item) && (
+                      <span
+                        className="admin-icon is-held"
+                        title={node.protect?.reason}
+                        aria-label="This one cannot be removed"
+                      >
+                        ●
+                      </span>
                     )}
                   </div>
                 </div>
