@@ -122,6 +122,48 @@ export const PAGE_LOCKS: Partial<Record<PageSlug, LockRule[]>> = {
   ],
 };
 
+/**
+ * Locks for a catalog category.
+ *
+ * A category is assembled from three tables, and two of its fields are
+ * load-bearing in ways nothing on the page hints at.
+ */
+export const CATEGORY_LOCKS: LockRule[] = [
+  {
+    pattern: "seo.path",
+    mode: "readonly",
+    reason:
+      "The page's address, built from the URL name below. It is set by the " +
+      "site's routing rather than typed here.",
+  },
+  {
+    pattern: "slug",
+    mode: "readonly",
+    reason:
+      "The category's web address. Changing it breaks every link already " +
+      "pointing at this page — including any in a sent email — so it is done " +
+      "deliberately rather than in passing.",
+  },
+  {
+    /**
+     * `catalog_groups` cascades on delete: removing a group takes its lots'
+     * rows with it. Those ids are what `?interest=` resolves through, so the
+     * one thing that must never happen silently is exactly what removing a
+     * group would do. Wording and order stay editable.
+     */
+    pattern: "groups",
+    mode: "fixed-length",
+    reason:
+      "Groups keep the lots inside them, and removing one would delete those " +
+      "lots outright rather than retiring them. Lots themselves can be added " +
+      "and removed freely.",
+  },
+];
+
+export function locksForCategory(): LockRule[] {
+  return CATEGORY_LOCKS;
+}
+
 /** Matches a dotted path against a pattern, where `*` stands for any segment. */
 export function matchesPattern(path: string, pattern: string): boolean {
   const a = path.split(".");

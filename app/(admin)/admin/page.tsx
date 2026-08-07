@@ -59,7 +59,7 @@ export default async function AdminDashboard() {
           </p>
         </Link>
 
-        <div className="admin-card" data-soon="true">
+        <Link href="/admin/catalog" className="admin-card">
           <h2>
             Auction catalog{" "}
             <span className="admin-count">
@@ -68,9 +68,9 @@ export default async function AdminDashboard() {
           </h2>
           <p>
             Categories and the lots inside them. Add an item, edit its details,
-            or archive one that has sold.
+            or take one off the site when it has sold.
           </p>
-        </div>
+        </Link>
 
         <div className="admin-card" data-soon="true">
           <h2>

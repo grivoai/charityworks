@@ -43,22 +43,24 @@ function RestoreButton({ label }: { label: string }) {
 export function RevisionList({
   slug,
   revisions,
+  action = restorePageRevision,
+  emptyMessage = "This page has not been edited yet, so there is nothing to go back to. " +
+    "The first save will record the wording it had beforehand.",
 }: {
   slug: string;
   revisions: RevisionView[];
+  /**
+   * Which restore to call. Defaults to the page one; the catalog passes its
+   * own, because putting a category back means rewriting three tables rather
+   * than one column.
+   */
+  action?: (state: RestoreState, formData: FormData) => Promise<RestoreState>;
+  emptyMessage?: string;
 }) {
-  const [state, formAction] = useActionState<RestoreState, FormData>(
-    restorePageRevision,
-    {}
-  );
+  const [state, formAction] = useActionState<RestoreState, FormData>(action, {});
 
   if (revisions.length === 0) {
-    return (
-      <div className="admin-empty">
-        This page has not been edited yet, so there is nothing to go back to.
-        The first save will record the wording it had beforehand.
-      </div>
-    );
+    return <div className="admin-empty">{emptyMessage}</div>;
   }
 
   return (
