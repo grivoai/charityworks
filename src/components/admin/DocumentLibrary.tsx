@@ -173,8 +173,10 @@ function CopyLink({ slug }: { slug: string }) {
 /* ------------------------------------------------------------------ */
 
 function AddDocument({
+  onStart,
   onDone,
 }: {
+  onStart: () => void;
   onDone: (result: DocumentResult) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
@@ -209,6 +211,9 @@ function AddDocument({
 
   const submit = async () => {
     if (!file) return setProblem("Choose a PDF first.");
+    // Clears whatever the last action said. A "Saved." from a minute ago
+    // sitting above an upload in progress is a sentence about the wrong thing.
+    onStart();
 
     const bad =
       fileProblem(file.name, file.size) ?? titleProblem(title) ?? slugProblem(slug);
@@ -345,9 +350,11 @@ function AddDocument({
 
 function LinkRow({
   link,
+  onStart,
   onDone,
 }: {
   link: DocumentLinkView;
+  onStart: () => void;
   onDone: (result: DocumentResult) => void;
 }) {
   const [renaming, setRenaming] = useState(false);
@@ -362,6 +369,7 @@ function LinkRow({
   const replace = async (file: File) => {
     const bad = fileProblem(file.name, file.size);
     if (bad) return setProblem(bad);
+    onStart();
 
     setProblem(null);
     setPercent(0);
@@ -406,6 +414,7 @@ function LinkRow({
               type="button"
               className="admin-btn"
               onClick={async () => {
+                onStart();
                 const result = await renameDocument({ slug: link.slug, title });
                 if (!result.ok) return setProblem(result.message);
                 setProblem(null);
@@ -506,6 +515,7 @@ function LinkRow({
               type="button"
               className="admin-btn admin-btn-danger"
               onClick={async () => {
+                onStart();
                 const result = await deleteDocumentLink(link.slug);
                 setConfirming(false);
                 if (!result.ok) return setProblem(result.message);
@@ -544,10 +554,12 @@ function LinkRow({
 function FileRow({
   file,
   links,
+  onStart,
   onDone,
 }: {
   file: DocumentFileView;
   links: DocumentLinkView[];
+  onStart: () => void;
   onDone: (result: DocumentResult) => void;
 }) {
   const [target, setTarget] = useState("");
@@ -585,6 +597,7 @@ function FileRow({
               className="admin-btn"
               disabled={!target}
               onClick={async () => {
+                onStart();
                 const result = await repointDocument({
                   slug: target,
                   uploadId: file.id,
@@ -606,6 +619,7 @@ function FileRow({
               type="button"
               className="admin-btn admin-btn-danger"
               onClick={async () => {
+                onStart();
                 const result = await deleteUpload(file.id);
                 setConfirming(false);
                 if (!result.ok) return setProblem(result.message);
@@ -645,6 +659,9 @@ export function DocumentLibrary({ links, files }: Props) {
   const router = useRouter();
   const [note, setNote] = useState<string | null>(null);
 
+  /** A new action begins: whatever the last one said no longer applies. */
+  const start = () => setNote(null);
+
   const done = (result: DocumentResult) => {
     if (!result.ok) return;
     setNote(result.note ?? "Saved.");
@@ -663,7 +680,7 @@ export function DocumentLibrary({ links, files }: Props) {
         </p>
       )}
 
-      <AddDocument onDone={done} />
+      <AddDocument onStart={start} onDone={done} />
 
       <section className="admin-doc-section">
         <h2>
@@ -683,7 +700,7 @@ export function DocumentLibrary({ links, files }: Props) {
         ) : (
           <ul className="admin-docs">
             {links.map((link) => (
-              <LinkRow key={link.slug} link={link} onDone={done} />
+              <LinkRow key={link.slug} link={link} onStart={start} onDone={done} />
             ))}
           </ul>
         )}
@@ -702,7 +719,13 @@ export function DocumentLibrary({ links, files }: Props) {
           </p>
           <ul className="admin-doc-files">
             {spare.map((file) => (
-              <FileRow key={file.id} file={file} links={links} onDone={done} />
+              <FileRow
+                key={file.id}
+                file={file}
+                links={links}
+                onStart={start}
+                onDone={done}
+              />
             ))}
           </ul>
         </section>
