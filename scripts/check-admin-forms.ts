@@ -166,13 +166,57 @@ const contactTree = buildFieldTree(pageSchemas.contact, locksForPage("contact"))
 const contactSurvey = { fields: 0, opaque: [] as string[], locked: [] as string[] };
 survey(contactTree, "", contactSurvey);
 
-for (const expected of ["form.fields.*.name", "form.fields (fixed length)", "seo.path"]) {
+for (const expected of [
+  "form.fields.*.name",
+  "form.fields (fixed length)",
+  "seo.path",
+]) {
   if (!contactSurvey.locked.includes(expected)) {
     fail(
       `the contact page is missing the lock on "${expected}" — ` +
         `the enquiry pipeline reads these keys`
     );
   }
+}
+
+/* 5. And a lock has to be a constraint, not a disabled input.
+ *
+ * A server action is an HTTP endpoint. Nothing makes a submission come from
+ * the form that was rendered, so "the input was greyed out" says only that the
+ * honest path does not offer the edit. Both of these would break something
+ * nobody would see: renaming `email` files enquiries under a key the pipeline
+ * does not read, and `seo.path` is what the sitemap is built from. */
+const contactContent = contactPage as unknown as Record<string, unknown>;
+const forged = JSON.parse(JSON.stringify(contactContent)) as {
+  seo: { path: string };
+  form: { fields: { name: string; label: string }[] };
+};
+forged.seo.path = "/somewhere-else";
+forged.form.fields[0].name = "stolen";
+// Reordered as well, so the entries cannot be matched up by position.
+forged.form.fields.reverse();
+
+const guarded = coerceToTree(forged, contactTree, contactContent) as typeof forged;
+
+if (guarded.seo.path !== (contactContent.seo as { path: string }).path) {
+  fail(`a submission changed the locked seo.path to "${guarded.seo.path}"`);
+}
+
+const storedNames = new Map(
+  (contactContent.form as { fields: { id: string; name: string }[] }).fields.map(
+    (field) => [field.id, field.name]
+  )
+);
+for (const field of guarded.form.fields as unknown as { id: string; name: string }[]) {
+  if (storedNames.get(field.id) !== field.name) {
+    fail(
+      `a submission changed a locked field name: ${field.id} became ` +
+        `"${field.name}" (stored: "${storedNames.get(field.id)}")`
+    );
+  }
+}
+if (failures === 0) {
+  console.log("\n  ok    a submission cannot change a locked value, even reordered");
 }
 
 console.log(`\n  ${totalFields} editable fields across 8 pages`);

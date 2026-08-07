@@ -187,8 +187,21 @@ export async function saveCategory(
     return { message: "The form's content could not be read. Please try again." };
   }
 
+  /**
+   * Read first: coercion takes a locked field's value from the stored category
+   * rather than from the request, so `slug` and `seo.path` cannot be changed by
+   * a submission that never went through the disabled input.
+   */
+  let current: AuctionItem | undefined;
+  try {
+    current = await readCategory(slug);
+  } catch (error) {
+    return { message: (error as Error).message };
+  }
+  if (!current) return { message: "That category is missing from the database." };
+
   const tree = buildFieldTree(auctionItemSchema, locksForCategory());
-  const coerced = coerceToTree(submitted, tree);
+  const coerced = coerceToTree(submitted, tree, current);
 
   const parsed = auctionItemSchema.safeParse(coerced);
   if (!parsed.success) {
@@ -198,14 +211,6 @@ export async function saveCategory(
     };
   }
   const next = parsed.data as AuctionItem;
-
-  let current: AuctionItem | undefined;
-  try {
-    current = await readCategory(slug);
-  } catch (error) {
-    return { message: (error as Error).message };
-  }
-  if (!current) return { message: "That category is missing from the database." };
 
   if (deepEqual(current, next)) {
     return { ok: true, unchanged: true, data: next, savedAt: new Date().toISOString() };

@@ -182,12 +182,30 @@ export async function savePage(
   }
 
   /**
+   * The stored page is read before the submission is rebuilt, not after.
+   *
+   * Coercion needs it: a locked field's value is taken from here rather than
+   * from the request, so that a lock is a constraint on what can be saved and
+   * not just a disabled input. `seo.path` is the one that matters most on a
+   * page — the sitemap is built from it.
+   */
+  let current: PageRow | null;
+  try {
+    current = await readPage(slug);
+  } catch (error) {
+    return { message: (error as Error).message };
+  }
+  if (!current) {
+    return { message: "That page is missing from the database." };
+  }
+
+  /**
    * Rebuild the document against the schema's own shape before validating it.
    * This drops any key the schema does not declare and takes fixed values —
    * the page's `slug` above all — from the server rather than the request.
    */
   const tree = buildFieldTree(pageSchemas[slug], locksForPage(slug));
-  const coerced = coerceToTree(submitted, tree);
+  const coerced = coerceToTree(submitted, tree, current.data);
 
   const parsed = pageSchemas[slug].safeParse(coerced);
   if (!parsed.success) {
@@ -198,16 +216,6 @@ export async function savePage(
   }
 
   const next = parsed.data;
-
-  let current: PageRow | null;
-  try {
-    current = await readPage(slug);
-  } catch (error) {
-    return { message: (error as Error).message };
-  }
-  if (!current) {
-    return { message: "That page is missing from the database." };
-  }
 
   // A save that changes nothing should not add a version. Otherwise the history
   // fills with identical entries and stops being useful for finding the edit

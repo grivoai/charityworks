@@ -13,11 +13,32 @@ import type { FieldNode } from "@/lib/admin/field-node";
  * request. A page's `slug` is a hidden literal, so no submission can change
  * which page it is claiming to be — the discriminator comes from the server.
  *
+ * A LOCKED FIELD IS ALSO TAKEN FROM THE SERVER, from `current` — the document
+ * as it stands. Until this was added, `locked` only disabled an input, and a
+ * disabled input is a statement to whoever is using the page rather than a
+ * constraint on what can be posted. Everything a lock protects is something
+ * that breaks invisibly when it changes: `seo.path` disagreeing with the
+ * routing, a category's `slug`, and the contact form's field names, which the
+ * lead pipeline reads and which nothing would error on.
+ *
+ * Passing no `current` keeps the old behaviour, which is what the check scripts
+ * want: they ask what a submission coerces to, not what a save would store.
+ *
  * Validation still happens afterwards, in Zod. This does not decide whether the
  * content is valid, only that its shape is the schema's rather than the
  * browser's.
  */
-export function coerceToTree(value: unknown, node: FieldNode): unknown {
+export function coerceToTree(
+  value: unknown,
+  node: FieldNode,
+  current?: unknown
+): unknown {
+  if (node.locked !== undefined && current !== undefined) {
+    // Not the submitted value, and not re-coerced either: it is already stored
+    // in the schema's shape, and coercing it again could only change it.
+    return current;
+  }
+
   switch (node.kind) {
     case "hidden":
       // Never from the request.
@@ -66,7 +87,36 @@ export function coerceToTree(value: unknown, node: FieldNode): unknown {
 
     case "array": {
       if (!Array.isArray(value)) return [];
-      return value.map((entry) => coerceToTree(entry, node.element));
+
+      /**
+       * Entries are matched to their stored selves by `id`, never by position.
+       *
+       * Reordering a list is an ordinary edit, so index N of the submission is
+       * routinely a different entry from index N of what is stored — matching
+       * by position would hand a locked value to the wrong entry, which is a
+       * worse outcome than not enforcing the lock at all. An entry with no
+       * match is new, and a new entry has no stored value to hold it to.
+       */
+      const stored = new Map<string, unknown>();
+      if (Array.isArray(current)) {
+        for (const entry of current) {
+          if (entry && typeof entry === "object" && "id" in (entry as object)) {
+            stored.set(String((entry as Record<string, unknown>).id), entry);
+          }
+        }
+      }
+
+      return value.map((entry) => {
+        const id =
+          entry && typeof entry === "object" && "id" in (entry as object)
+            ? String((entry as Record<string, unknown>).id)
+            : null;
+        return coerceToTree(
+          entry,
+          node.element,
+          id === null ? undefined : stored.get(id)
+        );
+      });
     }
 
     case "object": {
@@ -74,9 +124,13 @@ export function coerceToTree(value: unknown, node: FieldNode): unknown {
         return node.optional ? undefined : {};
       }
       const raw = value as Record<string, unknown>;
+      const from =
+        current && typeof current === "object" && !Array.isArray(current)
+          ? (current as Record<string, unknown>)
+          : undefined;
       const out: Record<string, unknown> = {};
       for (const { key, node: child } of node.fields) {
-        const coerced = coerceToTree(raw[key], child);
+        const coerced = coerceToTree(raw[key], child, from?.[key]);
         // An absent key is how the schema reads "not set". Writing `undefined`
         // into the object would serialise to null in JSONB.
         if (coerced !== undefined) out[key] = coerced;
