@@ -811,3 +811,57 @@ a.admin-card:hover {
   .admin-split { display: block; }
   .admin-preview { display: none; }
 }
+
+/* ---------------- enquiries ---------------- */
+
+.admin-enquiries { list-style: none; display: grid; gap: 12px; }
+
+.admin-enquiry {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-enquiry-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.admin-enquiry-who { font-weight: 600; font-size: 15px; }
+.admin-enquiry-when { margin-left: auto; font-size: 12.5px; color: var(--muted); }
+
+.admin-enquiry-contact {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.admin-enquiry-contact a { color: var(--green); }
+
+.admin-enquiry-message {
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 10px 12px;
+  background: #faf9f5;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  margin-bottom: 8px;
+  white-space: pre-wrap;
+}
+
+.admin-enquiry-meta { font-size: 12.5px; color: var(--muted); }
+
+.admin-enquiry-delivery { font-size: 12.5px; margin-top: 4px; }
+.admin-enquiry-delivery.is-good { color: #1f5c2b; }
+.admin-enquiry-delivery.is-warn { color: #7a5c12; }
+.admin-enquiry-delivery.is-bad  { color: #8d2018; font-weight: 500; }
+
+/* The chip already exists for history; these are its states. */
+.admin-chip.is-good { color: #1f5c2b; background: #edf6ee; border-color: #bfe0c4; }
+.admin-chip.is-warn { color: #7a5c12; background: #fdf6e6; border-color: #e6d5a8; }
+.admin-chip.is-bad  { color: #8d2018; background: #fbeceb; border-color: #edc3bf; }

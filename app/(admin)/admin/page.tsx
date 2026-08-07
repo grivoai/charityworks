@@ -72,7 +72,7 @@ export default async function AdminDashboard() {
           </p>
         </Link>
 
-        <div className="admin-card" data-soon="true">
+        <Link href="/admin/enquiries" className="admin-card">
           <h2>
             Enquiries <span className="admin-count">{show(submissions)}</span>
           </h2>
@@ -80,7 +80,7 @@ export default async function AdminDashboard() {
             Everyone who has filled in a form, and whether their details reached
             the follow-up automation.
           </p>
-        </div>
+        </Link>
 
         <div className="admin-card" data-soon="true">
           <h2>

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordDelivery, recordSubmission } from "@/lib/submissions";
 import { getPage } from "@/lib/content";
 import { getInterestRegistry } from "@/lib/interests";
 import {
@@ -191,10 +192,21 @@ export async function POST(request: Request) {
     ...context,
   };
 
-  const delivery = await deliver(lead);
+  /**
+   * Filed before delivery is attempted, so an enquiry that dies mid-delivery
+   * still exists. Failure here is swallowed: the person submitting has already
+   * pressed the button, and a database problem must not cost them their
+   * enquiry or stop it reaching the pipeline.
+   */
+  const filed = await recordSubmission(lead);
 
-  // Always logged, whatever the webhook did. This is the fallback record.
-  console.info("[contact] lead", { delivery, ...lead });
+  const delivery = await deliver(lead);
+  if (filed) await recordDelivery(lead.leadId, delivery);
+
+  // Always logged, whatever the webhook did. This is the fallback record, and
+  // it stays even now the enquiry is also a row: the log is what survives a
+  // database outage, which is precisely when the row does not exist.
+  console.info("[contact] lead", { delivery, filed, ...lead });
 
   // The submitter is told the enquiry succeeded even when the webhook failed:
   // from their side it did, we hold their details, and an error here would only
