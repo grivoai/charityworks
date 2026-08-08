@@ -26,7 +26,14 @@ import { isDatabaseConfigured } from "@/lib/content-source";
  * `pending`, which is visible and recoverable.
  */
 
-/** The seeded contact form. The tables exist; nothing renders from them yet. */
+/**
+ * Which form an enquiry came from.
+ *
+ * A plain label now, not a foreign key: the `forms` and `form_fields` tables
+ * were dropped once the contact page document became the single definition of
+ * the form. The column is kept because there will be a second form one day —
+ * and because it costs nothing to be able to tell them apart in hindsight.
+ */
 const CONTACT_FORM_ID = "contact";
 
 export type DeliveryResult = "sent" | "not-configured" | "failed";

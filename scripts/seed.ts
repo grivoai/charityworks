@@ -21,7 +21,6 @@ import { createClient } from "@supabase/supabase-js";
 
 import {
   auctionItemSchema,
-  contactPageSchema,
   pageSchemas,
   siteContentSchema,
 } from "../src/content/schema";
@@ -193,64 +192,6 @@ async function seedCatalog() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Contact form                                                        */
-/* ------------------------------------------------------------------ */
-
-/**
- * Field names the lead pipeline reads.
- *
- * The n8n "CW — Website Lead Intake" workflow maps these to fixed spreadsheet
- * columns and an SMS follow-up, so they are seeded `locked = true`: the admin
- * can reword a label but cannot rename or remove the field. A renamed key would
- * not error anywhere — leads would simply stop arriving with that column
- * filled, which looks like a quiet week rather than a bug.
- */
-const LOCKED_FIELD_NAMES = new Set([
-  "name",
-  "org",
-  "email",
-  "phone",
-  "date",
-  "message",
-]);
-
-async function seedContactForm() {
-  const page = check("contactPage", contactPageSchema, contactPage);
-  const { form } = page;
-
-  await must(
-    "forms",
-    db.from("forms").upsert({
-      id: "contact",
-      name: "Contact form",
-      submit_label: form.submitLabel,
-      success_message: form.successMessage,
-      error_message: form.errorMessage,
-    })
-  );
-
-  const fieldRows = form.fields.map((field, index) => ({
-    id: field.id,
-    form_id: "contact",
-    name: field.name,
-    label: field.label,
-    type: field.type,
-    placeholder: field.placeholder ?? null,
-    required: field.required,
-    width: field.width,
-    position: index,
-    locked: LOCKED_FIELD_NAMES.has(field.name),
-  }));
-
-  await must("form_fields", db.from("form_fields").upsert(fieldRows));
-
-  const lockedCount = fieldRows.filter((f) => f.locked).length;
-  console.log(
-    `  forms           1 form, ${fieldRows.length} fields (${lockedCount} locked)`
-  );
-}
-
-/* ------------------------------------------------------------------ */
 
 async function main() {
   console.log(`\nSeeding ${url!.replace(/^https?:\/\//, "")}\n`);
@@ -258,7 +199,6 @@ async function main() {
   await seedSite();
   await seedPages();
   await seedCatalog();
-  await seedContactForm();
 
   console.log(
     "\n  Done. With NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY both\n" +

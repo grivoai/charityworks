@@ -243,9 +243,15 @@ why they are shaped that way.
 | `catalog_categories` / `catalog_groups` / `catalog_items` | The catalog, normalized | Independent lifecycles: adding a lot without a developer is requirement 5. Needs listing, reordering and concurrent edits that do not clobber a shared blob |
 | `uploads` | Media library, images and PDFs | Provenance and dedupe by checksum |
 | `document_links` | `/d/<slug>` → an upload | A stable public link that survives replacing the file, so next quarter's newsletter reuses the same URL |
-| `forms` / `form_fields` | The form builder's definitions | `locked` is the column that protects the n8n contract — see collision 1 |
 | `submissions` | Every lead, plus delivery state | `raw` + `webhook_status` make a failed delivery replayable |
 | `audit_log` | Who changed what | Useful the first time two people disagree about an edit |
+
+**`forms` and `form_fields` were dropped** on 2026-08-08. They were seeded and
+never read: the contact page document is the single definition of the form, and
+`locks.ts` already does in code — with reasons the client can read — what
+`form_fields.locked` was meant to do as data. Two places that can disagree about
+which fields are protected is worse than one. `submissions.form_id` survives as a
+plain text label, so a second form is still tellable apart later.
 
 Three decisions inside that file are worth stating plainly, because they are not
 the obvious choice:
@@ -435,6 +441,16 @@ during hydration, ahead of anything added later, so `stopPropagation()` does not
 reach it. Cancelling at the Navigation API instead leaves the URL saying `/faqs`
 while React has already rendered the contact page into the frame — a preview
 lying about what it shows, which is worse than the problem.
+
+**Six fields render nowhere, and stay that way.** `home.heading`,
+`home.donor.header.eyebrow`, `home.closing.cta`, `auctioneers.intro.title`,
+`auctioneers.differentiators.header.lede` and `contact.intro.title` hold content
+no component reads — three shared shapes (`basePage`, `sectionHeaderSchema`,
+`ctaRefSchema`) are simply wider than some routes use. Reviewed on 2026-08-08 and
+deliberately left: each is locked with a reason the client can read, removing one
+would mean a schema change plus a migration for nothing visible, and the only
+non-duplicate among them (`contact.intro.title`) repeats the home page's closing
+title, so rendering it would say the same sentence twice.
 
 **The catalog editor gets the same column.** A category is one record on four
 surfaces — its own page, the tiles on the home and auction items pages, and the
