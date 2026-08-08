@@ -1,5 +1,5 @@
 /**
- * Proves the assumptions the document links are built on.
+ * Proves the assumptions both buckets are built on.
  *
  * This one is unusual among the checks: the other three read content and
  * compare shapes, but the upload path rests on claims about a system nobody
@@ -24,18 +24,23 @@
  *
  * Everything it creates, it deletes. Run it against the real database:
  *
- *   npm run check:documents
+ *   npm run check:uploads
  */
 
 import { createHash } from "node:crypto";
 
 import { getServiceClient } from "@/lib/supabase";
 import { MAX_DOCUMENT_BYTES } from "@/lib/admin/document-rules";
+import { MAX_IMAGE_BYTES } from "@/lib/admin/image-rules";
+import { probeImage } from "@/lib/admin/image-probe";
 import {
   DOCUMENT_BUCKET,
+  IMAGE_BUCKET,
   UploadError,
   ingestDocument,
+  ingestImage,
   signDocumentUpload,
+  signImageUpload,
 } from "@/lib/admin/uploads";
 
 let failures = 0;
@@ -77,19 +82,21 @@ async function put(url: string, body: Buffer): Promise<Response> {
  * The first version of this script used `download` and reported two files as
  * "left behind" that had in fact been deleted correctly.
  */
-async function exists(path: string): Promise<boolean> {
+async function existsIn(bucket: string, path: string): Promise<boolean> {
   const at = path.lastIndexOf("/");
   const { data } = await getServiceClient()
-    .storage.from(DOCUMENT_BUCKET)
+    .storage.from(bucket)
     .list(path.slice(0, at), { search: path.slice(at + 1), limit: 1 });
   return (data ?? []).some((entry) => entry.name === path.slice(at + 1));
 }
 
-/** Every object in the bucket, as full paths. Storage has no recursive list. */
-async function storedPaths(): Promise<string[]> {
+const exists = (path: string) => existsIn(DOCUMENT_BUCKET, path);
+
+/** Every object in a bucket, as full paths. Storage has no recursive list. */
+async function storedPaths(bucket: string): Promise<string[]> {
   const supabase = getServiceClient();
   const out: string[] = [];
-  const roots = await supabase.storage.from(DOCUMENT_BUCKET).list("", { limit: 1000 });
+  const roots = await supabase.storage.from(bucket).list("", { limit: 1000 });
 
   for (const entry of roots.data ?? []) {
     // A file at the root carries metadata; a folder does not.
@@ -98,13 +105,95 @@ async function storedPaths(): Promise<string[]> {
       continue;
     }
     const inside = await supabase.storage
-      .from(DOCUMENT_BUCKET)
+      .from(bucket)
       .list(entry.name, { limit: 1000 });
     for (const file of inside.data ?? []) {
       if (file.metadata) out.push(`${entry.name}/${file.name}`);
     }
   }
   return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Synthesised images                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Structurally real files, built here rather than committed as fixtures.
+ *
+ * The point of each is its header, which is the only part `probeImage` reads —
+ * and building them in the open means the expected dimensions are visible next
+ * to the assertion instead of being a property of a binary nobody can inspect.
+ */
+function crc32(bytes: Buffer): number {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let i = 0; i < 8; i += 1) {
+      crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const head = Buffer.alloc(4);
+  head.writeUInt32BE(data.length, 0);
+  const body = Buffer.concat([Buffer.from(type, "latin1"), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body), 0);
+  return Buffer.concat([head, body, crc]);
+}
+
+function samplePng(width: number, height: number): Buffer {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 6; // truecolour with alpha
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk("IHDR", ihdr),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+function sampleJpeg(width: number, height: number): Buffer {
+  const sof = Buffer.alloc(19);
+  sof.writeUInt16BE(0xffc0, 0);
+  sof.writeUInt16BE(17, 2); // segment length
+  sof[4] = 8; // precision
+  sof.writeUInt16BE(height, 5);
+  sof.writeUInt16BE(width, 7);
+  sof[9] = 3; // components
+  return Buffer.concat([
+    Buffer.from([0xff, 0xd8]),
+    // An APP0 segment first, so the parser has to walk rather than assume.
+    Buffer.from([0xff, 0xe0, 0x00, 0x10]),
+    Buffer.from("JFIF\u0000\u0001\u0001\u0000\u0000\u0001\u0000\u0001\u0000\u0000", "latin1"),
+    sof,
+    Buffer.from([0xff, 0xd9]),
+  ]);
+}
+
+function sampleWebp(width: number, height: number): Buffer {
+  const body = Buffer.alloc(22);
+  body.write("WEBP", 0, "latin1");
+  body.write("VP8X", 4, "latin1");
+  body.writeUInt32LE(10, 8); // chunk size
+  body[12] = 0x10; // flags
+  const w = width - 1;
+  const h = height - 1;
+  body[16] = w & 0xff;
+  body[17] = (w >> 8) & 0xff;
+  body[18] = (w >> 16) & 0xff;
+  body[19] = h & 0xff;
+  body[20] = (h >> 8) & 0xff;
+  body[21] = (h >> 16) & 0xff;
+  const head = Buffer.alloc(8);
+  head.write("RIFF", 0, "latin1");
+  head.writeUInt32LE(body.length, 4);
+  return Buffer.concat([head, body]);
 }
 
 async function main(): Promise<void> {
@@ -264,34 +353,166 @@ async function main(): Promise<void> {
   }
 
   /* ---------------------------------------------------------------- */
-  /* 5. Nothing orphaned                                               */
+  /* Photographs                                                       */
   /* ---------------------------------------------------------------- */
-  const rows = await supabase
-    .from("uploads")
-    .select("id, path, filename")
-    .eq("bucket", DOCUMENT_BUCKET)
-    .returns<{ id: string; path: string; filename: string }[]>();
 
-  if (rows.error) {
-    fail(`the library could not be read: ${rows.error.message}`);
+  const imageBucket = await supabase.storage.getBucket(IMAGE_BUCKET);
+  if (imageBucket.error || !imageBucket.data) {
+    fail(`the "${IMAGE_BUCKET}" bucket could not be read: ${imageBucket.error?.message}`);
   } else {
-    const known = new Map((rows.data ?? []).map((row) => [row.path, row]));
-    const stored = new Set(await storedPaths());
+    if (imageBucket.data.file_size_limit !== MAX_IMAGE_BYTES) {
+      fail(
+        `the images bucket allows ${imageBucket.data.file_size_limit ?? "any size"} ` +
+          `but MAX_IMAGE_BYTES is ${MAX_IMAGE_BYTES} — re-apply ` +
+          `supabase/migrations/0003_image_storage.sql`
+      );
+    } else {
+      ok(`the images bucket refuses anything over ${MAX_IMAGE_BYTES / (1024 * 1024)} MB`);
+    }
 
-    /* A row with no object is a link that 404s. */
-    for (const [path, row] of known) {
-      if (!stored.has(path)) {
-        fail(`"${row.filename}" is in the library but its file is gone (${path})`);
+    const types = [...(imageBucket.data.allowed_mime_types ?? [])].sort();
+    const wanted = ["image/jpeg", "image/png", "image/webp"];
+    if (types.join(",") !== wanted.join(",")) {
+      fail(
+        `the images bucket accepts ${types.length ? types.join(", ") : "any type"}. ` +
+          `It is public and served from a supabase.co origin, so an SVG there ` +
+          `would be a scriptable document on that domain`
+      );
+    } else {
+      ok("the images bucket accepts JPG, PNG and WebP only — no SVG");
+    }
+  }
+
+  /* The header parsers are hand-written, so every format is read back. A wrong
+     answer here is silent: the row simply records a size nobody checks. */
+  for (const [label, bytes, expected] of [
+    ["PNG", samplePng(800, 600), { format: "image/png", width: 800, height: 600 }],
+    ["JPEG", sampleJpeg(1024, 768), { format: "image/jpeg", width: 1024, height: 768 }],
+    ["WebP", sampleWebp(1200, 900), { format: "image/webp", width: 1200, height: 900 }],
+  ] as const) {
+    const probe = probeImage(bytes as Buffer);
+    const got = probe
+      ? `${probe.format} ${probe.width}x${probe.height}`
+      : "not recognised";
+    const want = `${expected.format} ${expected.width}x${expected.height}`;
+    if (got !== want) {
+      fail(`a ${label} header was read as ${got}, expected ${want}`);
+    } else {
+      ok(`a ${label} header gives its real format and size (${want})`);
+    }
+  }
+
+  if (probeImage(Buffer.from("<svg xmlns='http://www.w3.org/2000/svg'/>"))) {
+    fail("an SVG was recognised as an image this accepts");
+  } else {
+    ok("an SVG is not recognised as an image");
+  }
+
+  /* And the round trip: a real upload, and one that lies about its format. */
+  const images: string[] = [];
+  const imageRows: string[] = [];
+  try {
+    const good = await signImageUpload("photo.png");
+    const put1 = await fetch(good.signedUrl, {
+      method: "PUT",
+      headers: { "content-type": "image/png" },
+      body: new Uint8Array(samplePng(1400, 933)),
+    });
+    if (!put1.ok) {
+      fail(`an image upload was refused by the bucket (${put1.status})`);
+    } else {
+      const added = await ingestImage({
+        path: good.path,
+        filename: "photo.png",
+        adminId: null,
+      });
+      imageRows.push(added.uploadId);
+      images.push(good.path);
+      if (added.width !== 1400 || added.height !== 933) {
+        fail(`the stored size was ${added.width}x${added.height}, expected 1400x933`);
+      } else if (!added.src.includes("/storage/v1/object/public/images/")) {
+        fail(`the returned src is not a public image URL: ${added.src}`);
+      } else {
+        ok("a photograph is stored with the size read from its own header");
       }
     }
 
-    /* An object with no row is invisible in the admin, so it is never cleaned
-       up and never appears — it just occupies a public bucket. */
-    for (const path of stored) {
-      if (!known.has(path)) fail(`"${path}" is in the bucket with no row`);
+    /* A JPEG named .png. The bucket cannot catch this — the declared type
+       matches the name, and the name is the thing that is wrong. */
+    const liar = await signImageUpload("screenshot.png");
+    const put2 = await fetch(liar.signedUrl, {
+      method: "PUT",
+      headers: { "content-type": "image/png" },
+      body: new Uint8Array(sampleJpeg(100, 100)),
+    });
+    if (put2.ok) {
+      let refused = false;
+      try {
+        const wrong = await ingestImage({
+          path: liar.path,
+          filename: "screenshot.png",
+          adminId: null,
+        });
+        imageRows.push(wrong.uploadId);
+        images.push(liar.path);
+      } catch (error) {
+        refused = error instanceof UploadError;
+      }
+      if (!refused) {
+        fail("a JPEG named .png was accepted");
+      } else if (await existsIn(IMAGE_BUCKET, liar.path)) {
+        images.push(liar.path);
+        fail("a refused photograph was left behind in the bucket");
+      } else {
+        ok("a file whose header disagrees with its name is refused and deleted");
+      }
+    }
+  } catch (error) {
+    fail(`the photograph round trip did not complete: ${(error as Error).message}`);
+  } finally {
+    if (imageRows.length > 0) {
+      await supabase.from("uploads").delete().in("id", imageRows);
+    }
+    if (images.length > 0) {
+      await supabase.storage.from(IMAGE_BUCKET).remove(images);
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* 5. Nothing orphaned                                               */
+  /* ---------------------------------------------------------------- */
+  /**
+   * Both buckets, the same two questions.
+   *
+   * A row with no object is a link or an image that 404s. An object with no row
+   * is invisible in the admin, so it is never cleaned up and never appears — it
+   * just occupies a public bucket. Neither says anything at the time it happens.
+   */
+  for (const bucket of [DOCUMENT_BUCKET, IMAGE_BUCKET]) {
+    const rows = await supabase
+      .from("uploads")
+      .select("id, path, filename")
+      .eq("bucket", bucket)
+      .returns<{ id: string; path: string; filename: string }[]>();
+
+    if (rows.error) {
+      fail(`the ${bucket} library could not be read: ${rows.error.message}`);
+      continue;
     }
 
-    ok(`${known.size} file(s) in the library, ${stored.size} object(s) stored`);
+    const known = new Map((rows.data ?? []).map((row) => [row.path, row]));
+    const stored = new Set(await storedPaths(bucket));
+
+    for (const [path, row] of known) {
+      if (!stored.has(path)) {
+        fail(`"${row.filename}" is in the ${bucket} library but its file is gone (${path})`);
+      }
+    }
+    for (const path of stored) {
+      if (!known.has(path)) fail(`"${path}" is in the ${bucket} bucket with no row`);
+    }
+
+    ok(`${bucket}: ${known.size} file(s) in the library, ${stored.size} object(s) stored`);
   }
 
   const links = await supabase

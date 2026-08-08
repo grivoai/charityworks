@@ -20,6 +20,7 @@ import {
   signUpload,
   type DocumentResult,
 } from "@/lib/admin/document-actions";
+import { putFile } from "@/components/admin/upload-transfer";
 
 /**
  * The documents page, in the browser.
@@ -63,64 +64,6 @@ export interface DocumentLinkView {
 interface Props {
   links: DocumentLinkView[];
   files: DocumentFileView[];
-}
-
-/* ------------------------------------------------------------------ */
-/* The transfer                                                        */
-/* ------------------------------------------------------------------ */
-
-/** What Supabase said, turned into something worth reading. */
-function storageError(xhr: XMLHttpRequest): string {
-  if (xhr.status === 413) {
-    return "That file is larger than the 25 MB limit.";
-  }
-  try {
-    const body = JSON.parse(xhr.responseText) as { message?: string };
-    if (body.message) return `The upload was refused: ${body.message}`;
-  } catch {
-    /* not JSON; fall through */
-  }
-  return `The upload failed (${xhr.status || "no response"}). Please try again.`;
-}
-
-/**
- * PUT with a progress figure.
- *
- * `fetch` cannot report upload progress, and this is the one place in the admin
- * where something takes long enough that a spinner alone would read as a hang.
- */
-function putFile(
-  url: string,
-  file: File,
-  onProgress: (percent: number) => void
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("PUT", url);
-    // Declared rather than taken from the file: the extension has already been
-    // checked, the server sniffs the bytes regardless, and some systems report
-    // no type at all for a PDF — which the bucket would then refuse for a
-    // reason that has nothing to do with the file.
-    xhr.setRequestHeader("content-type", "application/pdf");
-    // The path is a UUID that is never reused for different bytes, so the
-    // object can be cached at the CDN indefinitely. /d/<slug> is what moves.
-    xhr.setRequestHeader("cache-control", "max-age=31536000");
-
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        onProgress(Math.round((event.loaded / event.total) * 100));
-      }
-    };
-    xhr.onload = () =>
-      xhr.status >= 200 && xhr.status < 300
-        ? resolve()
-        : reject(new Error(storageError(xhr)));
-    xhr.onerror = () =>
-      reject(new Error("The connection dropped during the upload."));
-    xhr.onabort = () => reject(new Error("The upload was cancelled."));
-
-    xhr.send(file);
-  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -229,7 +172,11 @@ function AddDocument({
     }
 
     try {
-      await putFile(signed.signedUrl, file, setPercent);
+      await putFile(signed.signedUrl, file, {
+        contentType: "application/pdf",
+        tooLarge: "That file is larger than the 25 MB limit.",
+        onProgress: setPercent,
+      });
     } catch (error) {
       setPercent(null);
       return setProblem((error as Error).message);
@@ -381,7 +328,11 @@ function LinkRow({
     }
 
     try {
-      await putFile(signed.signedUrl, file, setPercent);
+      await putFile(signed.signedUrl, file, {
+        contentType: "application/pdf",
+        tooLarge: "That file is larger than the 25 MB limit.",
+        onProgress: setPercent,
+      });
     } catch (error) {
       setPercent(null);
       return setProblem((error as Error).message);

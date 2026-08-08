@@ -1077,3 +1077,10 @@ a.admin-card:hover {
   font-weight: 500;
 }
 .admin-enquiry-custom dd { font-size: 14px; line-height: 1.5; }
+
+/* Uploading a photograph, from inside the image field. */
+.admin-image-upload { margin-top: 10px; }
+.admin-image-upload .admin-btn { margin-top: 0; }
+.admin-image-upload .admin-doc-bar { margin-top: 8px; }
+.admin-image-upload .admin-help,
+.admin-image-upload .admin-f-error { margin-top: 6px; }

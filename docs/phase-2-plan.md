@@ -515,7 +515,7 @@ request body at 4.5 MB, so a server action cannot receive a 10 MB brochure; it
 fails with a 413 that says nothing useful, and only in production. The browser
 therefore PUTs straight at Supabase Storage using a URL the server signs, and
 the server inspects the object afterwards. That is safe only because a signed
-upload URL is one-shot and bound to one path, so `npm run check:documents`
+upload URL is one-shot and bound to one path, so `npm run check:uploads`
 asserts both rather than trusting them.
 
 **The consequence is that for a moment an unchecked object exists**, and every
@@ -536,6 +536,27 @@ was filled. The lookup underneath is still tagged and cached.
 **Identical bytes are one row.** Uploading the same PDF twice deletes the
 duplicate object and reuses the existing upload, and the admin is told so rather
 than shown a silent no-op.
+
+**Photographs go the same way, one bucket over.** The image field's `src` was a
+text box expecting a path like `/images/catalog/example.jpg` — right for the
+ninety-six photographs Phase 1 shipped, and no way at all to add a new one. The
+box stays, because those paths are still the correct value; an upload button
+sits beside it. What a file *is* comes from its own header rather than its name:
+`image-probe.ts` reads the PNG, JPEG and WebP headers, which answers the format
+question and the dimensions question at once, and a JPEG named `.png` is refused
+by the one check the bucket cannot make. No SVG — it is a document that can
+carry script, the bucket is public, and `next/image` cannot optimize one anyway.
+
+The upload sets the field and nothing else, so the photograph is not on the site
+until the client saves. That keeps every guarantee the save path makes, and an
+upload they then abandon is an unused row rather than a live change nobody
+asked for. Alt text is cleared rather than carried across, because a caption
+that confidently describes a photograph that is no longer there is worse than
+an empty one.
+
+`next.config.ts` derives the Supabase host from the configured URL rather than
+naming it, since `next/image` refuses any host not listed and a hard-coded one
+would be wrong for every other project.
 
 ---
 
@@ -589,6 +610,9 @@ Storing submissions is additive, on the same discipline as the Calendly work.
 | `/d/<slug>` | A dynamic page that redirects | A route handler, or streaming the bytes through the function |
 | Replacing a file | The previous upload is kept | Delete the old object once nothing points at it |
 | The same file twice | One row; the duplicate object is deleted | A second row per upload |
+| What an uploaded image is | Read from its own header | Trusted from the name and content type |
+| SVG uploads | Refused | Accepted, like any other image |
+| An uploaded photograph | Fills the field; live only once saved | Published on upload |
 
 ---
 

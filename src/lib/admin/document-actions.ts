@@ -50,7 +50,7 @@ export type SignResult =
  * Handing a signed URL to the browser is safe because it is bound to one path
  * and works once — so the worst it can be used for is the upload it was issued
  * for. Nothing is recorded here; an abandoned upload leaves an object with no
- * row, which `npm run check:documents` reports.
+ * row, which `npm run check:uploads` reports.
  */
 export async function signUpload(filename: string): Promise<SignResult> {
   await requireAdmin();

@@ -11,7 +11,7 @@
 -- after the fact and can only refuse and delete.
 --
 -- Keep the size in step with MAX_DOCUMENT_BYTES in src/lib/admin/uploads.ts.
--- `npm run check:documents` fails if they drift apart.
+-- `npm run check:uploads` fails if they drift apart.
 
 insert into storage.buckets (id, name, public)
 values ('documents', 'documents', true)

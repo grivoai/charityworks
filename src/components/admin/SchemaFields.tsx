@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useRef, useState } from "react";
 import type {
   ArrayNode,
   FieldErrors,
@@ -9,6 +9,14 @@ import type {
   ObjectNode,
 } from "@/lib/admin/field-node";
 import { FIELD_PATH_ATTR, domId } from "@/lib/admin/dom";
+import { putFile } from "@/components/admin/upload-transfer";
+import { addImage, signImage } from "@/lib/admin/image-actions";
+import {
+  IMAGE_TYPES,
+  MAX_IMAGE_BYTES,
+  imageProblem,
+} from "@/lib/admin/image-rules";
+import { formatBytes } from "@/lib/admin/document-rules";
 
 /**
  * Renders an editable form from a field tree.
@@ -241,6 +249,107 @@ function EnumField({ node, value, onChange, path, errors }: FieldProps) {
  * fields, because it is the thing most often left describing the previous
  * picture after a swap.
  */
+/**
+ * Choosing a photograph by uploading one.
+ *
+ * The field's `src` was a text box expecting a path like
+ * `/images/catalog/example.jpg` — fine for the ninety-six photographs Phase 1
+ * shipped, and no help at all to someone who has a new one on their desktop.
+ * The box stays, because those existing paths are still the right value and
+ * still need to be editable; this adds the way in for everything else.
+ *
+ * It sets the field and nothing more. The photograph is not on the site until
+ * the form is saved, which keeps every guarantee the save path makes — and an
+ * upload the client then abandons is an unused row rather than a live change
+ * they did not ask for.
+ */
+function ImageUpload({
+  onChosen,
+}: {
+  onChosen: (image: { src: string; width: number | null; height: number | null }) => void;
+}) {
+  const [percent, setPercent] = useState<number | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+
+  const busy = percent !== null;
+
+  const upload = async (file: File) => {
+    setNote(null);
+    const bad = imageProblem(file.name, file.size);
+    if (bad) return setProblem(bad);
+
+    setProblem(null);
+    setPercent(0);
+
+    const signed = await signImage(file.name);
+    if (!signed.ok) {
+      setPercent(null);
+      return setProblem(signed.message);
+    }
+
+    try {
+      await putFile(signed.signedUrl, file, {
+        contentType:
+          IMAGE_TYPES[
+            file.name.slice(file.name.lastIndexOf(".")).toLowerCase() as keyof typeof IMAGE_TYPES
+          ] ?? "application/octet-stream",
+        tooLarge: `That photograph is larger than the ${formatBytes(MAX_IMAGE_BYTES)} limit.`,
+        onProgress: setPercent,
+      });
+    } catch (error) {
+      setPercent(null);
+      return setProblem((error as Error).message);
+    }
+
+    const added = await addImage({ path: signed.path, filename: file.name });
+    setPercent(null);
+    if (input.current) input.current.value = "";
+
+    if (!added.ok) return setProblem(added.message);
+
+    onChosen({ src: added.src, width: added.width, height: added.height });
+    setNote(
+      added.warning ??
+        (added.deduped
+          ? "That photograph was already in the library, so the copy already there is used."
+          : `Added${added.width ? ` — ${added.width}\u00d7${added.height}` : ""}. It goes live when you save.`)
+    );
+  };
+
+  return (
+    <div className="admin-image-upload">
+      <input
+        ref={input}
+        type="file"
+        accept={Object.keys(IMAGE_TYPES).join(",")}
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void upload(file);
+        }}
+      />
+      <button
+        type="button"
+        className="admin-btn"
+        disabled={busy}
+        onClick={() => input.current?.click()}
+      >
+        {busy ? `Uploading — ${percent}%` : "Upload a photograph"}
+      </button>
+
+      {busy && (
+        <div className="admin-doc-bar" role="status">
+          <span style={{ width: `${percent}%` }} />
+        </div>
+      )}
+      {problem && <p className="admin-f-error">{problem}</p>}
+      {note && !problem && <p className="admin-help">{note}</p>}
+    </div>
+  );
+}
+
 function ImageField({
   node,
   value,
@@ -256,12 +365,15 @@ function ImageField({
     return (
       <div className="admin-f" {...marker(path)}>
         <label>{node.label}</label>
+        <ImageUpload
+          onChosen={(image) => onChange({ ...image, alt: "" })}
+        />
         <button
           type="button"
           className="admin-btn admin-btn-quiet"
           onClick={() => onChange({ src: "", alt: "" })}
         >
-          Add a photograph
+          Or type a path
         </button>
         {node.description && <p className="admin-help">{node.description}</p>}
       </div>
@@ -297,6 +409,15 @@ function ImageField({
             {errors[`${path}.src`] && (
               <p className="admin-f-error">{errors[`${path}.src`]}</p>
             )}
+            <ImageUpload
+              onChosen={(image) =>
+                // The alt text describes the old photograph, so it is cleared
+                // rather than carried onto a different one. Leaving it would be
+                // worse than empty: a caption that confidently describes
+                // something that is no longer there.
+                onChange({ ...image, alt: "" })
+              }
+            />
           </div>
 
           <div className={`admin-f${errors[`${path}.alt`] ? " is-invalid" : ""}`}>
