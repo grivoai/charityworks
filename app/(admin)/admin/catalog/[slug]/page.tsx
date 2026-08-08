@@ -5,8 +5,9 @@ import type { Metadata } from "next";
 import { auctionItemSchema } from "@/content/schema";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { CategoryEditor } from "@/components/admin/CategoryEditor";
+import { PagePreview } from "@/components/admin/PagePreview";
 import { requireAdmin } from "@/lib/auth";
-import { getAuctionCategory } from "@/lib/content";
+import { getAuctionCategories, getAuctionCategory } from "@/lib/content";
 import { getServiceClient } from "@/lib/supabase";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { locksForCategory } from "@/lib/admin/locks";
@@ -44,7 +45,7 @@ export default async function EditCategoryRoute({
   const category = await getAuctionCategory(slug);
   if (!category) notFound();
 
-  const [historyCount, meta, retired] = await Promise.all([
+  const [historyCount, meta, retired, siblings] = await Promise.all([
     countRevisions("category", category.id),
     getServiceClient()
       .from("catalog_categories")
@@ -61,6 +62,9 @@ export default async function EditCategoryRoute({
         "group_id",
         category.groups.map((group) => group.id)
       ),
+    // Every category, so browsing from one to another in the preview can offer
+    // the right editor rather than silently editing the wrong record.
+    getAuctionCategories(),
   ]);
 
   const tree = buildFieldTree(auctionItemSchema, locksForCategory());
@@ -71,8 +75,10 @@ export default async function EditCategoryRoute({
 
   const lots = category.groups.reduce((n, group) => n + group.items.length, 0);
 
+  const categoryPath = `/auction-items/${category.slug}`;
+
   return (
-    <AdminShell admin={admin}>
+    <AdminShell admin={admin} wide>
       <nav className="admin-crumbs">
         <Link href="/admin">Site content</Link>
         <span aria-hidden="true">›</span>
@@ -103,14 +109,35 @@ export default async function EditCategoryRoute({
         </p>
       ) : null}
 
-      <CategoryEditor
-        slug={category.slug}
-        tree={tree}
-        initial={category as unknown as Record<string, unknown>}
-        historyCount={historyCount}
-        updatedLabel={updatedLabel}
-        restored={restored === "1"}
-      />
+      {/* The same two columns as the pages editor, and the same component:
+          the preview is a locator into this form, not a second way to write.
+          A category is one record on four surfaces, and this is the one that
+          shows nearly all of its words — the tiles elsewhere carry the rest,
+          which is written down in CATALOG_NOT_VISIBLE. */}
+      <div className="admin-split has-preview">
+        <div className="admin-split-editor">
+          <CategoryEditor
+            slug={category.slug}
+            tree={tree}
+            initial={category as unknown as Record<string, unknown>}
+            historyCount={historyCount}
+            updatedLabel={updatedLabel}
+            restored={restored === "1"}
+          />
+        </div>
+
+        <PagePreview
+          slug={category.slug}
+          path={categoryPath}
+          label={category.title}
+          pages={siblings.map((c) => ({
+            slug: c.slug,
+            label: c.title,
+            path: `/auction-items/${c.slug}`,
+            editorHref: `/admin/catalog/${c.slug}`,
+          }))}
+        />
+      </div>
     </AdminShell>
   );
 }

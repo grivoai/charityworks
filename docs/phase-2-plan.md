@@ -436,6 +436,17 @@ reach it. Cancelling at the Navigation API instead leaves the URL saying `/faqs`
 while React has already rendered the contact page into the frame — a preview
 lying about what it shows, which is worse than the problem.
 
+**The catalog editor gets the same column.** A category is one record on four
+surfaces — its own page, the tiles on the home and auction items pages, and the
+planner's results card — and the preview shows the one carrying nearly all of
+its words. The fields that are *not* there are not missing markers: `title`,
+`image` and `span` belong to the tile pointing at this page, and
+`CATALOG_NOT_VISIBLE` says so. The check treats the catalog as one record across
+all nine of its pages rather than page by page, because the optional parts are
+filled in on different ones — three groups of eleven have a title, eleven lots
+of eighty-nine carry a note — and asking each page for the full set would fail
+on nearly all of them while saying nothing true.
+
 **The frame renders at 1280px and is scaled to fit**, with a phone toggle at
 390px. Sized to the column instead, it would show the tablet layout, and the
 client would be editing one page while looking at a version almost none of their
@@ -567,6 +578,7 @@ Storing submissions is additive, on the same discipline as the Calendly work.
 | Markers in public HTML | Shipped, so pages stay static | Admin-only render of every page |
 | Clicks in the preview | Intercepted by a sheet over the frame | Cancelling link clicks inside it |
 | Preview width | Real 1280px, scaled to fit, with a phone toggle | Whatever width the column happens to have |
+| Catalog preview coverage | The record across all nine category pages | Each category page checked on its own |
 | Locked fields | Taken from the stored document on save | Rendered read-only and trusted |
 | Core form fields | Protected entries in a list that can still grow | A fixed-length list, or a free-form builder |
 | A new question's key | Generated from its wording, prefixed `custom_` | Typed by the client |

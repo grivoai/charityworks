@@ -24,19 +24,24 @@
  *   npm run check:visual
  */
 
-import { pageSchemas } from "@/content/schema";
+import { auctionItemSchema, pageSchemas } from "@/content/schema";
 import type { PageSlug } from "@/content/types";
 import type { FieldNode } from "@/lib/admin/field-node";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
-import { locksForPage } from "@/lib/admin/locks";
+import { locksForCategory, locksForPage } from "@/lib/admin/locks";
 import { PAGE_ORDER, PAGE_PATHS } from "@/lib/admin/page-meta";
 import {
   MARKED_UP,
+  catalogDeferredReason,
+  catalogNotVisibleReason,
   deferredReason,
   normalizeIndices,
   notVisibleReason,
   parseMark,
 } from "@/lib/admin/visual-map";
+import { supabaseContentSource } from "@/lib/content-source-supabase";
+import { isDatabaseConfigured } from "@/lib/content-source";
+import { seedContentSource } from "@/lib/content-source-seed";
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
 
@@ -195,6 +200,95 @@ async function main(): Promise<void> {
         `${String(deferred).padStart(2)} after an interaction, ` +
         `${String(explained).padStart(2)} not on the page, ` +
         `${marks.length} markers rendered`
+    );
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* The catalog                                                       */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * Checked as ONE record across ALL NINE of its pages, not page by page.
+   *
+   * Every category is the same shape rendered nine times, and the optional
+   * parts of that shape are filled in on different ones: three groups of the
+   * eleven have a title, eleven lots of eighty-nine carry a note. Asking each
+   * page for the full set on its own would fail on nearly all of them and say
+   * nothing true. A field is reachable if it is marked on any category — that is
+   * what "the client can click it" means when the client is looking at whichever
+   * category they happen to be editing.
+   */
+  const catalogTree = buildFieldTree(auctionItemSchema, locksForCategory());
+  const catalogExpected: string[] = [];
+  leafPatterns(catalogTree, "", catalogExpected);
+
+  const source = isDatabaseConfigured() ? supabaseContentSource : seedContentSource;
+  const categories = await source.getAuctionCategories();
+
+  const catalogMarks: string[] = [];
+  let catalogPages = 0;
+
+  for (const category of categories) {
+    let html: string;
+    try {
+      html = await fetchPage(`/auction-items/${category.slug}`);
+    } catch (error) {
+      fail(`catalog: could not read /auction-items/${category.slug} — ${(error as Error).message}`);
+      continue;
+    }
+    catalogPages += 1;
+    catalogMarks.push(...marksIn(html));
+  }
+
+  if (catalogPages > 0) {
+    const marked = new Set(
+      catalogMarks.map((m) => normalizeIndices(parseMark(m).path))
+    );
+
+    let reachable = 0;
+    let explained = 0;
+    let deferred = 0;
+    const unexplained: string[] = [];
+
+    for (const pattern of catalogExpected) {
+      if (marked.has(pattern)) reachable += 1;
+      else if (catalogDeferredReason(pattern)) deferred += 1;
+      else if (catalogNotVisibleReason(pattern)) explained += 1;
+      else unexplained.push(pattern);
+    }
+
+    for (const pattern of unexplained) {
+      fail(
+        `catalog: "${pattern}" is editable but nothing on any category page is ` +
+          `marked with it — mark the element, or add it to CATALOG_NOT_VISIBLE ` +
+          `with a reason`
+      );
+    }
+
+    for (const mark of new Set(catalogMarks)) {
+      const { record, path } = parseMark(mark);
+      if (record) {
+        fail(`catalog: marker "${mark}" borrows from another record, which the catalog does not do`);
+        continue;
+      }
+      const found = nodeAt(catalogTree, normalizeIndices(path).split("."));
+      if (!found) {
+        fail(`catalog: marker "${mark}" does not match any field in a category`);
+      } else if (found.kind === "object" || found.kind === "array") {
+        fail(
+          `catalog: marker "${mark}" points at a whole ${found.kind}, not a ` +
+            `single field — mark the innermost element instead`
+        );
+      }
+    }
+
+    totalMarked += reachable;
+    console.log(
+      `  ${unexplained.length === 0 ? "ok  " : "FAIL"}  ${"catalog".padEnd(16)} ` +
+        `${String(reachable).padStart(3)} clickable, ` +
+        `${String(deferred).padStart(2)} with no content yet, ` +
+        `${String(explained).padStart(2)} not on the page, ` +
+        `${catalogMarks.length} markers across ${catalogPages} categories`
     );
   }
 

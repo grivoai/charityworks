@@ -137,6 +137,7 @@ export default async function EditPageRoute({
               slug: s,
               label: PAGE_LABELS[s],
               path: PAGE_PATHS[s],
+              editorHref: `/admin/pages/${s}`,
             }))}
           />
         )}

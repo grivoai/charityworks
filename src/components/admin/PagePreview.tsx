@@ -32,6 +32,15 @@ export interface PreviewPage {
   slug: string;
   label: string;
   path: string;
+  /**
+   * Where this record is edited.
+   *
+   * Carried rather than assumed: the preview column now serves the catalog
+   * editor as well as the pages editor, and a category is edited at
+   * /admin/catalog/<slug>. Building the link from a prefix here would send a
+   * click to a page that does not exist.
+   */
+  editorHref: string;
 }
 
 interface Outline {
@@ -257,7 +266,7 @@ export function PagePreview({
             <>
               That text is part of <strong>{other.label}</strong>, which is where
               it is edited — it appears on this page too.{" "}
-              <Link href={`/admin/pages/${other.slug}`}>Open {other.label}</Link>
+              <Link href={other.editorHref}>Open {other.label}</Link>
             </>
           ) : (
             <>That text is set on another page.</>

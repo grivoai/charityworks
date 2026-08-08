@@ -137,6 +137,75 @@ export const PAGE_NOT_VISIBLE: Partial<Record<PageSlug, NotVisibleRule[]>> = {
   ],
 };
 
+/**
+ * The catalog is not a page, so it gets its own list.
+ *
+ * A category is one record rendered on four surfaces: its own page, the tiles
+ * on the home and auction items pages, and the auction planner's results card.
+ * The preview shows its own page, which is where nearly all of its words are —
+ * and the fields that are NOT there are not missing markers, they are fields
+ * that belong to the tile pointing at it. Saying which is which is the whole
+ * point of writing this down.
+ */
+export const CATALOG_NOT_VISIBLE: NotVisibleRule[] = [
+  {
+    pattern: "slug",
+    reason:
+      "The category's web address. Part of the URL rather than anything on " +
+      "the page, and locked in the form for the same reason.",
+  },
+  {
+    pattern: "title",
+    reason:
+      "The short name on the tiles that link here — on the home page and the " +
+      "auction items page. This page uses the longer heading instead.",
+  },
+  {
+    pattern: "image.**",
+    reason:
+      "The category's own photograph, shown on those same tiles. The pictures " +
+      "on this page belong to the individual lots.",
+  },
+  {
+    pattern: "span",
+    reason: "How wide the tile sits in the grid on the auction items page. Layout, not wording.",
+  },
+  {
+    pattern: "generalOnly",
+    reason:
+      "A switch, not a piece of wording: it decides whether this category " +
+      "describes what it contains or lists named lots.",
+  },
+];
+
+/**
+ * Marked up and working, but not in any category's HTML today.
+ *
+ * Item details are the clearest case of why this list is separate from "not on
+ * the page". The markup is there and the moment a lot has figures they are as
+ * clickable as anything else — no lot has any yet, which is the work
+ * `docs/item-details-needed.md` is waiting on, not a gap in the preview.
+ */
+export const CATALOG_DEFERRED: NotVisibleRule[] = [
+  {
+    pattern: "groups.*.items.*.details.**",
+    reason:
+      "A lot's figures, shown under its description. No lot has any yet — see " +
+      "docs/item-details-needed.md — so there is nothing rendered to click.",
+  },
+];
+
+export function catalogNotVisibleReason(path: string): string | undefined {
+  return [...COMMON_NOT_VISIBLE, ...CATALOG_NOT_VISIBLE].find((rule) =>
+    matchesVisualPattern(path, rule.pattern)
+  )?.reason;
+}
+
+export function catalogDeferredReason(path: string): string | undefined {
+  return CATALOG_DEFERRED.find((rule) => matchesVisualPattern(path, rule.pattern))
+    ?.reason;
+}
+
 export function notVisibleRules(slug: PageSlug): NotVisibleRule[] {
   return [...COMMON_NOT_VISIBLE, ...(PAGE_NOT_VISIBLE[slug] ?? [])];
 }

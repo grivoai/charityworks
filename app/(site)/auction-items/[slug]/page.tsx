@@ -10,6 +10,7 @@ import {
 import { siteUrl } from "@/lib/site-config";
 import { Cta } from "@/components/Section";
 import { CategoryJsonLd } from "@/components/JsonLd";
+import { at, editable } from "@/lib/editable";
 
 type Params = { slug: string };
 
@@ -73,9 +74,14 @@ export default async function AuctionCategoryRoute({
             <Link href="/auction-items">Auction Items</Link>
           </span>
           <h1>
-            <span aria-hidden="true">{category.icon}</span> {category.heading}
+            <span aria-hidden="true" {...editable("icon")}>
+              {category.icon}
+            </span>{" "}
+            <span {...editable("heading")}>{category.heading}</span>
           </h1>
-          <p className="lede">{category.blurb}</p>
+          <p className="lede" {...editable("blurb")}>
+            {category.blurb}
+          </p>
         </div>
       </header>
 
@@ -87,26 +93,38 @@ export default async function AuctionCategoryRoute({
                 ? "What's in this category"
                 : `${lotCount} lot${lotCount === 1 ? "" : "s"} in this category`}
             </h2>
-            <p className="section-lede reveal">{category.intro}</p>
+            <p className="section-lede reveal" {...editable("intro")}>
+              {category.intro}
+            </p>
           </div>
 
-          {category.groups.map((group) => (
+          {category.groups.map((group, groupIndex) => {
+            const at_ = (...rest: Array<string | number>) =>
+              at("groups", groupIndex, ...rest);
+            return (
             <div key={group.id} className="cat-group">
               {group.title && (
                 <div className="cat-group-head reveal">
-                  <h3>{group.title}</h3>
-                  {group.blurb && <p>{group.blurb}</p>}
+                  <h3 {...editable(at_("title"))}>{group.title}</h3>
+                  {group.blurb && (
+                    <p {...editable(at_("blurb"))}>{group.blurb}</p>
+                  )}
                 </div>
               )}
 
               <ul className="cat-grid">
-                {group.items.map((item, index) => (
+                {group.items.map((item, index) => {
+                  const lot = at_("items", index);
+                  return (
                   <li
                     key={item.id}
                     className={`cat-card reveal${index % 3 > 0 ? ` d${index % 3}` : ""}`}
                   >
                     {item.image && (
-                      <div className="cat-card-media">
+                      <div
+                        className="cat-card-media"
+                        {...editable(at(lot, "image"))}
+                      >
                         <Image
                           src={item.image.src}
                           alt={item.image.alt}
@@ -117,24 +135,37 @@ export default async function AuctionCategoryRoute({
                       </div>
                     )}
                     <div className="cat-card-body">
-                      <h4>{item.name}</h4>
-                      <p>{item.description}</p>
+                      <h4 {...editable(at(lot, "name"))}>{item.name}</h4>
+                      <p {...editable(at(lot, "description"))}>
+                        {item.description}
+                      </p>
 
                       {/* Rendered only when the client has supplied figures.
                           Nothing here is derived from the photograph or the
                           description — see ItemDetail in content/types.ts. */}
                       {item.details && item.details.length > 0 && (
                         <dl className="cat-card-details">
-                          {item.details.map((detail) => (
+                          {item.details.map((detail, d) => (
                             <div key={detail.label}>
-                              <dt>{detail.label}</dt>
-                              <dd>{detail.value}</dd>
+                              <dt {...editable(at(lot, "details", d, "label"))}>
+                                {detail.label}
+                              </dt>
+                              <dd {...editable(at(lot, "details", d, "value"))}>
+                                {detail.value}
+                              </dd>
                             </div>
                           ))}
                         </dl>
                       )}
 
-                      {item.note && <p className="cat-card-note">{item.note}</p>}
+                      {item.note && (
+                        <p
+                          className="cat-card-note"
+                          {...editable(at(lot, "note"))}
+                        >
+                          {item.note}
+                        </p>
+                      )}
 
                       {/* aria-label rather than the visible text alone: a page
                           of identical "Request this item" links is useless to
@@ -153,10 +184,12 @@ export default async function AuctionCategoryRoute({
                       </Link>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
-          ))}
+            );
+          })}
 
           <p className="cat-notice reveal">
             <strong>Availability:</strong>{" "}
