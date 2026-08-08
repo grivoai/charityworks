@@ -246,6 +246,14 @@ why they are shaped that way.
 | `submissions` | Every lead, plus delivery state | `raw` + `webhook_status` make a failed delivery replayable |
 | `audit_log` | Who changed what | Useful the first time two people disagree about an edit |
 
+**`npm run seed` refuses to run over edited content.** It is named like a setup
+step and behaves like a restore — no draft state, no backup, so whatever it
+overwrites is the live site. It now surveys every row it would write first and
+stops unless each one is either absent or already identical, naming the records
+it would have replaced; `npm run seed -- --force` overrides deliberately. A
+database it cannot read is a refusal too, because being unable to check is not
+the same as having checked.
+
 **`forms` and `form_fields` were dropped** on 2026-08-08. They were seeded and
 never read: the contact page document is the single definition of the form, and
 `locks.ts` already does in code — with reasons the client can read — what
