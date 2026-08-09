@@ -651,8 +651,10 @@ Storing submissions is additive, on the same discipline as the Calendly work.
 
 ## Open
 
-- **The old site's newsletter/trips page.** The reference copies in `reference/`
-  contain no PDF or download pattern, only the word "Trips". A URL or screenshot
-  would still let the documents page match the existing behaviour; without one it
-  shipped the general upload → permanent link design above, which is the shape
-  every use of it so far wants anyway.
+- ~~The old site's newsletter/trips page.~~ **Closed 2026-08-08.** There is no
+  newsletter page: the word appears nowhere in `reference/`, and the old site's
+  own page index — embedded in the Homestead builder's JSON, listing all
+  nineteen pages — has no such entry. `Trips` (`urlAlias: "trips"`) does exist,
+  and the live legacy page at charityworks.net/trips is a bare heading with no
+  content, no links and nothing downloadable. So there was never a pattern to
+  match, and `/d/<slug>` stands as designed rather than as a fallback.
