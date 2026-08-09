@@ -571,6 +571,15 @@ question and the dimensions question at once, and a JPEG named `.png` is refused
 by the one check the bucket cannot make. No SVG — it is a document that can
 carry script, the bucket is public, and `next/image` cannot optimize one anyway.
 
+A photograph already uploaded can be picked from the library instead of being
+uploaded again. Upload alone left reuse awkward — putting the same picture on a
+second lot meant still having the file to hand, which after a few months nobody
+does. The library lists only what has come through the admin: the ninety-six
+photographs Phase 1 shipped are files in `public/images`, not rows, so they are
+reused by their path in the text box. It loads when opened rather than with the
+form, because the catalog editor renders one image field per lot and fetching a
+library nobody opened, ninety times, is a cost paid on every page load.
+
 The upload sets the field and nothing else, so the photograph is not on the site
 until the client saves. That keeps every guarantee the save path makes, and an
 upload they then abandon is an unused row rather than a live change nobody

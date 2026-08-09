@@ -10,6 +10,7 @@ import type {
 } from "@/lib/admin/field-node";
 import { FIELD_PATH_ATTR, domId } from "@/lib/admin/dom";
 import { putFile } from "@/components/admin/upload-transfer";
+import { ImagePicker } from "@/components/admin/ImagePicker";
 import { addImage, signImage } from "@/lib/admin/image-actions";
 import {
   IMAGE_TYPES,
@@ -365,9 +366,8 @@ function ImageField({
     return (
       <div className="admin-f" {...marker(path)}>
         <label>{node.label}</label>
-        <ImageUpload
-          onChosen={(image) => onChange({ ...image, alt: "" })}
-        />
+        <ImageUpload onChosen={(image) => onChange({ ...image, alt: "" })} />
+        <ImagePicker onChosen={(image) => onChange({ ...image, alt: "" })} />
         <button
           type="button"
           className="admin-btn admin-btn-quiet"
@@ -409,15 +409,12 @@ function ImageField({
             {errors[`${path}.src`] && (
               <p className="admin-f-error">{errors[`${path}.src`]}</p>
             )}
-            <ImageUpload
-              onChosen={(image) =>
-                // The alt text describes the old photograph, so it is cleared
-                // rather than carried onto a different one. Leaving it would be
-                // worse than empty: a caption that confidently describes
-                // something that is no longer there.
-                onChange({ ...image, alt: "" })
-              }
-            />
+            {/* The alt text describes the old photograph, so both of these
+                clear it rather than carrying it onto a different one. Leaving
+                it would be worse than empty: a caption that confidently
+                describes something that is no longer there. */}
+            <ImageUpload onChosen={(image) => onChange({ ...image, alt: "" })} />
+            <ImagePicker onChosen={(image) => onChange({ ...image, alt: "" })} />
           </div>
 
           <div className={`admin-f${errors[`${path}.alt`] ? " is-invalid" : ""}`}>
