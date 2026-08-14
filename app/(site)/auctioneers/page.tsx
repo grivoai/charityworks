@@ -5,7 +5,7 @@ import { getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
 import { at, editable } from "@/lib/editable";
-import { BreadcrumbJsonLd } from "@/components/JsonLd";
+import { AuctioneersJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export function generateMetadata(): Promise<Metadata> {
   return buildMetadata("auctioneers");
@@ -25,6 +25,7 @@ export default async function AuctioneersRoute() {
   return (
     <>
       <BreadcrumbJsonLd title="Auctioneers" path={page.seo.path} />
+      <AuctioneersJsonLd auctioneers={page.auctioneers} name={page.rosterHeading} />
 
       <header className="page-hero center">
         <div className="wrap">

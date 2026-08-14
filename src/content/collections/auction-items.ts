@@ -202,7 +202,7 @@ export const auctionItems: AuctionItem[] = [
     intro:
       "Crystal-embellished handbags photograph exceptionally well and draw guests toward a table. They work as a mid-tier lot that lifts the average bid across a silent auction.",
     seo: {
-      title: "Crystal & Swarovski Handbags for Auctions | CharityWorks",
+      title: "Handbags with Swarovski Crystals for Auctions | CharityWorks",
       description:
         "Crystal-embellished handbags for nonprofit silent auctions and galas. Offered on consignment with no upfront cost to your organization.",
       targetTerms: [

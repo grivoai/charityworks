@@ -115,6 +115,10 @@ export default async function AuctionCategoryRoute({
               <ul className="cat-grid">
                 {group.items.map((item, index) => {
                   const lot = at_("items", index);
+                  // Item names sit under the group's H3 when the group is
+                  // titled, and directly under the section H2 when it is not —
+                  // so their level follows, keeping the outline from skipping H3.
+                  const NameTag = group.title ? "h4" : "h3";
                   return (
                   <li
                     key={item.id}
@@ -135,7 +139,7 @@ export default async function AuctionCategoryRoute({
                       </div>
                     )}
                     <div className="cat-card-body">
-                      <h4 {...editable(at(lot, "name"))}>{item.name}</h4>
+                      <NameTag {...editable(at(lot, "name"))}>{item.name}</NameTag>
                       <p {...editable(at(lot, "description"))}>
                         {item.description}
                       </p>

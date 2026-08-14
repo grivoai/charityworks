@@ -5,10 +5,9 @@ export const auctionItemsPage: AuctionItemsPage = {
   heading: "Charity Auction Items for Galas & Fundraisers",
 
   seo: {
-    title:
-      "Charity Auction Items & Celebrity Signed Guitar Fundraiser Packages | CharityWorks",
+    title: "Charity Auction Items for Galas & Fundraisers | CharityWorks",
     description:
-      "Browse 1,000+ charity auction items: celebrity signed guitars, sports memorabilia, luxury travel, jewelry and meet & greets. Risk-free consignment for nonprofits.",
+      "Browse 1,000+ charity auction items: celebrity signed guitars, sports memorabilia, travel, jewelry and meet & greets. Risk-free consignment for nonprofits.",
     targetTerms: [
       "charity auction items",
       "celebrity signed guitar fundraiser",
