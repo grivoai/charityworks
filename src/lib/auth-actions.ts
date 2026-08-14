@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase-auth";
 import { getAdmin, touchLastSeen } from "@/lib/auth";
+import {
+  isRateLimited,
+  recordFailure,
+  clearFailures,
+} from "@/lib/auth-throttle";
 
 export type SignInState = { error?: string };
 
@@ -25,41 +30,17 @@ function safeNext(value: FormDataEntryValue | null): string {
 }
 
 /**
- * A speed bump on repeated failures from one address.
+ * Repeated-failure throttling lives in `@/lib/auth-throttle`, backed by Postgres
+ * so the count holds across every serverless instance and every cold start
+ * rather than resetting per-process. Two buckets are kept, one on the caller's
+ * IP and one on the target email, and both fail open on a database error.
  *
- * Being precise about what this is worth: it is process-local, so on a
- * serverless platform it is per-instance and resets on a cold start. It will
- * slow a naive script pointed at one deployment; it will not stop a
- * distributed attempt, and it is not what makes the login safe.
- *
- * The real controls are elsewhere and are server-side: Supabase Auth rate
- * limits its own sign-in endpoint per address, signups are disabled so the set
- * of valid accounts is fixed and tiny, and a session without an `admin_users`
- * row grants nothing. This is defence in depth, not defence.
+ * This defends the login form. It is not the whole story: signups are disabled
+ * so the set of valid accounts is fixed and tiny, a session without an
+ * `admin_users` row grants nothing, and — for the path that skips this form and
+ * calls Supabase's token endpoint directly — Supabase Auth's own rate limits and
+ * CAPTCHA Attack Protection are the backstop, configured in the dashboard.
  */
-const FAILURE_LIMIT = 8;
-const FAILURE_WINDOW_MS = 10 * 60 * 1000;
-const failures = new Map<string, { count: number; first: number }>();
-
-function tooManyFailures(key: string): boolean {
-  const record = failures.get(key);
-  if (!record) return false;
-  if (Date.now() - record.first > FAILURE_WINDOW_MS) {
-    failures.delete(key);
-    return false;
-  }
-  return record.count >= FAILURE_LIMIT;
-}
-
-function recordFailure(key: string): void {
-  const now = Date.now();
-  const record = failures.get(key);
-  if (!record || now - record.first > FAILURE_WINDOW_MS) {
-    failures.set(key, { count: 1, first: now });
-    return;
-  }
-  record.count += 1;
-}
 
 export async function signIn(
   _previous: SignInState,
@@ -77,7 +58,7 @@ export async function signIn(
   const ip =
     headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
-  if (tooManyFailures(ip)) {
+  if (await isRateLimited(ip, email)) {
     return {
       error: "Too many failed attempts. Wait a few minutes and try again.",
     };
@@ -87,7 +68,7 @@ export async function signIn(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    recordFailure(ip);
+    await recordFailure(ip, email);
     /**
      * One message for every failure mode, deliberately. Distinguishing "no such
      * account" from "wrong password" turns the login form into a way to test
@@ -105,11 +86,11 @@ export async function signIn(
   const admin = await getAdmin();
   if (!admin) {
     await supabase.auth.signOut();
-    recordFailure(ip);
+    await recordFailure(ip, email);
     return { error: "That account does not have access to the admin panel." };
   }
 
-  failures.delete(ip);
+  await clearFailures(ip, email);
   await touchLastSeen(admin.id);
 
   // Outside the try/catch shape above on purpose: redirect() signals by

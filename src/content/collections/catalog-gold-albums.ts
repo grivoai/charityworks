@@ -12,7 +12,7 @@ const DIR = "/images/catalog/gold-albums";
  * this tier from the hand-signed pieces, and a bidder is entitled to know
  * which of the two they are bidding on.
  */
-export const goldAlbumItems: CategoryItem[] = [
+const goldAlbumBase: CategoryItem[] = [
   {
     id: "album-ac-dc",
     name: "AC/DC — Framed Gold Album with Laser Signature",
@@ -224,3 +224,12 @@ export const goldAlbumItems: CategoryItem[] = [
     },
   },
 ];
+
+/**
+ * Every gold album display is the same framed size, confirmed by the client, so
+ * the detail is attached uniformly here rather than repeated on all 21 lots.
+ */
+export const goldAlbumItems: CategoryItem[] = goldAlbumBase.map((item) => ({
+  ...item,
+  details: [{ label: "Size", value: "20×26, framed with acrylic" }],
+}));

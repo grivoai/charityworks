@@ -16,7 +16,7 @@ import {
  * Lots and photography are the client's real inventory, held in
  * src/content/collections/catalog-*.ts and public/images/catalog/.
  *
- * Two categories — Jewelry and Swarovski Handbags — carry `generalOnly: true`.
+ * Two categories — Jewelry and Handbags with Swarovski Crystals — carry `generalOnly: true`.
  * The client lists those only as categories with no named lots, so the pages
  * describe what the category contains rather than claiming specific stock.
  * They are also the only two still using stock photography.
@@ -189,7 +189,7 @@ export const auctionItems: AuctionItem[] = [
     id: "item-handbags",
     slug: "handbags",
     icon: "👜",
-    title: "Swarovski Handbags",
+    title: "Handbags with Swarovski Crystals",
     blurb: "Dazzling statement pieces guests adore.",
     image: {
       // Deliberately an unbranded studio photograph. Do not swap in a shot of a
@@ -222,6 +222,10 @@ export const auctionItems: AuctionItem[] = [
             name: "Crystal-Embellished Handbags",
             description:
               "Evening and day bags finished with crystal detailing, supplied with a dust bag.",
+            // One-off: the client confirmed $1200+ is an appraised/retail value
+            // shown to bidders (standard at auctions), not a consignment or
+            // selling price. Prices are kept off every other lot on the site.
+            details: [{ label: "Appraised value", value: "$1200+" }],
           },
         ],
       },
