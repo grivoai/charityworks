@@ -170,6 +170,39 @@ section { position: relative; }
 .s4 { bottom: 0; right: 30px; animation-delay: -4.5s; }
 @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-18px);} }
 
+/* ============ HOME FIRST-LOAD INTRO ============
+   Gated on [data-home-intro="play"], set once per session by the hero's inline
+   script (and never under reduced motion). Because it is an attribute that is
+   present at first paint, the pre-animation state lives only inside these
+   rules — without the flag, everything renders in its final position, so there
+   is no flash and no dependence on JavaScript. */
+@keyframes intro-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes intro-fade { from { opacity: 0; } to { opacity: 1; } }
+
+[data-home-intro="play"] .hero-pill { animation: intro-rise 0.55s var(--ease) 0.04s both; }
+/* Word delays come from an inline animation-delay per word; only name/duration
+   are set here so the stagger is preserved. Opacity-only keeps the accent
+   line's clipped gradient intact. */
+[data-home-intro="play"] .hero h1 .intro-word {
+  animation-name: intro-fade;
+  animation-duration: 0.5s;
+  animation-timing-function: var(--ease);
+  animation-fill-mode: both;
+}
+[data-home-intro="play"] .hero p.sub { animation: intro-rise 0.55s var(--ease) 0.36s both; }
+[data-home-intro="play"] .hero-btns { animation: intro-rise 0.55s var(--ease) 0.46s both; }
+
+/* Stat cards keep their resting float — the intro only fades them in, staggered.
+   Two comma-separated animation-delays: the first staggers the fade, the second
+   restores each card's original float desync. */
+[data-home-intro="play"] .hero-stats .stat-card {
+  animation: intro-fade 0.55s var(--ease) both, float 6s ease-in-out infinite;
+}
+[data-home-intro="play"] .stat-card.s1 { animation-delay: 0.55s, 0s; }
+[data-home-intro="play"] .stat-card.s2 { animation-delay: 0.68s, -1.5s; }
+[data-home-intro="play"] .stat-card.s3 { animation-delay: 0.81s, -3s; }
+[data-home-intro="play"] .stat-card.s4 { animation-delay: 0.94s, -4.5s; }
+
 /* ============ REVEAL ============ */
 .reveal { opacity: 0; transform: translateY(38px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
 .reveal.in { opacity: 1; transform: none; }

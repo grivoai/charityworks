@@ -7,8 +7,37 @@ import { BentoGrid } from "@/components/BentoGrid";
 import { DonorIncentive } from "@/components/DonorIncentive";
 import { TestimonialMarquee } from "@/components/TestimonialMarquee";
 import { ContactForm } from "@/components/ContactForm";
+import { CountUp } from "@/components/CountUp";
 import { editable } from "@/lib/editable";
 import { testimonials } from "@/content/collections/testimonials";
+
+/**
+ * Runs before the hero paints. On the first visit of a session (and only when
+ * motion is welcome) it flags the document so the CSS intro animations play and
+ * the stat numbers count up; it records the visit so a reload or a scroll back
+ * up never replays it, and clears the flag shortly after so a client-side
+ * navigation back to the home page shows the finished state instead. Kept inline
+ * and synchronous so there is no flash of the final layout before it animates.
+ */
+const HOME_INTRO_SCRIPT = `try{if(!sessionStorage.getItem('cw:home-intro')&&!matchMedia('(prefers-reduced-motion:reduce)').matches){sessionStorage.setItem('cw:home-intro','1');var r=document.documentElement;r.dataset.homeIntro='play';setTimeout(function(){r.removeAttribute('data-home-intro')},3000)}}catch(e){}`;
+
+/** Wraps each word of the headline so the intro can stagger them in. */
+function heroWords(text: string, startIndex: number) {
+  let index = startIndex;
+  return text.split(/(\s+)/).map((token, i) => {
+    if (/^\s+$/.test(token) || token === "") return token;
+    const delay = index++;
+    return (
+      <span
+        key={i}
+        className="intro-word"
+        style={{ animationDelay: `calc(0.12s + ${delay} * 0.05s)` }}
+      >
+        {token}
+      </span>
+    );
+  });
+}
 
 export function generateMetadata(): Promise<Metadata> {
   return buildMetadata("home");
@@ -36,6 +65,9 @@ export default async function HomePage() {
     <>
       {/* ---------- HERO ---------- */}
       <header className="hero">
+        {/* First-load intro trigger. Inline + before the content so the flag is
+            set before first paint — see HOME_INTRO_SCRIPT. */}
+        <script dangerouslySetInnerHTML={{ __html: HOME_INTRO_SCRIPT }} />
         <div className="hero-bg" />
         <div className="hero-grid" />
         <div className="wrap">
@@ -49,10 +81,15 @@ export default async function HomePage() {
               <span {...editable("hero.pill")}>{hero.pill}</span>
             </div>
             <h1>
-              <span {...editable("hero.headingLead")}>{hero.headingLead}</span>
+              <span {...editable("hero.headingLead")}>
+                {heroWords(hero.headingLead, 0)}
+              </span>
               <br />
               <span className="accent" {...editable("hero.headingAccent")}>
-                {hero.headingAccent}
+                {heroWords(
+                  hero.headingAccent,
+                  hero.headingLead.trim().split(/\s+/).length
+                )}
               </span>
             </h1>
             <p className="sub" {...editable("hero.sub")}>
@@ -68,7 +105,7 @@ export default async function HomePage() {
             {hero.stats.map((stat, index) => (
               <div key={stat.id} className={`stat-card s${index + 1}`}>
                 <div className="num" {...editable(`hero.stats.${index}.value`)}>
-                  {stat.value}
+                  <CountUp value={stat.value} />
                 </div>
                 <div className="lbl" {...editable(`hero.stats.${index}.label`)}>
                   {stat.label}

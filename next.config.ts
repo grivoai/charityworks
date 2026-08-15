@@ -42,6 +42,47 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  /**
+   * Legacy Homestead URLs → their new homes, plus apex → www.
+   *
+   * `permanent: true` emits a 308 (a permanent redirect Google treats the same
+   * as a 301, preserving the request method). These fire once charityworks.net
+   * points at this deployment; until then the paths simply are not requested, so
+   * carrying them now is harmless. Only paths that actually CHANGED are listed —
+   * /auction-info, /faqs, /testimonials, /auctioneers, /auction-items, /contact
+   * and / are already served here unchanged and need no hop.
+   */
+  async redirects() {
+    return [
+      // Canonical host: apex → www (the new site's canonical everywhere).
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "charityworks.net" }],
+        destination: "https://www.charityworks.net/:path*",
+        permanent: true,
+      },
+      // Catalog category pages that moved under /auction-items.
+      { source: "/gold-albums", destination: "/auction-items/gold-albums", permanent: true },
+      { source: "/guitars-handsigned", destination: "/auction-items/signed-guitars", permanent: true },
+      { source: "/guitar-prices", destination: "/auction-items/signed-guitars", permanent: true },
+      { source: "/dm-taylor-swift", destination: "/auction-items/taylor-swift-signed-guitar", permanent: true },
+      { source: "/mexicovac", destination: "/auction-items/vacations", permanent: true },
+      { source: "/travel_voucher", destination: "/auction-items/vacations", permanent: true },
+      { source: "/trips", destination: "/auction-items/vacations", permanent: true },
+      { source: "/best-items", destination: "/auction-items", permanent: true },
+      // Enquiry / roster / results equivalents.
+      { source: "/inquire-page", destination: "/contact", permanent: true },
+      { source: "/client-list", destination: "/testimonials", permanent: true },
+      { source: "/virtual-auction", destination: "/auction-info", permanent: true },
+      // No equivalent on the new site — sent home rather than to a soft 404.
+      { source: "/cbid", destination: "/", permanent: true },
+      { source: "/newsletter-pdfs", destination: "/", permanent: true },
+      { source: "/travel-terms", destination: "/", permanent: true },
+      { source: "/terms-conditions", destination: "/", permanent: true },
+      { source: "/terms-and-conditions-voucher", destination: "/", permanent: true },
+    ];
+  },
+
   async headers() {
     if (!noindex) return [];
 
