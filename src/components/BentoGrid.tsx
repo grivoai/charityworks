@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { AuctionItem } from "@/content/types";
+import { Icon } from "@/components/Icon";
 
 /**
  * Auction catalog grid.
@@ -53,7 +54,7 @@ export function BentoGrid({
                 href={`/auction-items/${item.slug}`}
                 className="bento-link"
               >
-                <span aria-hidden="true">{item.icon}</span> {item.title}
+                <span aria-hidden="true"><Icon name={item.icon} /></span> {item.title}
               </Link>
             </h3>
             <p className="reveal-txt">{item.blurb}</p>

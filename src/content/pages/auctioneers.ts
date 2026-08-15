@@ -34,25 +34,25 @@ export const auctioneersPage: AuctioneersPage = {
     items: [
       {
         id: "auc-diff-engagement",
-        icon: "🔥",
+        icon: "flame",
         title: "Unmatched Engagement",
         body: "They create an exciting, high-energy atmosphere that captivates your audience.",
       },
       {
         id: "auc-diff-consultation",
-        icon: "🧭",
+        icon: "compass",
         title: "Strategic Consultation",
         body: "From event planning to the final gavel drop, they provide expert insights to optimize your fundraising strategy.",
       },
       {
         id: "auc-diff-revenue",
-        icon: "📈",
+        icon: "trending-up",
         title: "Revenue Maximization",
         body: "They help identify the most effective revenue streams for your unique event and audience.",
       },
       {
         id: "auc-diff-guests",
-        icon: "🤝",
+        icon: "handshake",
         title: "A Seamless Guest Experience",
         body: "They ensure every attendee feels valued, comfortable, and eager to bid.",
       },

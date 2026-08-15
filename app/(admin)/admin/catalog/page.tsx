@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { Icon } from "@/components/Icon";
 import { requireAdmin } from "@/lib/auth";
 import { getAuctionCategories } from "@/lib/content";
 import { getServiceClient } from "@/lib/supabase";
@@ -72,7 +73,7 @@ export default async function CatalogRoute() {
               <Link href={`/admin/catalog/${category.slug}`} className="admin-row">
                 <span className="admin-row-main">
                   <span className="admin-row-title">
-                    <span aria-hidden="true">{category.icon}</span> {category.title}
+                    <span aria-hidden="true"><Icon name={category.icon} /></span> {category.title}
                   </span>
                   <span className="admin-row-sub">
                     {count === 0

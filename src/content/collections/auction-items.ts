@@ -34,7 +34,7 @@ export const auctionItems: AuctionItem[] = [
   {
     id: "item-vacations",
     slug: "vacations",
-    icon: "🌴",
+    icon: "palm-tree",
     title: "Affordable Vacations",
     blurb: "Crowd-pleasing getaways priced to sell and stack profit.",
     span: "wide",
@@ -64,7 +64,7 @@ export const auctionItems: AuctionItem[] = [
   {
     id: "item-bucket-list",
     slug: "bucket-list-trips",
-    icon: "✈️",
+    icon: "plane",
     title: "Bucket List Trips",
     blurb: "Once-in-a-lifetime escapes that ignite a bidding war.",
     image: {
@@ -90,7 +90,7 @@ export const auctionItems: AuctionItem[] = [
   {
     id: "item-signed-guitars",
     slug: "signed-guitars",
-    icon: "🎸",
+    icon: "guitar",
     title: "Hand-Signed Guitars",
     blurb: "Celebrity & rock legends — authenticated showpieces.",
     image: {
@@ -116,7 +116,7 @@ export const auctionItems: AuctionItem[] = [
   {
     id: "item-memorabilia",
     slug: "sports-celebrity-memorabilia",
-    icon: "🏆",
+    icon: "trophy",
     title: "Sports & Celebrity Memorabilia",
     blurb: "The WOW factor that creates buzz and drives up every bid.",
     span: "tall",
@@ -143,7 +143,7 @@ export const auctionItems: AuctionItem[] = [
   {
     id: "item-jewelry",
     slug: "jewelry",
-    icon: "💎",
+    icon: "gem",
     title: "Gemstone & Costume Jewelry",
     blurb: "Sparkle that sells across every demographic.",
     image: {
@@ -188,7 +188,7 @@ export const auctionItems: AuctionItem[] = [
   {
     id: "item-handbags",
     slug: "handbags",
-    icon: "👜",
+    icon: "handbag",
     title: "Handbags with Swarovski Crystals",
     blurb: "Dazzling statement pieces guests adore.",
     image: {
@@ -234,7 +234,7 @@ export const auctionItems: AuctionItem[] = [
   {
     id: "item-meet-greets",
     slug: "meet-and-greets",
-    icon: "🎤",
+    icon: "mic",
     title: "Meet & Greets",
     blurb: "Priceless access bidders pay whatever it takes for.",
     image: {
@@ -261,7 +261,7 @@ export const auctionItems: AuctionItem[] = [
   {
     id: "item-gold-albums",
     slug: "gold-albums",
-    icon: "🥇",
+    icon: "disc",
     title: "Gold Album Showcases",
     blurb: "Framed music history that commands the room.",
     image: {
@@ -287,7 +287,7 @@ export const auctionItems: AuctionItem[] = [
   {
     id: "item-taylor-swift-guitar",
     slug: "taylor-swift-signed-guitar",
-    icon: "🎸",
+    icon: "guitar",
     title: "Taylor Swift Signed Guitar",
     blurb:
       "An authenticated, hand-signed guitar to auction — the headline showpiece your guests will talk about all night.",

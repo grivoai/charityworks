@@ -8,6 +8,7 @@ import { DonorIncentive } from "@/components/DonorIncentive";
 import { TestimonialMarquee } from "@/components/TestimonialMarquee";
 import { ContactForm } from "@/components/ContactForm";
 import { CountUp } from "@/components/CountUp";
+import { Icon } from "@/components/Icon";
 import { editable } from "@/lib/editable";
 import { testimonials } from "@/content/collections/testimonials";
 
@@ -147,7 +148,7 @@ export default async function HomePage() {
                     aria-hidden="true"
                     {...editable(`${entry}.icon`)}
                   >
-                    {item.icon}
+                    <Icon name={item.icon} />
                   </div>
                   <h3 {...editable(`${entry}.title`)}>{item.title}</h3>
                   <p {...editable(`${entry}.body`)}>{item.body}</p>
@@ -191,7 +192,7 @@ export default async function HomePage() {
                     {step.number}
                   </div>
                   <div className="ico" aria-hidden="true" {...editable(`${entry}.icon`)}>
-                    {step.icon}
+                    <Icon name={step.icon} />
                   </div>
                   <h3 {...editable(`${entry}.title`)}>{step.title}</h3>
                   <p {...editable(`${entry}.body`)}>{step.body}</p>
@@ -304,7 +305,7 @@ export default async function HomePage() {
               {site.contact.channels.map((channel, index) => (
                 <div key={channel.id} className={`ci-row reveal d${index + 1}`}>
                   <div className="ci-ico" aria-hidden="true">
-                    {channel.icon}
+                    <Icon name={channel.icon} />
                   </div>
                   <div>
                     <div className="lbl">{channel.label}</div>

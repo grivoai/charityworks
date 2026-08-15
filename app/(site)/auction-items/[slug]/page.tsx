@@ -10,6 +10,7 @@ import {
 import { siteUrl } from "@/lib/site-config";
 import { Cta } from "@/components/Section";
 import { CategoryJsonLd } from "@/components/JsonLd";
+import { Icon } from "@/components/Icon";
 import { at, editable } from "@/lib/editable";
 
 type Params = { slug: string };
@@ -74,8 +75,8 @@ export default async function AuctionCategoryRoute({
             <Link href="/auction-items">Auction Items</Link>
           </span>
           <h1>
-            <span aria-hidden="true" {...editable("icon")}>
-              {category.icon}
+            <span className="cat-hero-ico" aria-hidden="true" {...editable("icon")}>
+              <Icon name={category.icon} />
             </span>{" "}
             <span {...editable("heading")}>{category.heading}</span>
           </h1>

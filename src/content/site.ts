@@ -54,21 +54,21 @@ export const site: SiteContent = {
     channels: [
       {
         id: "channel-phone",
-        icon: "📞",
+        icon: "phone",
         label: "Call Us",
         value: "(925) 250-6968",
         href: "tel:9252506968",
       },
       {
         id: "channel-email",
-        icon: "✉️",
+        icon: "mail",
         label: "Email Us",
         value: "Ira@CharityWorks.net",
         href: "mailto:Ira@CharityWorks.net",
       },
       {
         id: "channel-area",
-        icon: "📍",
+        icon: "map-pin",
         label: "Service Area",
         value: "All 50 States",
       },

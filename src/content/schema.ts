@@ -98,14 +98,18 @@ export const stepSchema = z.object({
   number: text.describe(
     "The number shown on the step. Set explicitly rather than counted, so steps can be reordered."
   ),
-  icon: text.describe("A single emoji. Decorative — screen readers skip it."),
+  icon: text.describe(
+    'An icon name from the set (e.g. "guitar", "shield-check", "handshake"). Decorative — screen readers skip it.'
+  ),
   title: text,
   body: text,
 });
 
 export const valuePropSchema = z.object({
   id: text,
-  icon: text.describe("A single emoji. Decorative — screen readers skip it."),
+  icon: text.describe(
+    'An icon name from the set (e.g. "guitar", "shield-check", "handshake"). Decorative — screen readers skip it.'
+  ),
   title: text,
   body: text,
 });
@@ -165,7 +169,9 @@ export const categoryGroupSchema = z.object({
 export const auctionItemSchema = z.object({
   id: text,
   slug: text.describe("URL segment under /auction-items."),
-  icon: text.describe("A single emoji. Decorative — screen readers skip it."),
+  icon: text.describe(
+    'An icon name from the set (e.g. "guitar", "shield-check", "handshake"). Decorative — screen readers skip it.'
+  ),
   title: text,
   blurb: text.describe(
     "Appears in three places: the tile on the home and auction items pages, " +

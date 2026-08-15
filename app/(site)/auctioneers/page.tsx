@@ -6,6 +6,7 @@ import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
 import { at, editable } from "@/lib/editable";
 import { AuctioneersJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import { Icon } from "@/components/Icon";
 
 export function generateMetadata(): Promise<Metadata> {
   return buildMetadata("auctioneers");
@@ -75,7 +76,7 @@ export default async function AuctioneersRoute() {
                     aria-hidden="true"
                     {...editable(`${entry}.icon`)}
                   >
-                    {item.icon}
+                    <Icon name={item.icon} />
                   </div>
                   <h3 {...editable(`${entry}.title`)}>{item.title}</h3>
                   <p {...editable(`${entry}.body`)}>{item.body}</p>

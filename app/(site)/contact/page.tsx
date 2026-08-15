@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getPage, getSite } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { ContactForm } from "@/components/ContactForm";
+import { Icon } from "@/components/Icon";
 import { getInterestLookup } from "@/lib/interests";
 import { editable } from "@/lib/editable";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
@@ -49,7 +50,7 @@ export default async function ContactRoute() {
                   className={`ci-row reveal d${index + 1}`}
                 >
                   <div className="ci-ico" aria-hidden="true">
-                    {channel.icon}
+                    <Icon name={channel.icon} />
                   </div>
                   <div>
                     <div className="lbl">{channel.label}</div>
@@ -66,7 +67,7 @@ export default async function ContactRoute() {
             </div>
 
             <p className="mobile-note reveal d3">
-              <span aria-hidden="true">📱</span>{" "}
+              <span className="inline-ico" aria-hidden="true"><Icon name="smartphone" /></span>{" "}
               {/* The ` — ` stays one text node, exactly as it was. Splitting it
                   reshapes the glyphs either side and the paragraph rasterises a
                   few pixels differently — invisible, but it is not nothing, and

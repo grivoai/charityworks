@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
+import { Icon } from "@/components/Icon";
 import { editable } from "@/lib/editable";
 import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
@@ -44,7 +45,7 @@ export default async function AuctionInfoRoute() {
                     {step.number}
                   </div>
                   <div className="ico" aria-hidden="true" {...editable(`${entry}.icon`)}>
-                    {step.icon}
+                    <Icon name={step.icon} />
                   </div>
                   <h3 {...editable(`${entry}.title`)}>{step.title}</h3>
                   <p {...editable(`${entry}.body`)}>{step.body}</p>
@@ -86,7 +87,7 @@ export default async function AuctionInfoRoute() {
                   className={`why-card reveal${index % 3 > 0 ? ` d${index % 3}` : ""}`}
                 >
                   <div className="why-ico" aria-hidden="true" {...editable(`${entry}.icon`)}>
-                    {point.icon}
+                    <Icon name={point.icon} />
                   </div>
                   <h3 {...editable(`${entry}.title`)}>{point.title}</h3>
                   <p {...editable(`${entry}.body`)}>{point.body}</p>
@@ -124,7 +125,7 @@ export default async function AuctionInfoRoute() {
                   className={`why-card reveal${index % 3 > 0 ? ` d${index % 3}` : ""}`}
                 >
                   <div className="why-ico" aria-hidden="true" {...editable(`${entry}.icon`)}>
-                    {format.icon}
+                    <Icon name={format.icon} />
                   </div>
                   <h3 {...editable(`${entry}.title`)}>{format.title}</h3>
                   <p {...editable(`${entry}.body`)}>{format.body}</p>
@@ -133,7 +134,7 @@ export default async function AuctionInfoRoute() {
             })}
           </div>
           <p className="info-note reveal">
-            <span aria-hidden="true">📱</span>{" "}
+            <span className="inline-ico" aria-hidden="true"><Icon name="smartphone" /></span>{" "}
             <strong {...editable("mobileBidding.heading")}>{page.mobileBidding.heading}</strong> —{" "}
             <span {...editable("mobileBidding.body")}>{page.mobileBidding.body}</span>
           </p>

@@ -351,6 +351,20 @@ section { position: relative; }
 .contact-info { margin-top: 30px; display: flex; flex-direction: column; gap: 18px; }
 .ci-row { display: flex; align-items: center; gap: 16px; }
 .ci-ico { width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; font-size: 1.3rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); flex: 0 0 50px; }
+
+/* ============ LINE ICONS ============
+   Replace the old emoji glyphs. Sized from each container's font-size (width:1em)
+   and coloured with currentColor, so a surface's own palette drives the icon. */
+.cw-icon { width: 1em; height: 1em; display: inline-block; vertical-align: middle; flex: none; }
+.why-ico .cw-icon { color: var(--green); }
+.step .ico .cw-icon { color: var(--green); }
+.donor-card .emoji .cw-icon { width: 2rem; height: 2rem; color: var(--gold); }
+.ci-ico .cw-icon { color: var(--gold-bright); }
+.bento-card h3 .cw-icon { color: var(--gold-bright); vertical-align: -0.12em; }
+.inline-ico { display: inline-flex; }
+.inline-ico .cw-icon { width: 1.05em; height: 1.05em; color: var(--green); vertical-align: -0.2em; }
+.cat-hero-ico { font-size: 0.72em; }
+.cat-hero-ico .cw-icon { color: var(--gold-bright); vertical-align: -0.05em; }
 .ci-row .lbl { font-size: 0.78rem; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.08em; }
 .ci-row .val { font-size: 1.1rem; font-weight: 600; }
 .ci-row a.val:hover { color: var(--gold-bright); }

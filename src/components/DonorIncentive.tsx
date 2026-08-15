@@ -1,4 +1,5 @@
 import type { DonorSection } from "@/content/types";
+import { Icon } from "@/components/Icon";
 import { at, editable } from "@/lib/editable";
 
 /**
@@ -41,7 +42,7 @@ export function DonorIncentive({
                 aria-hidden="true"
                 {...editable(at(path, "perks", index, "emoji"))}
               >
-                {perk.emoji}
+                <Icon name={perk.emoji} />
               </div>
               <h3 {...editable(at(path, "perks", index, "action"))}>{perk.action}</h3>
               <div className="arrow">

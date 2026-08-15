@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { auctionItemSchema } from "@/content/schema";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { Icon } from "@/components/Icon";
 import { CategoryEditor } from "@/components/admin/CategoryEditor";
 import { PagePreview } from "@/components/admin/PagePreview";
 import { requireAdmin } from "@/lib/auth";
@@ -89,7 +90,7 @@ export default async function EditCategoryRoute({
 
       <div className="admin-head">
         <h1>
-          <span aria-hidden="true">{category.icon}</span> {category.title}
+          <span aria-hidden="true"><Icon name={category.icon} /></span> {category.title}
         </h1>
         <p>
           {lots} lot{lots === 1 ? "" : "s"}. Saving publishes straight to{" "}
