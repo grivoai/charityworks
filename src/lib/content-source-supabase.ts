@@ -100,6 +100,35 @@ function fail(what: string, error: PostgrestError | null): never {
   );
 }
 
+/**
+ * Retries a read a few times before giving up.
+ *
+ * These reads run at build time, where a transient database hiccup — a brief
+ * clock skew that reads back as "JWT issued at future", a dropped connection —
+ * otherwise fails the entire static build for something that would have
+ * succeeded a second later. A short backoff turns those into a pause rather than
+ * a failed deploy. A genuine fault (a real outage, a schema mismatch) still
+ * surfaces once the attempts are spent, and `fail()` still throws loudly — this
+ * only buys a few seconds for the transient case.
+ */
+async function read<R extends { error: PostgrestError | null }>(
+  label: string,
+  run: () => PromiseLike<R>
+): Promise<R> {
+  const backoffMs = [500, 1500, 3500];
+  let result = await run();
+  for (const delay of backoffMs) {
+    if (!result.error) return result;
+    console.warn(
+      `[content] transient read error for ${label} (${result.error.message}); ` +
+        `retrying in ${delay}ms`
+    );
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    result = await run();
+  }
+  return result;
+}
+
 /** Drops nulls so an absent column becomes an absent key, which is what the schemas expect. */
 function imageOf(row: {
   image_src: string | null;
@@ -126,11 +155,13 @@ function omitNull<T>(value: T | null): T | undefined {
 
 export const supabaseContentSource: ContentSource = {
   async getSite(): Promise<SiteContent> {
-    const { data, error } = await getServiceClient()
-      .from("site_settings")
-      .select("data")
-      .eq("id", 1)
-      .maybeSingle<SiteRow>();
+    const { data, error } = await read("site settings", () =>
+      getServiceClient()
+        .from("site_settings")
+        .select("data")
+        .eq("id", 1)
+        .maybeSingle<SiteRow>()
+    );
 
     if (error || !data) fail("site settings", error);
 
@@ -148,11 +179,13 @@ export const supabaseContentSource: ContentSource = {
   },
 
   async getPage<S extends PageSlug>(slug: S): Promise<PageMap[S]> {
-    const { data, error } = await getServiceClient()
-      .from("pages")
-      .select("slug, data")
-      .eq("slug", slug)
-      .maybeSingle<PageRow>();
+    const { data, error } = await read(`page "${slug}"`, () =>
+      getServiceClient()
+        .from("pages")
+        .select("slug, data")
+        .eq("slug", slug)
+        .maybeSingle<PageRow>()
+    );
 
     if (error || !data) fail(`page "${slug}"`, error);
 
@@ -172,10 +205,9 @@ export const supabaseContentSource: ContentSource = {
   },
 
   async getAllPages(): Promise<AnyPage[]> {
-    const { data, error } = await getServiceClient()
-      .from("pages")
-      .select("slug, data")
-      .returns<PageRow[]>();
+    const { data, error } = await read("pages", () =>
+      getServiceClient().from("pages").select("slug, data").returns<PageRow[]>()
+    );
 
     if (error || !data) fail("pages", error);
 
@@ -202,23 +234,29 @@ export const supabaseContentSource: ContentSource = {
        lots in an arbitrary order is a bug nobody notices until the client
        does. Three ordered reads of a few hundred rows, at build time only. */
     const [categories, groups, items] = await Promise.all([
-      supabase
-        .from("catalog_categories")
-        .select("*")
-        .eq("published", true)
-        .order("position")
-        .returns<CategoryRow[]>(),
-      supabase
-        .from("catalog_groups")
-        .select("*")
-        .order("position")
-        .returns<GroupRow[]>(),
-      supabase
-        .from("catalog_items")
-        .select("*")
-        .eq("published", true)
-        .order("position")
-        .returns<ItemRow[]>(),
+      read("catalog categories", () =>
+        supabase
+          .from("catalog_categories")
+          .select("*")
+          .eq("published", true)
+          .order("position")
+          .returns<CategoryRow[]>()
+      ),
+      read("catalog groups", () =>
+        supabase
+          .from("catalog_groups")
+          .select("*")
+          .order("position")
+          .returns<GroupRow[]>()
+      ),
+      read("catalog items", () =>
+        supabase
+          .from("catalog_items")
+          .select("*")
+          .eq("published", true)
+          .order("position")
+          .returns<ItemRow[]>()
+      ),
     ]);
 
     if (categories.error || !categories.data) fail("catalog categories", categories.error);
