@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { getAuctionCategories, getPage, getSite } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
@@ -102,7 +103,31 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="hero-stats">
+          <div className="hero-visual">
+            {/* Real inventory behind the stats — signed guitar + framed jersey —
+                so the hero shows what the business sells, not just text on dark.
+                Decorative: the hero's meaning is carried by its copy. */}
+            <div className="hero-collage" aria-hidden="true">
+              <div className="hc hc-a">
+                <Image
+                  src="/images/catalog/guitars/guitar_01_taylor-swift.jpg"
+                  alt=""
+                  fill
+                  sizes="(max-width: 980px) 0px, 300px"
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
+              <div className="hc hc-b">
+                <Image
+                  src="/images/catalog/memorabilia/memorabilia_01_george-kittle-49ers-handsigned-framed-jersey.jpg"
+                  alt=""
+                  fill
+                  sizes="(max-width: 980px) 0px, 280px"
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
+            </div>
+            <div className="hero-stats">
             {hero.stats.map((stat, index) => (
               <div key={stat.id} className={`stat-card s${index + 1}`}>
                 <div className="num" {...editable(`hero.stats.${index}.value`)}>
@@ -113,6 +138,7 @@ export default async function HomePage() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
         </div>
       </header>
@@ -156,6 +182,24 @@ export default async function HomePage() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* ---------- REAL PHOTOGRAPHY BAND ----------
+          A full-bleed strip of actual inventory between the icon-led sections,
+          so the page is not carried by icons and text alone. Decorative. */}
+      <section className="photo-band reveal" aria-hidden="true">
+        <div className="pb">
+          <Image src="/images/catalog/guitars/guitar_10_taylor-swift.jpg" alt="" fill sizes="(max-width: 700px) 50vw, 25vw" style={{ objectFit: "cover" }} />
+        </div>
+        <div className="pb">
+          <Image src="/images/catalog/memorabilia/memorabilia_07_buster-posey-handsigned-framed-jersey.jpg" alt="" fill sizes="(max-width: 700px) 50vw, 25vw" style={{ objectFit: "cover" }} />
+        </div>
+        <div className="pb">
+          <Image src="/images/catalog/gold-albums/goldalbum_15_pink-floyd-the-wall.jpg" alt="" fill sizes="(max-width: 700px) 50vw, 25vw" style={{ objectFit: "cover" }} />
+        </div>
+        <div className="pb">
+          <Image src="/images/catalog/trips/trip_20_food-and-beverages-included.jpg" alt="" fill sizes="(max-width: 700px) 50vw, 25vw" style={{ objectFit: "cover" }} />
         </div>
       </section>
 

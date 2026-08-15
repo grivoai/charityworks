@@ -170,6 +170,16 @@ section { position: relative; }
 .s4 { bottom: 0; right: 30px; animation-delay: -4.5s; }
 @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-18px);} }
 
+/* Hero visual: a small collage of real inventory, with the glass stat cards
+   floating over it. */
+.hero-visual { position: relative; align-self: center; min-height: 460px; }
+.hero-collage { position: absolute; inset: 0; z-index: 0; }
+.hero-collage .hc { position: absolute; border-radius: 18px; overflow: hidden; box-shadow: 0 26px 64px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.14); }
+.hero-collage .hc img { object-fit: cover; }
+.hero-collage .hc-a { width: 56%; height: 60%; top: 0; left: 2%; transform: rotate(-5deg); z-index: 1; }
+.hero-collage .hc-b { width: 50%; height: 54%; bottom: 2%; right: 0; transform: rotate(4deg); z-index: 2; }
+.hero-visual .hero-stats { position: relative; z-index: 3; height: 460px; }
+
 /* ============ HOME FIRST-LOAD INTRO ============
    Gated on [data-home-intro="play"], set once per session by the hero's inline
    script (and never under reduced motion). Because it is an attribute that is
@@ -263,6 +273,21 @@ section { position: relative; }
 .why-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); border-color: transparent; }
 .why-card:hover::before { transform: scaleY(1); }
 .why-ico { width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; font-size: 1.6rem; background: linear-gradient(135deg, rgba(184,134,11,0.16), rgba(42,82,152,0.14)); margin-bottom: 18px; }
+
+/* Featured first card — breaks the uniform 3-up grid with one larger, darker
+   tile that carries more weight than the rest of the row. */
+.why-grid > .why-card:first-child { grid-column: span 2; background: linear-gradient(140deg, var(--green), var(--green-deep)); border-color: transparent; }
+.why-grid > .why-card:first-child h3 { color: #fff; font-size: 1.45rem; }
+.why-grid > .why-card:first-child p { color: rgba(255,255,255,0.86); }
+.why-grid > .why-card:first-child .why-ico { width: 66px; height: 66px; font-size: 2rem; background: rgba(255,255,255,0.12); }
+.why-grid > .why-card:first-child .cw-icon { color: var(--gold-bright); }
+
+/* Full-bleed photography band. */
+.photo-band { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.photo-band .pb { position: relative; height: clamp(180px, 22vw, 300px); overflow: hidden; }
+.photo-band .pb img { transition: transform 0.7s var(--ease); }
+.photo-band .pb:hover img { transform: scale(1.06); }
+@media (max-width: 700px) { .photo-band { grid-template-columns: repeat(2, 1fr); } }
 .why-card h3 { font-size: 1.2rem; color: var(--green); margin-bottom: 8px; }
 .why-card p { color: var(--muted); font-size: 0.96rem; }
 
@@ -468,6 +493,11 @@ section { position: relative; }
 @media (max-width: 980px) {
   .hero .wrap { grid-template-columns: 1fr; }
   .hero-stats { height: 260px; max-width: 460px; }
+  /* The collage is a two-column flourish; on a stacked hero it would only crowd
+     the cards, so drop it and let the stats stand alone as before. */
+  .hero-collage { display: none; }
+  .hero-visual { min-height: 0; }
+  .hero-visual .hero-stats { height: 260px; }
   .contact .wrap { grid-template-columns: 1fr; }
   .steps { grid-template-columns: 1fr; gap: 44px; }
   .steps::before { display: none; }
