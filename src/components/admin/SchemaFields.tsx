@@ -11,6 +11,7 @@ import type {
 import { FIELD_PATH_ATTR, domId } from "@/lib/admin/dom";
 import { putFile } from "@/components/admin/upload-transfer";
 import { ImagePicker } from "@/components/admin/ImagePicker";
+import { Icon, ICON_SLUGS } from "@/components/Icon";
 import { addImage, signImage } from "@/lib/admin/image-actions";
 import {
   IMAGE_TYPES,
@@ -156,8 +157,51 @@ function FieldFrame({
   );
 }
 
-function StringField({ node, value, onChange, path, errors }: FieldProps) {
+/**
+ * A visual chooser for the `icon`/`emoji` fields, so an editor picks from the
+ * line-icon set (see components/Icon.tsx) rather than typing a slug. The stored
+ * value is still the slug string, so nothing downstream changes.
+ */
+function IconPickerField(props: FieldProps) {
+  const { node, value, onChange, path, errors } = props;
+  const current = typeof value === "string" ? value : "";
+  return (
+    <FieldFrame node={node} path={path} errors={errors}>
+      <div
+        className="admin-icon-picker"
+        role="radiogroup"
+        aria-label={`${node.label} icon`}
+      >
+        {ICON_SLUGS.map((slug) => {
+          const selected = slug === current;
+          return (
+            <button
+              key={slug}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              aria-label={slug}
+              title={slug}
+              className={`admin-icon-swatch${selected ? " is-selected" : ""}`}
+              disabled={Boolean(node.locked)}
+              onClick={() => onChange(slug)}
+            >
+              <Icon name={slug} />
+            </button>
+          );
+        })}
+      </div>
+      <p className="admin-help admin-icon-current">
+        {current ? `Selected: ${current}` : "Pick an icon above."}
+      </p>
+    </FieldFrame>
+  );
+}
+
+function StringField(props: FieldProps) {
+  const { node, value, onChange, path, errors } = props;
   if (node.kind !== "string") return null;
+  if (/(^|\.)(icon|emoji)$/.test(path)) return <IconPickerField {...props} />;
   const text = typeof value === "string" ? value : "";
   const shared = {
     id: domId(path),
