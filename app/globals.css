@@ -914,6 +914,10 @@ main.is-transitioning {
   display: grid;
   place-items: center;
 }
+/* Top-anchor the crop so a head at the top of the frame is never the part that
+   gets cut. Most visible on mobile, where the frame turns wide and a centred
+   crop lops off foreheads. */
+.auc-portrait img { object-position: center top; }
 .auc-portrait .auc-avatar {
   width: 92px; height: 92px; border-radius: 50%;
   display: grid; place-items: center;

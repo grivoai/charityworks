@@ -44,18 +44,28 @@ export function RevealObserver() {
       return;
     }
 
-    let pending = targets;
+    /**
+     * Decide, up front, which elements to animate on scroll and which to just
+     * show. An IntersectionObserver only fires when an element *enters* the
+     * viewport, so anything already sitting *above* it will never trigger — and
+     * on a slow load, where the observer attaches long after paint, a visitor
+     * can scroll well past a section before it is ever observed, leaving it
+     * stuck at opacity 0. So snap those to visible now rather than observe them.
+     */
+    const pending: HTMLElement[] = [];
+    for (const el of targets) {
+      const rect = el.getBoundingClientRect();
+      const scrolledPast = rect.bottom <= 0;
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
 
-    if (!isFirstRun) {
-      pending = [];
-      for (const el of targets) {
-        const rect = el.getBoundingClientRect();
-        const onScreen = rect.top < window.innerHeight && rect.bottom > 0;
-        if (onScreen) {
-          el.classList.add("reveal-instant", "in");
-        } else {
-          pending.push(el);
-        }
+      // Snap (no animation) anything the visitor cannot actually watch fade in:
+      //   - always: elements already scrolled past — the stuck-at-0 bug; and
+      //   - after a client-side nav: in-view elements too, since AnimatedLayout
+      //     is already playing the entrance for what is on screen.
+      if (scrolledPast || (!isFirstRun && inView)) {
+        el.classList.add("reveal-instant", "in");
+      } else {
+        pending.push(el);
       }
     }
 
