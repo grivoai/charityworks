@@ -29,7 +29,7 @@ export const valueProps: ValueProp[] = [
   {
     id: "vp-catalog",
     icon: "package",
-    title: "1,000+ Items",
+    title: "Dozens of Items",
     body: "Wide variety for every audience and demographic.",
   },
   {

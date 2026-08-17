@@ -42,7 +42,7 @@ export const homePage: HomePage = {
       variant: "secondary",
     },
     stats: [
-      { id: "stat-items", value: "1,000+", label: "Auction Items" },
+      { id: "stat-items", value: "60+", label: "Auction Items" },
       { id: "stat-states", value: "All 50", label: "States Served" },
       { id: "stat-cost", value: "$0", label: "Upfront Cost" },
       { id: "stat-years", value: "30+", label: "Years Experience" },
@@ -76,7 +76,7 @@ export const homePage: HomePage = {
   itemsTeaser: {
     header: {
       eyebrow: "Auction Items",
-      title: "Over 1,000 Items to Choose From",
+      title: "Dozens of Items to Choose From",
       lede: "A curated catalog built to thrill every audience — and drive bids sky-high.",
     },
     cta: {

@@ -7,7 +7,7 @@ export const steps: Step[] = [
     number: "1",
     icon: "layout-grid",
     title: "Choose Your Items",
-    body: "Browse 1,000+ consignment packages tailored to your crowd. Luxury travel, experiences, memorabilia and more.",
+    body: "Browse dozens of consignment packages tailored to your crowd. Luxury travel, experiences, memorabilia and more.",
   },
   {
     id: "step-run",

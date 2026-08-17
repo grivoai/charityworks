@@ -10,7 +10,7 @@ export const faqs: FaqItem[] = [
     id: "faq-how-it-works",
     question: "How does the CharityWorks program work?",
     answer:
-      "You choose from our catalog of 1,000+ consignment items, feature them at your event, and only pay us for what sells. Anything unsold is returned at no cost — it's that simple and that risk-free.",
+      "You choose from dozens of consignment items in our catalog, feature them at your event, and only pay us for what sells. Anything unsold is returned at no cost — it's that simple and that risk-free.",
   },
   {
     id: "faq-silent-or-live",
