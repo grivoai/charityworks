@@ -135,15 +135,50 @@ section { position: relative; }
   background: linear-gradient(135deg, #07152e 0%, #0a1f3d 45%, #081933 100%);
   color: #fff; padding-top: 72px;
 }
-.hero-bg { position: absolute; inset: 0; z-index: 0; }
-.hero-bg::before, .hero-bg::after {
-  content: ""; position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.55;
-  animation: drift 16s ease-in-out infinite;
+/* ---- Hero slideshow ----
+   Five stacked photographs, one keyframe each, offset by --slide-delay so
+   exactly one is opaque at a time and consecutive layers overlap during the
+   fade. The cycle is `slides x hold`; keep the 20%/22% stops and the delay in
+   HeroSlideshow.tsx in step if the number of slides ever changes.
+
+   The blurred gold/blue orbs that used to live here were removed with the
+   photographs: two soft light sources drifting over a moving photograph read as
+   a smudge on the lens rather than as depth. */
+.hero-slides { position: absolute; inset: 0; z-index: 0; }
+.hero-slide {
+  position: absolute; inset: 0; opacity: 0;
+  animation: hero-slide 40s linear infinite;
+  animation-delay: var(--slide-delay, 0s);
 }
-.hero-bg::before { width: 540px; height: 540px; background: radial-gradient(circle, rgba(184,134,11,0.6), transparent 70%); top: -120px; right: -80px; }
-.hero-bg::after { width: 480px; height: 480px; background: radial-gradient(circle, rgba(42,82,152,0.85), transparent 70%); bottom: -140px; left: -90px; animation-delay: -8s; }
-@keyframes drift { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(40px,-30px) scale(1.12);} }
-.hero-grid { position: absolute; inset: 0; opacity: 0.06; background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px); background-size: 64px 64px; z-index: 0; mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000, transparent); }
+.hero-slide img {
+  /* Slow push-in, resetting while the layer is invisible so the jump back is
+     never seen. Keeps a held frame from looking like a stalled page. */
+  animation: hero-ken 40s ease-out infinite;
+  animation-delay: var(--slide-delay, 0s);
+}
+@keyframes hero-slide {
+  0% { opacity: 0; }
+  2% { opacity: 1; }
+  20% { opacity: 1; }
+  22% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes hero-ken {
+  0% { transform: scale(1.04); }
+  22% { transform: scale(1.12); }
+  100% { transform: scale(1.04); }
+}
+
+/* Two layers: the horizontal one buys contrast for the headline column, the
+   vertical one keeps the fixed nav legible at the top and grounds the stat
+   cards at the bottom. Sized against the brightest slide, not the darkest. */
+.hero-scrim {
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    linear-gradient(100deg, rgba(7,21,46,0.94) 0%, rgba(7,21,46,0.9) 32%, rgba(8,25,51,0.7) 66%, rgba(8,25,51,0.78) 100%),
+    linear-gradient(to bottom, rgba(7,21,46,0.6) 0%, rgba(7,21,46,0.3) 38%, rgba(7,21,46,0.72) 100%);
+}
+.hero-grid { position: absolute; inset: 0; opacity: 0.05; background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px); background-size: 64px 64px; z-index: 1; mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000, transparent); }
 .hero .wrap { position: relative; z-index: 2; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 50px; align-items: stretch; }
 .hero-content { text-align: left; align-self: center; }
 .hero-pill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 16px; border-radius: 100px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); font-size: 0.82rem; font-weight: 500; margin-bottom: 26px; backdrop-filter: blur(6px); }
@@ -170,16 +205,6 @@ section { position: relative; }
 .s4 { bottom: 0; right: 30px; animation-delay: -4.5s; }
 @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-18px);} }
 
-/* Hero visual: a small collage of real inventory, with the glass stat cards
-   floating over it. */
-.hero-visual { position: relative; align-self: center; min-height: 460px; }
-.hero-collage { position: absolute; inset: 0; z-index: 0; }
-.hero-collage .hc { position: absolute; border-radius: 18px; overflow: hidden; box-shadow: 0 26px 64px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.14); }
-.hero-collage .hc img { object-fit: cover; }
-.hero-collage .hc-a { width: 56%; height: 60%; top: 0; left: 2%; transform: rotate(-5deg); z-index: 1; }
-.hero-collage .hc-b { width: 50%; height: 54%; bottom: 2%; right: 0; transform: rotate(4deg); z-index: 2; }
-.hero-visual .hero-stats { position: relative; z-index: 3; height: 460px; }
-
 /* ============ HOME FIRST-LOAD INTRO ============
    Gated on [data-home-intro="play"], set once per session by the hero's inline
    script (and never under reduced motion). Because it is an attribute that is
@@ -189,35 +214,43 @@ section { position: relative; }
 @keyframes intro-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 @keyframes intro-fade { from { opacity: 0; } to { opacity: 1; } }
 
-[data-home-intro="play"] .hero-pill { animation: intro-rise 0.55s var(--ease) 0.04s both; }
+/* TIMING. The whole sequence runs to ~3.05s, roughly double what it was: the
+   original ended at ~1.5s with a 0.05s word stagger, which was over before the
+   eye could follow it. Anything added here must finish before the inline
+   script clears data-home-intro — see INTRO_CLEAR_MS in page.tsx, which is set
+   from this timeline with headroom. Past that point the attribute disappears
+   mid-animation and whatever is still running snaps to its final state. */
+[data-home-intro="play"] .hero-pill { animation: intro-rise 0.8s var(--ease) 0.1s both; }
 /* Word delays come from an inline animation-delay per word; only name/duration
    are set here so the stagger is preserved. Opacity-only keeps the accent
    line's clipped gradient intact. */
 [data-home-intro="play"] .hero h1 .intro-word {
   animation-name: intro-fade;
-  animation-duration: 0.5s;
+  animation-duration: 0.85s;
   animation-timing-function: var(--ease);
   animation-fill-mode: both;
 }
-[data-home-intro="play"] .hero p.sub { animation: intro-rise 0.55s var(--ease) 0.36s both; }
-[data-home-intro="play"] .hero-btns { animation: intro-rise 0.55s var(--ease) 0.46s both; }
+[data-home-intro="play"] .hero p.sub { animation: intro-rise 0.85s var(--ease) 0.95s both; }
+[data-home-intro="play"] .hero-btns { animation: intro-rise 0.85s var(--ease) 1.25s both; }
 
 /* Stat cards keep their resting float — the intro only fades them in, staggered.
    Two comma-separated animation-delays: the first staggers the fade, the second
    restores each card's original float desync. */
 [data-home-intro="play"] .hero-stats .stat-card {
-  animation: intro-fade 0.55s var(--ease) both, float 6s ease-in-out infinite;
+  animation: intro-fade 0.9s var(--ease) both, float 6s ease-in-out infinite;
 }
-[data-home-intro="play"] .stat-card.s1 { animation-delay: 0.55s, 0s; }
-[data-home-intro="play"] .stat-card.s2 { animation-delay: 0.68s, -1.5s; }
-[data-home-intro="play"] .stat-card.s3 { animation-delay: 0.81s, -3s; }
-[data-home-intro="play"] .stat-card.s4 { animation-delay: 0.94s, -4.5s; }
+[data-home-intro="play"] .stat-card.s1 { animation-delay: 1.5s, 0s; }
+[data-home-intro="play"] .stat-card.s2 { animation-delay: 1.72s, -1.5s; }
+[data-home-intro="play"] .stat-card.s3 { animation-delay: 1.94s, -3s; }
+[data-home-intro="play"] .stat-card.s4 { animation-delay: 2.16s, -4.5s; }
 
 /* ============ REVEAL ============ */
-.reveal { opacity: 0; transform: translateY(38px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+/* Paced to match the hero intro above — a 0.08s stagger read as everything
+   arriving at once next to a hero that now takes its time. */
+.reveal { opacity: 0; transform: translateY(38px); transition: opacity 1s var(--ease), transform 1s var(--ease); }
 .reveal.in { opacity: 1; transform: none; }
-.reveal.d1 { transition-delay: 0.08s; } .reveal.d2 { transition-delay: 0.16s; }
-.reveal.d3 { transition-delay: 0.24s; } .reveal.d4 { transition-delay: 0.32s; }
+.reveal.d1 { transition-delay: 0.13s; } .reveal.d2 { transition-delay: 0.26s; }
+.reveal.d3 { transition-delay: 0.39s; } .reveal.d4 { transition-delay: 0.52s; }
 
 /* ============ HOW IT WORKS ============ */
 .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 64px; position: relative; }
@@ -263,7 +296,19 @@ section { position: relative; }
 .b-tall { grid-row: span 2; }
 
 /* ============ WHY (icon grid) ============ */
-.why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 60px; }
+/* ---- Wrapping card rows ----
+   Flex rather than grid, and centred. A full row is identical to the 3-column
+   grid this replaced; the difference is the LAST row. These counts are
+   admin-editable, so a fixed column count strands whatever does not divide by
+   three against the left edge with a hole beside it — which is what this grid
+   did on all four sections that use it (9, 6, 4 and 4 items). Centring the
+   remainder makes any count read as deliberate, including counts the client
+   invents later. Same reasoning for .cat-grid, .t-grid and .donor-cards.
+
+   The column width is written out rather than left to `flex: 1` so a row of two
+   does not stretch to half the page each. */
+.why-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; margin-top: 60px; }
+.why-grid > .why-card { flex: 0 1 calc((100% - 2 * 22px) / 3); min-width: 240px; }
 .why-card {
   background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 30px;
   transition: transform 0.45s var(--ease), box-shadow 0.45s var(--ease), border-color 0.45s;
@@ -274,20 +319,38 @@ section { position: relative; }
 .why-card:hover::before { transform: scaleY(1); }
 .why-ico { width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; font-size: 1.6rem; background: linear-gradient(135deg, rgba(184,134,11,0.16), rgba(42,82,152,0.14)); margin-bottom: 18px; }
 
-/* Featured first card — breaks the uniform 3-up grid with one larger, darker
-   tile that carries more weight than the rest of the row. */
-.why-grid > .why-card:first-child { grid-column: span 2; background: linear-gradient(140deg, var(--green), var(--green-deep)); border-color: transparent; }
+/* Featured first card — carries more weight than the rest of the row through
+   colour and icon size. It used to span two columns as well; that is what put
+   a hole in every .why-grid on the site, since a 2-cell first card only tiles
+   cleanly at 2, 5, 8 or 11 items and the four sections have 9, 6, 4 and 4. The
+   darker treatment does the same job without the arithmetic. */
+.why-grid > .why-card:first-child { background: linear-gradient(140deg, var(--green), var(--green-deep)); border-color: transparent; }
 .why-grid > .why-card:first-child h3 { color: #fff; font-size: 1.45rem; }
 .why-grid > .why-card:first-child p { color: rgba(255,255,255,0.86); }
 .why-grid > .why-card:first-child .why-ico { width: 66px; height: 66px; font-size: 2rem; background: rgba(255,255,255,0.12); }
 .why-grid > .why-card:first-child .cw-icon { color: var(--gold-bright); }
 
-/* Full-bleed photography band. */
-.photo-band { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.photo-band .pb { position: relative; height: clamp(180px, 22vw, 300px); overflow: hidden; }
-.photo-band .pb img { transition: transform 0.7s var(--ease); }
-.photo-band .pb:hover img { transform: scale(1.06); }
-@media (max-width: 700px) { .photo-band { grid-template-columns: repeat(2, 1fr); } }
+/* ---- Item photo marquee (home items teaser) ----
+   Same seamless-loop mechanism as .t-track — the track holds its tiles twice
+   and travels exactly half its width — but reversed and slower, so the two
+   marquees on the page read as a pair rather than as the same trick twice.
+   Replaced the static .photo-band, which did a weaker version of this job. */
+.i-track-wrap {
+  margin-top: 44px; overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+}
+.i-track { display: flex; gap: 18px; width: max-content; animation: scroll-back 60s linear infinite; }
+.i-track-wrap:hover .i-track { animation-play-state: paused; }
+@keyframes scroll-back { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+.i-tile {
+  position: relative; flex: 0 0 280px; height: 200px;
+  border-radius: var(--radius-sm); overflow: hidden;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--line);
+}
+.i-tile img { transition: transform 0.7s var(--ease); }
+.i-tile:hover img { transform: scale(1.06); }
+@media (max-width: 760px) { .i-tile { flex-basis: 210px; height: 150px; } }
 .why-card h3 { font-size: 1.2rem; color: var(--green); margin-bottom: 8px; }
 .why-card p { color: var(--muted); font-size: 0.96rem; }
 
@@ -298,7 +361,8 @@ section { position: relative; }
 .donor .section-title { color: #5e430a; }
 .donor .section-lede { color: #6b5418; }
 .donor-tag { display: inline-block; background: var(--green); color: var(--gold-soft); padding: 7px 18px; border-radius: 100px; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; margin-bottom: 14px; }
-.donor-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 52px; }
+.donor-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 52px; }
+.donor-card { flex: 0 1 calc((100% - 3 * 20px) / 4); min-width: 210px; }
 .donor-card {
   background: rgba(255,255,255,0.55); backdrop-filter: blur(10px);
   border: 1px solid rgba(255,255,255,0.7); border-radius: var(--radius); padding: 30px 24px;
@@ -314,7 +378,6 @@ section { position: relative; }
 .auc-offer { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; margin: 30px auto 0; padding: 18px 28px; max-width: 760px; background: linear-gradient(135deg, rgba(184,134,11,0.12), rgba(42,82,152,0.1)); border: 1px dashed var(--gold); border-radius: var(--radius); }
 .auc-offer .big { font-family: "Playfair Display", serif; font-weight: 800; color: var(--gold); font-size: 1.5rem; }
 .auc-offer span { color: var(--muted); font-size: 0.96rem; }
-.auc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 56px; }
 .auc-card {
   background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 30px;
   transition: transform 0.45s var(--ease), box-shadow 0.45s var(--ease);
@@ -493,15 +556,12 @@ section { position: relative; }
 @media (max-width: 980px) {
   .hero .wrap { grid-template-columns: 1fr; }
   .hero-stats { height: 260px; max-width: 460px; }
-  /* The collage is a two-column flourish; on a stacked hero it would only crowd
-     the cards, so drop it and let the stats stand alone as before. */
-  .hero-collage { display: none; }
-  .hero-visual { min-height: 0; }
-  .hero-visual .hero-stats { height: 260px; }
   .contact .wrap { grid-template-columns: 1fr; }
   .steps { grid-template-columns: 1fr; gap: 44px; }
   .steps::before { display: none; }
-  .bento, .why-grid, .donor-cards, .auc-grid { grid-template-columns: repeat(2, 1fr); }
+  .bento { grid-template-columns: repeat(2, 1fr); }
+  .why-grid > .why-card { flex-basis: calc((100% - 22px) / 2); }
+  .donor-card { flex-basis: calc((100% - 20px) / 2); }
   .b-wide { grid-column: span 2; }
   .footer-top { grid-template-columns: 1fr 1fr; }
 }
@@ -510,8 +570,8 @@ section { position: relative; }
   .nav-links.open { transform: none; }
   .nav-toggle { display: flex; z-index: 1001; }
   .nav-cta { display: none; }
-  .bento, .why-grid, .donor-cards, .auc-grid { grid-template-columns: 1fr; }
-  .bento { grid-auto-rows: 170px; }
+  .bento { grid-template-columns: 1fr; grid-auto-rows: 170px; }
+  .why-grid > .why-card, .donor-card { flex-basis: 100%; }
   .b-wide, .b-tall { grid-column: span 1; grid-row: span 1; }
   .form-grid { grid-template-columns: 1fr; }
   .field.full, .form-msg, .lead-context { grid-column: span 1; }
@@ -525,6 +585,10 @@ section { position: relative; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; }
+  /* With the animation off, both marquees stop at their start position and the
+     rest of the track is simply clipped. Hand it back as a scrollable strip so
+     the content is still reachable rather than merely hidden. */
+  .t-track-wrap, .i-track-wrap { overflow-x: auto; }
 }
 
 /* ================================================================== */
@@ -627,12 +691,14 @@ section { position: relative; }
    The home page uses the duplicated marquee track; this page renders each
    testimonial exactly once so crawlers see no repeated content. */
 .t-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 26px;
   margin-top: 8px;
 }
-.t-grid .t-card { width: auto; flex: initial; }
+/* Overrides the marquee card's fixed 380px basis — see .t-card. */
+.t-grid .t-card { width: auto; flex: 0 1 calc((100% - 2 * 26px) / 3); min-width: 260px; }
 .t-grid .t-card {
   background: #fff;
   border: 1px solid var(--line);
@@ -696,10 +762,10 @@ section { position: relative; }
 
 /* ---- Responsive for additions ---- */
 @media (max-width: 980px) {
-  .t-grid { grid-template-columns: repeat(2, 1fr); }
+  .t-grid .t-card { flex-basis: calc((100% - 26px) / 2); }
 }
 @media (max-width: 760px) {
-  .t-grid { grid-template-columns: 1fr; }
+  .t-grid .t-card { flex-basis: 100%; }
   .bento-uniform { grid-auto-rows: 200px; }
   .page-hero { padding-top: clamp(120px, 26vw, 150px); }
 }
@@ -855,12 +921,17 @@ main.is-transitioning {
 }
 .cat-group-head p { color: var(--muted); font-size: 0.98rem; }
 
+/* Centred remainder, as .why-grid. It matters most here: group sizes run from
+   21 lots down to a single one (Handbags), and a lone card pinned to the left
+   of a 3-column row looks like two failed to load. */
 .cat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 26px;
   list-style: none;
 }
+.cat-card { flex: 0 1 calc((100% - 2 * 26px) / 3); min-width: 250px; }
 .cat-card {
   display: flex;
   flex-direction: column;
@@ -951,10 +1022,10 @@ main.is-transitioning {
 .cat-back a:hover { color: var(--gold); }
 
 @media (max-width: 1100px) {
-  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .cat-card { flex-basis: calc((100% - 26px) / 2); }
 }
 @media (max-width: 700px) {
-  .cat-grid { grid-template-columns: 1fr; }
+  .cat-card { flex-basis: 100%; }
 }
 
 /* Home page contact block: link out to the full contact page. */
