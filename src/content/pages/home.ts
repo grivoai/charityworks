@@ -42,7 +42,7 @@ export const homePage: HomePage = {
       variant: "secondary",
     },
     stats: [
-      { id: "stat-items", value: "60+", label: "Auction Items" },
+      { id: "stat-items", value: "80+", label: "Auction Items" },
       { id: "stat-states", value: "All 50", label: "States Served" },
       { id: "stat-cost", value: "$0", label: "Upfront Cost" },
       { id: "stat-years", value: "30+", label: "Years Experience" },
