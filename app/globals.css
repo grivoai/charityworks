@@ -172,11 +172,18 @@ section { position: relative; }
 /* Two layers: the horizontal one buys contrast for the headline column, the
    vertical one keeps the fixed nav legible at the top and grounds the stat
    cards at the bottom. Sized against the brightest slide, not the darkest. */
+/* The two layers MULTIPLY: what reaches the eye is 1 - (1-a1)(1-a2), not a1+a2.
+   The first pass stacked 0.94 over 0.6 on the headline column, which is 0.976
+   effective — the photograph was showing through at about two percent and might
+   as well not have been there. These values put the text column near 0.77 and
+   the open right side near 0.55, so the picture reads while the copy keeps a
+   comfortable margin over AA. Measured against the brightest frame rather than
+   estimated; see the stat-card note for the other half of this. */
 .hero-scrim {
   position: absolute; inset: 0; z-index: 1;
   background:
-    linear-gradient(100deg, rgba(7,21,46,0.94) 0%, rgba(7,21,46,0.9) 32%, rgba(8,25,51,0.7) 66%, rgba(8,25,51,0.78) 100%),
-    linear-gradient(to bottom, rgba(7,21,46,0.6) 0%, rgba(7,21,46,0.3) 38%, rgba(7,21,46,0.72) 100%);
+    linear-gradient(100deg, rgba(7,21,46,0.76) 0%, rgba(7,21,46,0.68) 34%, rgba(8,25,51,0.46) 68%, rgba(8,25,51,0.52) 100%),
+    linear-gradient(to bottom, rgba(7,21,46,0.26) 0%, rgba(7,21,46,0.06) 42%, rgba(7,21,46,0.38) 100%);
 }
 .hero-grid { position: absolute; inset: 0; opacity: 0.05; background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px); background-size: 64px 64px; z-index: 1; mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000, transparent); }
 .hero .wrap { position: relative; z-index: 2; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 50px; align-items: stretch; }
@@ -191,9 +198,15 @@ section { position: relative; }
 
 /* floating stat cards */
 .hero-stats { position: relative; height: 440px; align-self: center; display: flex; flex-direction: column; justify-content: center; }
+/* Dark glass, not white glass. These cards float over the lightened right side
+   of the hero where the photograph is now genuinely visible, and their text is
+   white — a white tint lifts the backdrop toward the text and destroys the
+   contrast it is supposed to protect. Tinting toward the hero navy instead
+   darkens locally, under the text only, which is what lets the scrim above stay
+   light everywhere else. The border and blur still read as glass. */
 .stat-card {
   position: absolute; padding: 22px 26px; border-radius: var(--radius);
-  background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(7,21,46,0.45); border: 1px solid rgba(255,255,255,0.22);
   backdrop-filter: blur(16px) saturate(140%); box-shadow: 0 20px 50px rgba(0,0,0,0.3);
   animation: float 6s ease-in-out infinite;
 }

@@ -117,42 +117,104 @@ const APPROVED_IMAGES = new Set<string>([
   "/images/catalog/trips/trip_31_under-the-tuscany.jpg",
 ]);
 
+/**
+ * Categories that photograph alike, collapsed into one family.
+ *
+ * Adjacency is enforced on the family, not the catalog category, because the
+ * catalog splits by what a lot IS and the strip is judged on what a lot LOOKS
+ * like. Vacations and Bucket List Trips are two categories and one wall of
+ * beach; Signed Guitars and the single-lot Taylor Swift Guitar category are two
+ * categories and the same sunburst acoustic on white. Enforcing on category let
+ * three beach-beach pairs through.
+ *
+ * A category not listed here is its own family, so a new one added in the admin
+ * keeps the old behaviour until somebody decides what it resembles.
+ */
+const VISUAL_FAMILIES: Record<string, string> = {
+  "item-vacations": "travel",
+  "item-bucket-list": "travel",
+  "item-meet-greets": "travel",
+  "item-signed-guitars": "guitars",
+  "item-taylor-swift-guitar": "guitars",
+};
+
+const familyOf = (categoryId: string) =>
+  VISUAL_FAMILIES[categoryId] ?? categoryId;
+
 interface Tile {
   src: string;
   key: string;
+  family: string;
 }
 
 /**
- * One photograph per category per pass, in catalog order.
+ * One photograph per category per pass, in catalog order, with no two
+ * neighbours from the same category.
  *
  * Round-robin rather than the first 14 lots: the catalog is grouped, so reading
  * straight through gives fourteen consecutive gold records. Deterministic on
  * purpose — a shuffle would rewrite the static HTML on every build for no
  * visible gain.
+ *
+ * The cursor walks the categories in order, which produces the round-robin, and
+ * a category equal to the previous tile's is skipped rather than taken, which
+ * enforces the adjacency rule outright instead of leaving it to fall out of the
+ * rotation. Plain round-robin only alternates while every category still has
+ * stock; once the small ones are exhausted a later pass would otherwise put two
+ * of the same together at a round boundary.
+ *
+ * The strip is a loop, so the last tile neighbours the first — the final slot
+ * excludes the opening category too. If no legal tile exists for a slot the
+ * strip simply ends one short, which nobody can see, rather than placing a
+ * neighbour that breaks the rule.
+ *
+ * Note this is the catalog's own idea of a category. Vacations and Bucket List
+ * Trips are two of them, so a beach can legally follow a beach.
  */
 function pickTiles(categories: AuctionItem[]): Tile[] {
-  const byCategory = categories.map((category) =>
-    category.groups
+  const queues = categories.map((category) => ({
+    id: category.id,
+    family: familyOf(category.id),
+    items: category.groups
       .flatMap((group) => group.items)
       .filter((item) => item.image?.src && APPROVED_IMAGES.has(item.image.src))
-      .map((item) => ({ src: item.image!.src, key: item.id }))
-  );
+      .map((item) => ({
+        src: item.image!.src,
+        key: item.id,
+        family: familyOf(category.id),
+      })),
+  }));
 
   const tiles: Tile[] = [];
   // Some lots are photographed with the same shot, and the same photograph
   // twice in a fourteen-tile loop reads as a rendering fault.
   const seen = new Set<string>();
-  const deepest = Math.max(0, ...byCategory.map((list) => list.length));
+  let cursor = 0;
 
-  for (let round = 0; round < deepest && tiles.length < TILE_COUNT; round++) {
-    for (const list of byCategory) {
-      if (round >= list.length) continue;
-      const candidate = list[round];
-      if (seen.has(candidate.src)) continue;
-      seen.add(candidate.src);
-      tiles.push(candidate);
-      if (tiles.length === TILE_COUNT) break;
+  while (tiles.length < TILE_COUNT) {
+    const previous = tiles.at(-1)?.family;
+    // Only meaningful once there is an opening tile to wrap around to.
+    const closesLoop = tiles.length === TILE_COUNT - 1 && tiles.length > 1;
+
+    let taken: Tile | undefined;
+
+    for (let step = 0; step < queues.length && !taken; step++) {
+      const queue = queues[(cursor + step) % queues.length];
+      if (queue.family === previous) continue;
+      if (closesLoop && queue.family === tiles[0].family) continue;
+
+      while (queue.items.length > 0) {
+        const candidate = queue.items.shift()!;
+        if (seen.has(candidate.src)) continue;
+        seen.add(candidate.src);
+        taken = candidate;
+        cursor = (cursor + step + 1) % queues.length;
+        break;
+      }
     }
+
+    if (!taken) break;
+    tiles.push(taken);
   }
 
   return tiles;
