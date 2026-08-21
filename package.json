@@ -13,6 +13,8 @@
     "check:admin": "tsx --conditions=react-server scripts/check-admin-forms.ts",
     "check:catalog": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-catalog.ts",
     "check:visual": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-visual-map.ts",
+    "check:site": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-site.ts",
+    "mfa": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/mfa-reset.ts",
     "check:uploads": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-uploads.ts",
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
   },
