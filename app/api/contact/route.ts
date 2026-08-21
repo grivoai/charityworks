@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { recordDelivery, recordSubmission } from "@/lib/submissions";
+import { deliver } from "@/lib/lead-delivery";
 import { isCoreField } from "@/lib/admin/form-write";
 import { getPage } from "@/lib/content";
 import { getInterestRegistry } from "@/lib/interests";
@@ -35,15 +36,6 @@ import {
 
 /** Ceiling for a single visible form value. The message box is the long one. */
 const MAX_FIELD_LENGTH = 5000;
-
-/**
- * How long to wait on the webhook before giving up.
- *
- * The submitter is waiting on this request, so the budget is a UX number, not a
- * reliability one. A slow n8n instance must not hold someone on a spinner; the
- * console log covers the timeout case.
- */
-const WEBHOOK_TIMEOUT_MS = 8000;
 
 /**
  * Form field name -> the key the pipeline reads, where the two differ.
@@ -223,12 +215,12 @@ export async function POST(request: Request) {
   const filed = await recordSubmission(lead);
 
   const delivery = await deliver(lead);
-  if (filed) await recordDelivery(lead.leadId, delivery);
+  if (filed) await recordDelivery(lead.leadId, delivery.result, delivery.detail);
 
   // Always logged, whatever the webhook did. This is the fallback record, and
   // it stays even now the enquiry is also a row: the log is what survives a
   // database outage, which is precisely when the row does not exist.
-  console.info("[contact] lead", { delivery, filed, ...lead });
+  console.info("[contact] lead", { delivery: delivery.result, filed, ...lead });
 
   // The submitter is told the enquiry succeeded even when the webhook failed:
   // from their side it did, we hold their details, and an error here would only
@@ -239,43 +231,4 @@ export async function POST(request: Request) {
   // booking record and its own webhooks, which is what lets a booking be joined
   // to the lead that produced it rather than matched on email and hoped for.
   return NextResponse.json({ ok: true, leadId: lead.leadId });
-}
-
-type DeliveryResult = "sent" | "not-configured" | "failed";
-
-async function deliver(lead: Record<string, unknown>): Promise<DeliveryResult> {
-  const url = process.env.LEAD_WEBHOOK_URL;
-  const secret = process.env.LEAD_WEBHOOK_SECRET;
-
-  // Both or neither, deliberately. The shared secret is what stops anyone who
-  // learns the webhook URL filing leads of their own — and those leads start an
-  // SMS follow-up to whatever number they carry. Posting without it would be
-  // rejected at the far end anyway; refusing here makes the reason explicit in
-  // the log rather than surfacing as an opaque 401.
-  if (!url || !secret) return "not-configured";
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-grivo-secret": secret,
-      },
-      body: JSON.stringify(lead),
-      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
-    });
-
-    if (!response.ok) {
-      console.error(
-        `[contact] webhook rejected the lead: ${response.status} ${response.statusText}`
-      );
-      return "failed";
-    }
-
-    return "sent";
-  } catch (error) {
-    // Covers the timeout, DNS failure and connection refusal cases alike.
-    console.error("[contact] webhook delivery failed", error);
-    return "failed";
-  }
 }

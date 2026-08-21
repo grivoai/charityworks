@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 import { AdminShell } from "@/components/admin/AdminShell";
+import { RetryAll, RetryOne } from "@/components/admin/RetryDelivery";
 import { requireAdmin } from "@/lib/auth";
 import { getPage } from "@/lib/content";
 import { isCoreField } from "@/lib/admin/form-write";
@@ -131,12 +132,7 @@ export default async function EnquiriesRoute() {
         </p>
       )}
 
-      {undelivered > 0 && (
-        <p className="admin-banner is-warn">
-          {undelivered} enquir{undelivered === 1 ? "y has" : "ies have"} not been
-          passed on. They are all here — the details below are complete.
-        </p>
-      )}
+      {undelivered > 0 && <RetryAll count={undelivered} />}
 
       {rows.length === 0 && !error && (
         <div className="admin-empty">
@@ -156,6 +152,10 @@ export default async function EnquiriesRoute() {
                   {row.org ? ` · ${row.org}` : ""}
                 </span>
                 <span className={`admin-chip is-${delivery.tone}`}>{delivery.label}</span>
+                {(row.webhook_status === "failed" ||
+                  row.webhook_status === "pending") && (
+                  <RetryOne leadId={row.lead_id} />
+                )}
                 <span className="admin-enquiry-when" title={formatExact(row.submitted_at)}>
                   {formatWhen(row.submitted_at)}
                 </span>

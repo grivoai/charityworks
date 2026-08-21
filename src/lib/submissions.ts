@@ -112,11 +112,20 @@ export async function recordSubmission(lead: LeadRecord): Promise<boolean> {
   }
 }
 
-/** Records what happened to the delivery, so a failure is visible and replayable. */
+/**
+ * Records what happened to the delivery, so a failure is visible and replayable.
+ *
+ * `attempts` is passed in rather than incremented here. supabase-js cannot
+ * express `webhook_attempts = webhook_attempts + 1` in an update, and a
+ * read-then-write inside this function would race the very case it exists for —
+ * two retries of the same enquiry. The caller already holds the row it is
+ * retrying, so it knows the count without another query.
+ */
 export async function recordDelivery(
   leadId: string,
   result: DeliveryResult,
-  detail?: string
+  detail?: string,
+  attempts = 1
 ): Promise<void> {
   if (!isDatabaseConfigured()) return;
 
@@ -125,7 +134,7 @@ export async function recordDelivery(
       .from("submissions")
       .update({
         webhook_status: result,
-        webhook_attempts: 1,
+        webhook_attempts: attempts,
         webhook_last_error: result === "failed" ? (detail ?? "delivery failed") : null,
         webhook_sent_at: result === "sent" ? new Date().toISOString() : null,
       })
