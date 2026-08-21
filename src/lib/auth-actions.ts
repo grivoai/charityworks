@@ -48,10 +48,23 @@ export async function signIn(
 ): Promise<SignInState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const captchaToken = String(formData.get("captchaToken") ?? "");
   const next = safeNext(formData.get("next"));
 
   if (!email || !password) {
     return { error: "Enter your email and password." };
+  }
+
+  /**
+   * Checked here rather than left to Supabase, and deliberately BEFORE the
+   * throttle: a missing token is not a failed credential guess. Counting it as
+   * one would let a widget that failed to load — a blocked script, a flaky
+   * network — lock a real admin out of the panel after a few clicks, which is
+   * the opposite of what the throttle is for. It costs an attacker nothing to
+   * skip either, since without a token the sign-in cannot succeed anyway.
+   */
+  if (!captchaToken) {
+    return { error: "Complete the CAPTCHA below, then sign in." };
   }
 
   const headerList = await headers();
@@ -65,9 +78,31 @@ export async function signIn(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    // Verified by Supabase against the hCaptcha SECRET key held in the project
+    // dashboard, not by anything in this repo. CAPTCHA protection is switched
+    // on there, so a sign-in that omits this is rejected outright.
+    options: { captchaToken },
+  });
 
   if (error) {
+    /**
+     * A rejected CAPTCHA is not a rejected credential, and saying "that email
+     * and password did not match" when the real problem is an expired token
+     * sends someone off resetting a password that was never wrong. It also
+     * leaks nothing: the answer is the same whether or not the account exists.
+     * The widget is reset on every return, so the retry gets a fresh token.
+     */
+    const captchaRejected =
+      error.code === "captcha_failed" ||
+      /captcha/i.test(error.message ?? "");
+
+    if (captchaRejected) {
+      return { error: "That CAPTCHA expired. Complete it again and retry." };
+    }
+
     await recordFailure(ip, email);
     /**
      * One message for every failure mode, deliberately. Distinguishing "no such

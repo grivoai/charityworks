@@ -194,6 +194,18 @@ a.admin-card:hover {
   background: #fff;
 }
 
+/* ---- hCaptcha on the login form ----
+   The widget renders at a fixed 303x78 in its normal size and cannot be made
+   fluid, so it is centred rather than stretched: the login card's content box
+   is 336px, which clears it by a hair. Reserving the height up front keeps the
+   Sign in button from jumping down the card when the iframe finishes loading. */
+.admin-captcha {
+  display: flex;
+  justify-content: center;
+  min-height: 78px;
+  margin-bottom: 18px;
+}
+
 .admin-submit {
   width: 100%;
   font: inherit;

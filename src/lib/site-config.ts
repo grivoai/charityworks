@@ -29,3 +29,19 @@ export const siteUrl = (
  * site; it has to be switched on deliberately.
  */
 export const noindex = process.env.SITE_NOINDEX === "true";
+
+/**
+ * hCaptcha site key for the admin login form.
+ *
+ * Public by design: it is rendered into the page HTML and only identifies which
+ * widget to draw. The half that must stay secret is the SECRET key, and that one
+ * is not in this repo at all — it is entered in the Supabase dashboard under
+ * Authentication > Bot and Abuse Protection, which is what verifies the token.
+ *
+ * Read from the environment so a different key can be used per deployment
+ * without a code change, defaulting to the production site's key so a missing
+ * variable does not silently render an unverifiable widget.
+ */
+export const hcaptchaSiteKey =
+  process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY ??
+  "a5468e90-5ee6-4de2-bae4-bad063d6f8b6";

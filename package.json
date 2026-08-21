@@ -17,6 +17,7 @@
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
   },
   "dependencies": {
+    "@hcaptcha/react-hcaptcha": "^2.1.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.0",
     "framer-motion": "^12.42.2",
