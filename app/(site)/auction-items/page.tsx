@@ -59,7 +59,7 @@ export default async function AuctionItemsRoute() {
           <p className="catalog-note reveal" {...editable("note")}>
             {page.note}
           </p>
-          <div className="center" style={{ marginTop: "40px" }}>
+          <div className="center section-cta" style={{ "--cta-gap": "40px" } as React.CSSProperties}>
             <Cta cta={page.cta} onDark={false} path="cta" />
           </div>
         </div>

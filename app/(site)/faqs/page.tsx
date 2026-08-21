@@ -42,7 +42,7 @@ export default async function FaqsRoute() {
             </h2>
           </div>
           <FaqAccordion faqs={page.faqs} path="faqs" />
-          <div className="center" style={{ marginTop: "56px" }}>
+          <div className="center section-cta" style={{ "--cta-gap": "56px" } as React.CSSProperties}>
             <Cta cta={page.cta} onDark={false} path="cta" />
           </div>
         </div>

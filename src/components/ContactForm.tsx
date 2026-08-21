@@ -190,8 +190,7 @@ export function ContactForm({
 
         <button
           type="submit"
-          className="btn btn-gold"
-          style={{ gridColumn: "span 2" }}
+          className="btn btn-gold form-submit"
           disabled={status === "submitting"}
         >
           {status === "submitting" ? (

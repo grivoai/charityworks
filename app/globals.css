@@ -1362,3 +1362,293 @@ main.is-transitioning {
 .planner-auctioneer h3 { font-family: "Playfair Display", serif; font-size: 1.05rem; color: var(--green); }
 .planner-auctioneer p { margin-top: 8px; font-size: 0.9rem; color: var(--muted); line-height: 1.55; }
 .planner-auctioneer .planner-pick-link { margin-top: 0; padding-top: 12px; display: inline-block; }
+
+/* Replaces the inline `gridColumn: "span 2"` that used to sit on the contact
+   form's submit button in ContactForm.tsx. Identical on desktop; the point of
+   moving it is that a media query can now reach it, which the inline style
+   made impossible. Declared HERE, above the phone block that takes it back to
+   one column, because media queries add no specificity — the two rules tie at
+   (0,1,0) and source order is the only thing that breaks the tie. */
+.form-submit { grid-column: span 2; }
+
+/* ================================================================== */
+/* MOBILE COMPACTION                                                   */
+/*                                                                     */
+/* Measured pass over the phone layout. The desktop design is not      */
+/* touched: every rule below lives inside a max-width query, and the   */
+/* block sits at the end of the file so it overrides the earlier       */
+/* stylesheet on specificity ties rather than by editing rules above   */
+/* the "ported unchanged" divider.                                     */
+/*                                                                     */
+/* The problem it solves: at 375x812 the home page measured 10,881px   */
+/* — 13.4 screens — and roughly a quarter of that was padding, gaps    */
+/* and card chrome carrying desktop values straight down to a phone.   */
+/* Section padding alone was 140px per section, header-to-content      */
+/* margins a flat 44-64px, and every card kept its 30px inset.         */
+/*                                                                     */
+/* Nothing is hidden or removed anywhere below. Every value prop,      */
+/* stat, perk, catalog tile and footer link that renders on desktop    */
+/* renders on a phone; the changes are to how they are packed.         */
+/* ================================================================== */
+
+@media (max-width: 760px) {
+  /* ---- Section rhythm ----
+     The clamp's 70px floor was doing desktop work on a phone: 9vw only
+     overtakes it at 778px wide, so every phone paid the maximum of the
+     lower bound. 48px keeps the sections legibly separate at this width
+     and returns ~44px per section boundary across every route. */
+  .pad { padding: clamp(48px, 9vw, 130px) 0; }
+  .section-title { margin-bottom: 12px; }
+  .eyebrow { margin-bottom: 12px; }
+
+  /* Shared header-to-content gaps. These are single values on desktop
+     sized for a 1200px canvas; at 375px they read as a dropped section. */
+  .why-grid { margin-top: 32px; }
+  .steps { margin-top: 36px; gap: 20px; }
+  .bento { margin-top: 32px; }
+  .i-track-wrap { margin-top: 28px; }
+  .donor-cards { margin-top: 30px; }
+
+  /* ---- Reveal stagger ----
+     The d1/d2/d3 delay classes encode a THREE-COLUMN row: they exist so
+     the three cards of a desktop row enter left to right. In the phone's
+     single-column grids each card crosses the observer threshold on its
+     own, several hundred milliseconds apart, so the class no longer
+     staggers anything — it just adds an arbitrary 130-390ms lag to some
+     cards and not others, which reads as jank rather than sequence.
+
+     Zeroed for the layouts that become one column. Only the bento keeps
+     its delays: it is the one grid that stays two-up below, where the
+     cards of a row genuinely do arrive together and the stagger still
+     means something. Its markup staggers on `index % 4`, which across
+     two columns lands as 0/0.13s on the first row and 0.26/0.39s on the
+     second — still reading top-to-bottom, so it needs no change. */
+  .why-grid > .why-card.reveal,
+  .donor-cards > .donor-card.reveal,
+  .steps > .step.reveal { transition-delay: 0s; }
+
+  /* ---- Hero ----
+     100vh on iOS resolves to the LARGE viewport — the height the page
+     gets once the URL bar has scrolled away — so the hero was always
+     taller than the screen actually showing it. svh is that visible
+     height; the vh line above stays as the fallback for anything that
+     does not know the unit. */
+  .hero { min-height: 100vh; min-height: 100svh; }
+  .hero .wrap { gap: 28px; }
+  .hero-pill { margin-bottom: 14px; }
+  .hero h1 { margin-bottom: 14px; }
+  .hero p.sub { margin-bottom: 22px; }
+  .hero-btns { gap: 10px; }
+
+  /* ---- Hero stat cards ----
+     THIS IS A BUG FIX, not a spacing change.
+
+     The four cards are absolutely positioned at fixed insets (s1 top
+     10/left 0, s3 bottom 90/left 20, and so on) inside a .hero-stats box
+     that the 980px query shrinks from 440px tall to 260px. Those insets
+     were measured against the taller box, so on a phone the cards land
+     on top of each other: measured at 375px, s1 and s3 overlap by
+     118x55px and s2 and s4 by 110x3px, and it is worse at 390px
+     (118x48 and 110x39) and at 414px (118x70 and 110x22). The 6s float
+     animation drifts them another 18px into each other. The "80+" card
+     was sitting half-hidden behind "$0 Upfront Cost" on every phone.
+
+     Below 760px they stop floating and become a plain 2x2 grid, which
+     cannot collide at any width and shows all four stats at once. The
+     float animation is dropped with the positioning — it is a decoration
+     that only makes sense for free-floating cards, and animating four
+     tiles in a fixed grid would just wobble the layout. */
+  .hero-stats {
+    position: static;
+    height: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: none;
+  }
+  .stat-card {
+    position: static;
+    padding: 16px 18px;
+    animation: none;
+  }
+  /* The desktop insets would still apply as static-position offsets on
+     some engines; clear them so the grid is the only thing placing. */
+  .s1, .s2, .s3, .s4 { top: auto; right: auto; bottom: auto; left: auto; }
+  .stat-card .num { font-size: 1.7rem; }
+  .stat-card .lbl { font-size: 0.78rem; margin-top: 4px; }
+
+  /* ---- Why cards ----
+     Nine cards stacked one per row, each spending 74px on a 56px icon
+     tile plus the 18px beneath it before any text starts — 666px of the
+     section's 2,590px was icon gutter.
+
+     Reflowed to a row: icon in a fixed left column, text beside it. The
+     body copy keeps a ~233px measure, which is a comfortable line; the
+     two-column tile grid this replaced as a candidate would have cut it
+     to ~123px and wrapped these sentences to five or six lines each.
+
+     The featured first card keeps its stacked form so the section still
+     opens on something with weight rather than nine identical rows. */
+  .why-grid { gap: 12px; }
+  .why-card { padding: 20px; }
+  .why-grid > .why-card:not(:first-child) {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .why-grid > .why-card:not(:first-child) .why-ico {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    font-size: 1.15rem;
+    margin-bottom: 0;
+    /* Second row of the icon column, so a card whose text wraps to three
+       lines does not stretch the tile down the side of the card. */
+    grid-row: span 2;
+  }
+  .why-grid > .why-card:first-child { padding: 24px; }
+  .why-grid > .why-card:first-child .why-ico {
+    width: 52px;
+    height: 52px;
+    font-size: 1.6rem;
+    margin-bottom: 12px;
+  }
+  .why-grid > .why-card:first-child h3 { font-size: 1.3rem; }
+
+  /* ---- How It Works ----
+     Same shape of waste as the why cards, one size up: a 92px numbered
+     disc centred over the copy with 26px beneath it, three times. The
+     dashed connector between steps is already display:none below 980px,
+     so nothing depends on the discs sharing a horizontal line. */
+  .step {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 16px;
+    align-items: start;
+    text-align: left;
+    padding: 0;
+  }
+  .step-num {
+    width: 56px;
+    height: 56px;
+    margin: 0;
+    font-size: 1.5rem;
+    grid-row: span 3;
+  }
+  .step-num::after { inset: -5px; }
+  .step .ico { font-size: 1.25rem; margin-bottom: 4px; }
+  .step h3 { font-size: 1.25rem; margin-bottom: 6px; }
+  .step p { max-width: none; margin: 0; font-size: 0.96rem; }
+
+  /* ---- Bento / catalog grid ----
+     The existing rule dropped this to a single column of 170px bands.
+     At 375px that is a 327x170 letterbox per category — nine of them on
+     /auction-items, 1,674px of scrolling — and the photograph inside is
+     cropped to a shape that suits none of them.
+
+     Two columns at 150px rows is both shorter and a better frame for the
+     photography. The span classes stay collapsed (set just above this in
+     the 760px block) so a wide or tall tile cannot punch a hole in the
+     two-column flow. */
+  .bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 160px; gap: 12px; }
+  .bento-uniform { grid-auto-rows: 160px; }
+  .bento-card { padding: 14px; }
+  /* The longest catalog title ("Sports & Celebrity Memorabilia") wraps to
+     three lines in a half-width tile; 0.95rem keeps that inside the tile
+     without the text crowding the photograph it sits on. */
+  .bento-card h3 { font-size: 0.95rem; line-height: 1.22; }
+  .bento-cue { font-size: 0.72rem; }
+
+  /* ---- Item marquee ----
+     Already the most efficient block on the page: 150px buys a full
+     photography strip. Only the tile is trimmed, so more of the loop is
+     visible in one glance at this width. */
+  .i-tile { flex-basis: 170px; height: 124px; }
+  .i-track { gap: 12px; }
+
+  /* ---- Donor perks ----
+     Tried two-up first, on the theory that an icon plus three short lines
+     is small enough to sit half-width. Measured, it was not: at a 123px
+     text column "Buy $100 in Raffle", "Free Vacation Package" and "Raffle
+     buyers cash in." each wrapped to two lines, so a 224px card carried
+     six lines of ragged centred text. That is the cramped result this
+     pass is supposed to avoid, and it saved no height worth having.
+
+     So these take the same horizontal row as the why cards instead: one
+     per row, icon in a fixed left column, text beside it. Same height as
+     the two-up version, none of the wrapping, and the two card grids on
+     the page now read as one idea rather than two. */
+  .donor-cards { gap: 10px; }
+  .donor-card {
+    flex-basis: 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 14px;
+    align-items: start;
+    text-align: left;
+    padding: 16px 18px;
+  }
+  .donor-card .emoji {
+    font-size: 1.6rem;
+    margin-bottom: 0;
+    grid-row: span 3;
+    line-height: 1;
+  }
+  .donor-card .emoji .cw-icon { width: 1.6rem; height: 1.6rem; }
+  .donor-card h3 { font-size: 1rem; }
+  .donor-card .arrow { font-size: 0.88rem; }
+  .donor-card p { font-size: 0.86rem; margin-top: 4px; }
+
+  /* ---- Contact form ---- */
+  .contact-form { padding: 22px; }
+  .form-grid { gap: 14px; }
+  /* The rule above the divider bleeds this widget out by -36px to claw
+     back the panel's padding. That padding is 22px here now, so the
+     original figure would overhang the panel by 14px a side. */
+  .booking-embed { margin-inline: -22px; }
+  /* The submit button carried `grid-column: span 2` as an INLINE style,
+     which no media query can override. With one explicit column left on
+     a phone, spanning two conjured an implicit second track and the form
+     laid itself out 485px wide inside a 375px viewport — clipping its
+     own right edge and the section heading with it, silently, because
+     `body { overflow-x: hidden }` swallowed the scrollbar that would
+     have shown it. The span now lives in the stylesheet where this can
+     reach it. Pre-existing; found while measuring this pass. */
+  .form-submit { grid-column: span 1; }
+  .contact-info { margin-top: 22px; gap: 14px; }
+
+  /* ---- Footer ----
+     Kept as one column: the second link column carries the office list
+     ("No. & So. CA - Tacoma WA - Chicago IL - NJ & ...") which wraps to
+     four lines in a 150px half-width and saves nothing. The Explore nav
+     is the part that pays — seven single-word links down a 327px column
+     is six rows of mostly empty space, so that list alone goes two-up. */
+  .footer { padding: 48px 0 22px; }
+  .footer-top { gap: 28px; padding-bottom: 30px; }
+  .footer h2, .footer h4 { margin-bottom: 10px; }
+  .footer-col a, .footer-col p { margin-bottom: 7px; }
+  .footer-col nav { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; }
+  .footer-logo { font-size: 1.5rem; margin-bottom: 10px; }
+  .footer-states { margin-top: 12px; }
+  .footer-bottom { padding-top: 18px; }
+
+  /* ---- Page heroes on the inner routes ---- */
+  .page-hero p.lede { margin-top: 10px; }
+  .cat-group { margin-top: 32px; }
+  .cat-group-head { margin-bottom: 20px; }
+  .cat-grid { gap: 16px; }
+  .t-track-wrap { margin-top: 28px; }
+  .t-grid { gap: 16px; margin-top: 32px; }
+  .faq-list { margin-top: 28px; }
+  .auc-list { gap: 16px; margin-top: 32px; }
+}
+
+/* Section CTA blocks. The desktop gap travels as --cta-gap from the
+   markup so each keeps the exact value it had as an inline style, while
+   the phone gets one shared, tighter number. */
+.section-cta { margin-top: var(--cta-gap, 46px); }
+@media (max-width: 760px) {
+  .section-cta { margin-top: 30px; }
+}

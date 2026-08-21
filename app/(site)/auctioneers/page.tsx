@@ -272,7 +272,7 @@ export default async function AuctioneersRoute() {
             })}
           </div>
 
-          <div className="center" style={{ marginTop: "52px" }}>
+          <div className="center section-cta" style={{ "--cta-gap": "52px" } as React.CSSProperties}>
             <Cta cta={page.cta} onDark={false} path="cta" />
           </div>
         </div>

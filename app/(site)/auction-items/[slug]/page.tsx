@@ -201,7 +201,7 @@ export default async function AuctionCategoryRoute({
             {category.generalOnly ? generalCategoryNotice : availabilityNotice}
           </p>
 
-          <div className="center" style={{ marginTop: "52px" }}>
+          <div className="center section-cta" style={{ "--cta-gap": "52px" } as React.CSSProperties}>
             {/* Carries the category itself as the interest, so someone who
                 wants the category rather than one lot still arrives at the
                 form with context attached.

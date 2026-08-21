@@ -216,7 +216,7 @@ export default async function HomePage() {
               );
             })}
           </div>
-          <div style={{ marginTop: "52px" }}>
+          <div className="section-cta" style={{ "--cta-gap": "52px" } as React.CSSProperties}>
             <Cta cta={page.process.cta} onDark={false} path="process.cta" />
           </div>
         </div>
@@ -250,7 +250,7 @@ export default async function HomePage() {
 
         <div className="wrap">
           <BentoGrid items={teaserItems} variant="uniform" />
-          <div className="center" style={{ marginTop: "46px" }}>
+          <div className="center section-cta" style={{ "--cta-gap": "46px" } as React.CSSProperties}>
             <Cta cta={page.itemsTeaser.cta} onDark={false} path="itemsTeaser.cta" />
             <p className="home-planner-link reveal">
               Or{" "}
@@ -290,7 +290,7 @@ export default async function HomePage() {
           </p>
         </div>
         <TestimonialMarquee testimonials={testimonials} />
-        <div className="wrap center" style={{ marginTop: "40px" }}>
+        <div className="wrap center section-cta" style={{ "--cta-gap": "40px" } as React.CSSProperties}>
           <Cta cta={page.testimonialsTeaser.cta} path="testimonialsTeaser.cta" />
         </div>
       </section>
