@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
+import { getPage, getSite } from "@/lib/content";
 import { AdminShell } from "@/components/admin/AdminShell";
 
 /**
@@ -12,6 +13,25 @@ import { AdminShell } from "@/components/admin/AdminShell";
  * still static.
  */
 export const dynamic = "force-dynamic";
+
+/**
+ * A count that lives inside a JSON document rather than as table rows.
+ *
+ * The contact form's questions and the navigation links are arrays inside the
+ * `pages` and `site_settings` documents, so `count: "exact"` cannot reach them.
+ * Same contract as `countOf`: a number, or null if it could not be read.
+ */
+async function countIn<T>(
+  read: () => Promise<T>,
+  pick: (value: T) => unknown[]
+): Promise<number | null> {
+  try {
+    return pick(await read()).length;
+  } catch (error) {
+    console.error("[admin] could not count a document field", error);
+    return null;
+  }
+}
 
 /** One count, or null if the table cannot be read. */
 async function countOf(table: string): Promise<number | null> {
@@ -28,15 +48,18 @@ async function countOf(table: string): Promise<number | null> {
 export default async function AdminDashboard() {
   const admin = await requireAdmin();
 
-  const [pages, categories, lots, submissions, documents] = await Promise.all([
-    countOf("pages"),
-    countOf("catalog_categories"),
-    countOf("catalog_items"),
-    countOf("submissions"),
-    // The links, not the uploads: what the card offers is an address to hand
-    // out, and superseded files are not that.
-    countOf("document_links"),
-  ]);
+  const [pages, categories, lots, submissions, documents, formFields, navLinks] =
+    await Promise.all([
+      countOf("pages"),
+      countOf("catalog_categories"),
+      countOf("catalog_items"),
+      countOf("submissions"),
+      // The links, not the uploads: what the card offers is an address to hand
+      // out, and superseded files are not that.
+      countOf("document_links"),
+      countIn(() => getPage("contact"), (page) => page.form.fields),
+      countIn(() => getSite(), (site) => site.nav),
+    ]);
 
   const show = (n: number | null) => (n === null ? "—" : String(n));
 
@@ -94,30 +117,37 @@ export default async function AdminDashboard() {
           </p>
         </Link>
 
-        <div className="admin-card" data-soon="true">
+        {/* The contact form is not a section of its own: the form lives in the
+            contact page's document, so its questions, wording, submit button
+            and success message are edited with the rest of that page. This card
+            used to say "Soon" beside a description of three things that already
+            worked — it is a shortcut now rather than a promise. */}
+        <Link href="/admin/pages/contact" className="admin-card">
           <h2>
-            Contact form <span className="admin-soon">Soon</span>
+            Contact form <span className="admin-count">{show(formFields)}</span>
           </h2>
           <p>
-            Reword the fields, add your own, and change what people see after
-            they submit.
+            Reword the questions, add your own, and change what people see after
+            they submit. Edited with the contact page.
           </p>
-        </div>
+        </Link>
 
-        <div className="admin-card" data-soon="true">
+        <Link href="/admin/site" className="admin-card">
           <h2>
-            Site details <span className="admin-soon">Soon</span>
+            Site details <span className="admin-count">{show(navLinks)}</span>
           </h2>
           <p>
-            Phone number, email addresses, navigation and the booking link.
+            The name in the header, navigation, phone number, email addresses,
+            the booking link and the footer. Shown on every page.
           </p>
-        </div>
+        </Link>
       </div>
 
       <p className="admin-note" style={{ textAlign: "left", marginTop: "28px" }}>
         The counts above come from the live database, so this page working at
-        all confirms the connection. Editing arrives section by section — page
-        text first, then the catalog, where the waiting work is.
+        all confirms the connection. Everything on the site is editable from
+        here — page wording, the catalog, the contact form and the details that
+        appear on every page.
       </p>
     </AdminShell>
   );

@@ -2,7 +2,6 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import type { $ZodIssue } from "zod/v4/core";
 
 import { pageSchemas } from "@/content/schema";
 import type { PageSlug } from "@/content/types";
@@ -12,6 +11,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
 import { coerceToTree, deepEqual } from "@/lib/admin/coerce";
 import type { FieldErrors } from "@/lib/admin/field-node";
+import { humanizeIssue, toFieldErrors } from "@/lib/admin/field-errors";
 import { locksForPage } from "@/lib/admin/locks";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { readPageDocument } from "@/lib/admin/page-read";
@@ -46,39 +46,6 @@ import {
  * Zod's default messages are written for developers ("Too small: expected
  * string to have >=1 characters"). The person reading these is the client.
  */
-function humanizeIssue(issue: $ZodIssue): string {
-  if (issue.code === "too_small") {
-    return issue.origin === "string"
-      ? "This cannot be left empty."
-      : `Too small — the smallest allowed is ${String(issue.minimum)}.`;
-  }
-  if (issue.code === "too_big") {
-    return issue.origin === "string"
-      ? "This is too long."
-      : `Too large — the largest allowed is ${String(issue.maximum)}.`;
-  }
-  if (issue.code === "invalid_type") {
-    if (issue.expected === "number") return "Enter a number.";
-    return "This cannot be left empty.";
-  }
-  if (issue.code === "invalid_format") {
-    const format = (issue as { format?: string }).format;
-    if (format === "email") return "Enter a valid email address.";
-    if (format === "url") return "Enter a full web address, starting with https://";
-  }
-  return issue.message;
-}
-
-function toFieldErrors(issues: readonly $ZodIssue[]): FieldErrors {
-  const errors: FieldErrors = {};
-  for (const issue of issues) {
-    const key = issue.path.map(String).join(".");
-    // First issue per field wins; a field with two complaints only needs one.
-    if (!(key in errors)) errors[key] = humanizeIssue(issue);
-  }
-  return errors;
-}
-
 /* ------------------------------------------------------------------ */
 /* Publishing                                                          */
 /* ------------------------------------------------------------------ */

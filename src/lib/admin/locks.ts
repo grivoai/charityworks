@@ -193,6 +193,53 @@ export const CATEGORY_LOCKS: LockRule[] = [
   },
 ];
 
+/**
+ * Locks for the site settings document.
+ *
+ * Two kinds of field here are not really content, and both break something the
+ * client cannot see from the editor.
+ *
+ * The navigation `href`s are routes. There are eight pages and their addresses
+ * come from the filesystem, so a link edited to `/about` does not create an
+ * about page — it creates a header link to a 404. The LABEL is what visitors
+ * read, and that stays theirs, exactly as with the contact form's field names.
+ *
+ * `phoneHref` is the `tel:` the footer's phone number dials. It is derived from
+ * `phone` on save (see site-actions), because the failure otherwise is silent
+ * and expensive: change the number, forget the link, and the site shows the new
+ * number while every tap on it calls the old one.
+ */
+export const SITE_LOCKS: LockRule[] = [
+  {
+    pattern: "nav.*.href",
+    mode: "readonly",
+    reason:
+      "The page this links to. Set by the site's routing rather than here — " +
+      "the wording above it is what visitors read, and that is yours.",
+  },
+  {
+    pattern: "nav.*.id",
+    mode: "readonly",
+    reason: "Internal name for this link. Fixed once the link exists.",
+  },
+  {
+    pattern: "contact.channels.*.id",
+    mode: "readonly",
+    reason: "Internal name for this row. Fixed once the row exists.",
+  },
+  {
+    pattern: "contact.phoneHref",
+    mode: "readonly",
+    reason:
+      "What the footer's phone number dials. Kept in step with the number " +
+      "above automatically, so there is no way to change one and not the other.",
+  },
+];
+
+export function locksForSite(): LockRule[] {
+  return SITE_LOCKS;
+}
+
 export function locksForCategory(): LockRule[] {
   return CATEGORY_LOCKS;
 }

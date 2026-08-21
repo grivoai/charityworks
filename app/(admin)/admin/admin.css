@@ -115,7 +115,6 @@ a.admin-card:hover {
   gap: 8px;
 }
 .admin-card p { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
-.admin-card[data-soon="true"] { opacity: 0.58; }
 
 .admin-count {
   margin-left: auto;
@@ -127,16 +126,6 @@ a.admin-card:hover {
   padding: 2px 9px;
 }
 
-.admin-soon {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--gold);
-  border: 1px solid rgba(184, 134, 11, 0.35);
-  border-radius: 999px;
-  padding: 2px 8px;
-  margin-left: auto;
-}
 
 /* ---------------- login ---------------- */
 
