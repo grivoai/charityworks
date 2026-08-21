@@ -104,6 +104,36 @@ export interface HiddenNode extends NodeBase {
   value: unknown;
 }
 
+/**
+ * One of several shapes, chosen by a literal field on the value itself.
+ *
+ * A Zod discriminated union. Before this the editor met one of these and gave
+ * up — `kind: "opaque"`, "a shape the editor cannot show yet" — which was fine
+ * while nothing in the content used one, and is the whole obstacle to letting
+ * anyone build a page out of blocks, because a list of blocks IS a
+ * discriminated union.
+ *
+ * The options carry a complete `ObjectNode` each, including the discriminator
+ * itself as a hidden field. That is what makes the rest of the machinery work
+ * unchanged: coercion, locks and validation all walk an ordinary object, and
+ * the only thing that had to learn anything new is which object to walk.
+ */
+export interface VariantNode extends NodeBase {
+  kind: "variant";
+  /** The field whose literal value decides the shape, e.g. `"type"`. */
+  discriminator: string;
+  options: Array<{
+    /** The literal this option matches, e.g. `"richText"`. */
+    value: string;
+    /** What the picker calls it. */
+    label: string;
+    /** The full shape for this option, discriminator included. */
+    node: ObjectNode;
+    /** A blank of this shape, so switching type does not have to rebuild it. */
+    template: unknown;
+  }>;
+}
+
 /** A shape the editor has no input for. Shown read-only rather than silently dropped. */
 export interface OpaqueNode extends NodeBase {
   kind: "opaque";
@@ -119,6 +149,7 @@ export type FieldNode =
   | ArrayNode
   | ImageNode
   | HiddenNode
+  | VariantNode
   | OpaqueNode;
 
 /** Field-level validation errors, keyed by dotted path, e.g. `hero.stats.0.value`. */

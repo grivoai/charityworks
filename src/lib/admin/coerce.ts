@@ -119,6 +119,54 @@ export function coerceToTree(
       });
     }
 
+    /**
+     * One of several shapes, picked by the value's own discriminator.
+     *
+     * The submitted discriminator decides which shape to rebuild against, NOT
+     * the stored one. Those differ exactly when somebody has just changed a
+     * block's type, which is an ordinary edit and the one this has to get
+     * right — trusting storage would rebuild the new block against the old
+     * shape and drop every field the client had just filled in.
+     *
+     * `current` is only passed through when the type has NOT changed. A locked
+     * field's value is taken from the stored entry, and after a type change the
+     * stored entry is a different shape whose keys mean different things; a
+     * `heading` held over from a text block is not the `heading` of the image
+     * block that replaced it. Treating a retyped block as new is both the
+     * honest reading and the safe one.
+     *
+     * An unrecognised discriminator falls back to the first option rather than
+     * throwing. The alternative is a save that fails on a value the client
+     * cannot see or edit, and the schema still gets the last word.
+     */
+    case "variant": {
+      const submitted =
+        value && typeof value === "object"
+          ? String((value as Record<string, unknown>)[node.discriminator] ?? "")
+          : "";
+      const option =
+        node.options.find((o) => o.value === submitted) ?? node.options[0];
+      if (!option) return undefined;
+
+      const storedType =
+        current && typeof current === "object"
+          ? String((current as Record<string, unknown>)[node.discriminator] ?? "")
+          : "";
+
+      const coerced = coerceToTree(
+        value,
+        option.node,
+        storedType === option.value ? current : undefined
+      ) as Record<string, unknown>;
+
+      // The discriminator is a hidden node inside the option, so it survives on
+      // its own — but a block whose type was just changed submits the NEW type
+      // while the hidden node still holds the old literal. Set it from the
+      // option that was actually used, which is the one thing that cannot be
+      // wrong.
+      return { ...coerced, [node.discriminator]: option.value };
+    }
+
     case "object": {
       if (!value || typeof value !== "object") {
         return node.optional ? undefined : {};

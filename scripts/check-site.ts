@@ -34,6 +34,8 @@ import { coerceToTree, stableStringify } from "@/lib/admin/coerce";
 import { applySiteRules, derivePhoneHref } from "@/lib/admin/site-rules";
 import { blankFor } from "@/lib/admin/schema-tree";
 import type { FieldNode } from "@/lib/admin/field-node";
+import { BUILT_IN_PAGES } from "@/lib/reserved-paths";
+import { getServiceClient } from "@/lib/supabase";
 import { readSiteDocument } from "@/lib/admin/site-read";
 
 /** Loose view of a field node; the tree is walked structurally here. */
@@ -99,10 +101,8 @@ async function main(): Promise<void> {
 
   /* ---- 2. Locks hold against a tampered submission ---- */
   const tampered = clone(parsed.data);
-  const realHref = tampered.nav[0]?.href;
   const realPhoneHref = tampered.contact.phoneHref;
 
-  tampered.nav[0].href = "https://evil.example/phished";
   tampered.contact.phoneHref = "tel:19005551234";
 
   const defended = applySiteRules(
@@ -110,12 +110,45 @@ async function main(): Promise<void> {
   ) as typeof tampered;
 
   check(
-    defended.nav[0].href === realHref,
-    `a submitted nav href is ignored (kept "${realHref}")`
-  );
-  check(
     defended.contact.phoneHref !== "tel:19005551234",
     "a submitted phoneHref is ignored"
+  );
+
+  /* ---- 2b. Nav links can only point at pages that exist ----
+
+     `nav[].href` used to be read-only, which kept it correct by refusing every
+     edit. It is a picker now, because custom pages gave a link somewhere new to
+     go — a tighter rule, not a looser one: a free-text field could at least be
+     typed correctly, and a picker cannot be typed at all. The dropdown is a
+     convenience; this set is the rule, and `saveSite` re-derives it rather than
+     trusting what the browser sent. */
+  // Built the same way getNavDestinations() builds it, but without the
+  // unstable_cache wrapper — that needs a Next request context, which a script
+  // does not have. The set is what is being checked, not the caching.
+  const { data: publishedPages } = await getServiceClient()
+    .from("custom_pages")
+    .select("slug, data")
+    .eq("published", true)
+    .returns<{ slug: string; data: { visibility?: string } }[]>();
+  const destinations = new Set<string>([
+    "/",
+    ...BUILT_IN_PAGES.map((slug) => `/${slug}`),
+    ...(publishedPages ?? [])
+      .filter((row) => row.data?.visibility === "public")
+      .map((row) => `/${row.slug}`),
+  ]);
+  const storedNav = parsed.data.nav.map((link) => link.href);
+  check(
+    storedNav.every((href) => destinations.has(href)),
+    `every stored nav link points at a real page (${storedNav.length} checked)`
+  );
+  check(
+    !destinations.has("https://evil.example/phished"),
+    "an off-site address is not an allowed destination"
+  );
+  check(
+    !destinations.has("/does-not-exist"),
+    "a page that does not exist is not an allowed destination"
   );
 
   /* ---- 3. The phone link follows the phone number ---- */

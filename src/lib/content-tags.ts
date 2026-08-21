@@ -62,3 +62,22 @@ export function pageTag(slug: string): string {
 export function tagsForPage(slug: string): string[] {
   return [pageTag(slug), PAGES_TAG];
 }
+
+/**
+ * The set of client-built pages, as opposed to any one of them.
+ *
+ * Read by the sitemap, the navigation and the admin's list. A page's own tag
+ * covers its content; this covers the fact that it exists at all, which is what
+ * changes when one is created, published, unpublished or deleted.
+ */
+export const CUSTOM_PAGES_TAG = "custom-pages";
+
+/** One client-built page, e.g. `custom-page:gala-2026`. */
+export function customPageTag(slug: string): string {
+  return `custom-page:${slug}`;
+}
+
+/** Everything a custom page edit makes stale. */
+export function tagsForCustomPage(slug: string): string[] {
+  return [customPageTag(slug), CUSTOM_PAGES_TAG];
+}

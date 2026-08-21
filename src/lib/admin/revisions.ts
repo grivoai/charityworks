@@ -19,7 +19,17 @@ import { getServiceClient } from "@/lib/supabase";
  * An undo you cannot undo is a second way to lose the text.
  */
 
-export type RevisionEntity = "page" | "site" | "category" | "item";
+/**
+ * Kept in step with the CHECK constraint on `content_revisions.entity`.
+ * Widening one without the other is a runtime rejection on a write the type
+ * system said was fine — see migration 0007 for the matching half.
+ */
+export type RevisionEntity =
+  | "page"
+  | "site"
+  | "category"
+  | "item"
+  | "custom-page";
 
 export interface Revision {
   id: number;

@@ -317,6 +317,54 @@ function toNode(schema: Internal, ctx: Context): FieldNode {
      */
     case "union": {
       const options = (inner.def.options ?? []) as Internal[];
+
+      /**
+       * A DISCRIMINATED union — the shape a list of page blocks takes.
+       *
+       * Zod reports these as `type: "union"` like any other, with the deciding
+       * field's name in `def.discriminator`; that is the only thing separating
+       * them from the loose union handled below.
+       *
+       * Each option becomes an ordinary ObjectNode, discriminator and all. That
+       * is deliberate and is what keeps the change small: coercion, locks,
+       * validation and error paths all keep walking objects, and the only new
+       * question anywhere is *which* object. The discriminator lands as a
+       * `hidden` node via the literal case, so it survives a save without being
+       * drawn as an editable field — the same treatment a page's slug gets.
+       */
+      const discriminator = inner.def.discriminator as string | undefined;
+      if (discriminator) {
+        const variants = options.map((option) => {
+          const shape = (option.def?.shape ?? {}) as Record<string, Internal>;
+          const literal = shape[discriminator];
+          const value = String(literal?.def?.values?.[0] ?? "");
+          const node = toNode(option, {
+            ...ctx,
+            // The option's own label would repeat the list's; what the picker
+            // needs is the name of THIS shape.
+            key: value,
+          }) as ObjectNode;
+          return {
+            value,
+            label: humanize(value),
+            node,
+            template: blankFor(node),
+          };
+        });
+
+        // A union whose options are not all objects with the literal present is
+        // not something this can draw, and guessing would be worse than saying
+        // so — the opaque fallback below already says it properly.
+        if (variants.every((v) => v.value !== "" && v.node.kind === "object")) {
+          return {
+            ...base,
+            kind: "variant",
+            discriminator,
+            options: variants,
+          };
+        }
+      }
+
       const hasEmptyLiteral = options.some(
         (o) => o?.def?.type === "literal" && o?.def?.values?.[0] === ""
       );
@@ -363,6 +411,14 @@ function toNode(schema: Internal, ctx: Context): FieldNode {
  */
 export function blankFor(node: FieldNode): unknown {
   switch (node.kind) {
+    /**
+     * The first option, which is therefore the one an "Add" lands on. Schema
+     * order is the authoring order, so the block a page most often opens with
+     * should be declared first.
+     */
+    case "variant":
+      return node.options[0] ? node.options[0].template : {};
+
     case "string":
       return "";
     case "number":

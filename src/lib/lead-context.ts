@@ -33,6 +33,15 @@ export const LEAD_SOURCES = [
   "auctioneer-request",
   "partner-request",
   "quiz",
+  /**
+   * An enquiry form block on a page the client built themselves.
+   *
+   * One value for all of them rather than one per page: the set is closed and
+   * validated server-side, so a per-page source would mean editing this list
+   * every time somebody adds a page — the opposite of the point. Which page it
+   * came from is already carried by `source_path`.
+   */
+  "custom-page",
 ] as const;
 export type LeadSource = (typeof LEAD_SOURCES)[number];
 

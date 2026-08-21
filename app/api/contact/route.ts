@@ -63,6 +63,7 @@ const LEAD_ID_PREFIX: Record<LeadSource, string> = {
   "auctioneer-request": "auctioneer",
   "partner-request": "partner",
   quiz: "quiz",
+  "custom-page": "page",
 };
 
 /** Quiz answer keys, carried through verbatim after sanitising. */

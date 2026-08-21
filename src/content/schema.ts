@@ -575,6 +575,122 @@ export const anyPageSchema = z.discriminatedUnion("slug", [
  * which is what makes `getPage("home")` return a validated `HomePage` rather
  * than `unknown` cast into hope.
  */
+/* ------------------------------------------------------------------ */
+/* Custom pages                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The blocks a client-built page is assembled from.
+ *
+ * A discriminated union, which is the reason the field editor grew a `variant`
+ * node — before that it met one of these and rendered "a shape the editor
+ * cannot show yet".
+ *
+ * Every block carries `id`, and it is load-bearing rather than decorative:
+ * coercion matches a submitted entry to its stored self by id, never by
+ * position, so reordering a page is an ordinary edit instead of a way to hand
+ * one block's protected values to another.
+ *
+ * Kept deliberately small. Six shapes that reuse components already on the
+ * site beats twenty that need new ones, and every extra shape is another thing
+ * the client has to choose between before they can write a sentence. The names
+ * avoid acronyms because the picker's labels are generated from them —
+ * `faqList` would read "Faq list".
+ */
+const blockBase = { id: text };
+
+export const richTextBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("richText"),
+  eyebrow: optionalText.describe("Small label above the heading."),
+  heading: optionalText,
+  body: text.describe("The paragraph or paragraphs. Blank lines start a new paragraph."),
+});
+
+export const imageAndTextBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("imageAndText"),
+  image: imageRefSchema,
+  heading: optionalText,
+  body: text,
+  imageSide: z
+    .enum(["left", "right"])
+    .describe("Which side the picture sits on. Stacks above the text on a phone either way."),
+});
+
+export const callToActionBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("callToAction"),
+  heading: text,
+  lede: optionalText,
+  cta: ctaRefSchema,
+});
+
+export const questionsBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("questions"),
+  heading: optionalText,
+  items: z.array(z.object({ id: text, question: text, answer: text })),
+});
+
+export const enquiryFormBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("enquiryForm"),
+  heading: text,
+  lede: optionalText.describe(
+    "The questions themselves come from the contact page, so there is one form to keep up to date."
+  ),
+});
+
+export const catalogTeaserBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("catalogTeaser"),
+  heading: optionalText,
+  lede: optionalText,
+  count: z
+    .number()
+    .int()
+    .min(1)
+    .max(12)
+    .describe("How many categories to show, newest first."),
+});
+
+export const pageBlockSchema = z.discriminatedUnion("type", [
+  richTextBlockSchema,
+  imageAndTextBlockSchema,
+  callToActionBlockSchema,
+  questionsBlockSchema,
+  enquiryFormBlockSchema,
+  catalogTeaserBlockSchema,
+]);
+
+/**
+ * Whether a custom page is listed anywhere.
+ *
+ * `unlisted` means exactly what the word says and no more: not in the
+ * navigation, not in the sitemap, and carrying `noindex, nofollow` — but still
+ * served to anyone who has the address. It is NOT private, and the admin says
+ * so in those words, because a client who reads "hidden" as "only the people I
+ * send it to" will eventually put something on one that should not be public.
+ *
+ * Real privacy would mean an access gate, and that is a different feature with
+ * a different cost. This one is honest about what it is.
+ */
+export const pageVisibilitySchema = z.enum(["public", "unlisted"]);
+
+export const customPageSchema = z.object({
+  slug: text,
+  title: text.describe("Shown as the page's heading and in the navigation."),
+  visibility: pageVisibilitySchema,
+  seo: seoMetaSchema,
+  intro: optionalText.describe("One or two lines under the heading. Optional."),
+  blocks: z.array(pageBlockSchema),
+});
+
+export type PageBlock = z.infer<typeof pageBlockSchema>;
+export type CustomPage = z.infer<typeof customPageSchema>;
+export type PageVisibility = z.infer<typeof pageVisibilitySchema>;
+
 export const pageSchemas = {
   home: homePageSchema,
   "auction-info": auctionInfoPageSchema,

@@ -9,6 +9,7 @@ import { SITE_TAG } from "@/lib/content-tags";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { locksForSite } from "@/lib/admin/locks";
 import { applySiteRules } from "@/lib/admin/site-rules";
+import { getNavDestinations } from "@/lib/admin/nav-destinations";
 import { coerceToTree, deepEqual } from "@/lib/admin/coerce";
 import { toFieldErrors } from "@/lib/admin/field-errors";
 import { ensureBaseline, getRevision, recordRevision } from "@/lib/admin/revisions";
@@ -84,6 +85,31 @@ export async function saveSite(
   // locked values are taken from the stored document rather than the request.
   const tree = buildFieldTree(siteContentSchema, locksForSite());
   const coerced = applySiteRules(coerceToTree(submitted, tree, current));
+
+  /**
+   * Nav links must point somewhere that exists.
+   *
+   * The editor offers a dropdown, but a dropdown is a convenience — the request
+   * is just JSON and can carry anything. Re-derived here rather than trusted,
+   * so the rule holds whatever the browser sent. A link to a page that does not
+   * exist is a header link to a 404, which is exactly what the old lock existed
+   * to prevent.
+   */
+  const allowed = new Set((await getNavDestinations()).map((d) => d.href));
+  const nav = (coerced as Record<string, unknown>).nav;
+  if (Array.isArray(nav)) {
+    for (const link of nav) {
+      if (!link || typeof link !== "object") continue;
+      const href = String((link as Record<string, unknown>).href ?? "");
+      if (!allowed.has(href)) {
+        return {
+          message:
+            `“${href || "(empty)"}” is not a page on this site, so a menu link ` +
+            "there would go nowhere. Pick a page from the list.",
+        };
+      }
+    }
+  }
 
   const parsed = siteContentSchema.safeParse(coerced);
   if (!parsed.success) {

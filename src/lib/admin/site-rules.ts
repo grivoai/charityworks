@@ -81,6 +81,40 @@ function assignChannelIds(contact: Record<string, unknown>): void {
 }
 
 /**
+ * Gives a newly added navigation link an id.
+ *
+ * Same rule and same reason as `assignChannelIds`: the id is locked so the
+ * client never has to invent one and cannot change one, which leaves a brand
+ * new row with nothing in it and no way to fill it. Derived from the label,
+ * deduped, and only ever minted for a row that has none.
+ */
+function assignNavIds(document: Record<string, unknown>): void {
+  const nav = document.nav;
+  if (!Array.isArray(nav)) return;
+
+  const taken = new Set(
+    nav
+      .map((link) =>
+        link && typeof link === "object"
+          ? String((link as Record<string, unknown>).id ?? "")
+          : ""
+      )
+      .filter((id) => id !== "")
+  );
+
+  for (const link of nav) {
+    if (!link || typeof link !== "object") continue;
+    const row = link as Record<string, unknown>;
+    if (typeof row.id === "string" && row.id !== "") continue;
+
+    const label = typeof row.label === "string" ? row.label : "";
+    const id = uniqueSlug(`nav-${slugify(label, "link")}`, taken);
+    row.id = id ?? `nav-${Date.now().toString(36)}`;
+    taken.add(String(row.id));
+  }
+}
+
+/**
  * Applies every site rule to a coerced document, in place.
  *
  * Runs AFTER coercion, because coercion is what restores locked values from
@@ -102,6 +136,8 @@ export function applySiteRules(coerced: unknown): unknown {
     }
     assignChannelIds(contact);
   }
+
+  assignNavIds(document);
 
   return document;
 }

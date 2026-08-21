@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getAllPages, getAuctionCategories } from "@/lib/content";
+import { getListedCustomPages } from "@/lib/custom-pages";
 import { siteUrl } from "@/lib/site-config";
 
 /** Priority per route — the home page and the two commercial pages rank highest. */
@@ -24,6 +25,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: priorities[page.seo.path] ?? 0.6,
   }));
 
+  /**
+   * Pages the client built — the LISTED ones only.
+   *
+   * `getListedCustomPages` is the single place `visibility` becomes a decision,
+   * so an unlisted page cannot be absent from the menu and present in the
+   * sitemap. Submitting an unlisted URL here would undo the point of it: the
+   * sitemap is the most direct way there is of telling a crawler a page exists.
+   *
+   * Below the built-in pages by default. These are usually campaign or event
+   * pages with a short life, and none of them should outrank /contact.
+   */
+  const custom = (await getListedCustomPages()).map((page) => ({
+    url: `${siteUrl}/${page.slug}`,
+    lastModified,
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
+
   // Category pages carry the long-tail terms ("celebrity signed guitar
   // fundraiser"), so they rank just below the top-level commercial pages.
   const categories = (await getAuctionCategories()).map((category) => ({
@@ -33,5 +52,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  return [...pages, ...categories];
+  return [...pages, ...custom, ...categories];
 }

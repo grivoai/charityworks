@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { locksForSite } from "@/lib/admin/locks";
+import { getNavDestinations, withNavDestinations } from "@/lib/admin/nav-destinations";
 import { countRevisions } from "@/lib/admin/revisions";
 import { formatWhen } from "@/lib/admin/page-meta";
 import { readSiteDocument, SITE_ENTITY_ID, SITE_ROW_ID } from "@/lib/admin/site-read";
@@ -69,7 +70,13 @@ export default async function SiteSettingsRoute({
       .maybeSingle<MetaRow>(),
   ]);
 
-  const tree = buildFieldTree(siteContentSchema, locksForSite());
+  // The nav's destinations are not knowable from the schema — they depend on
+  // which pages exist right now — so the picker is injected after the tree is
+  // built. The save re-derives the same set and checks what comes back.
+  const tree = withNavDestinations(
+    buildFieldTree(siteContentSchema, locksForSite()),
+    await getNavDestinations()
+  );
 
   const editor = meta.data?.admin_users;
   const updatedLabel = meta.data?.updated_at

@@ -7,6 +7,7 @@ import type {
   FieldNode,
   ImageNode,
   ObjectNode,
+  VariantNode,
 } from "@/lib/admin/field-node";
 import { FIELD_PATH_ATTR, domId } from "@/lib/admin/dom";
 import { putFile } from "@/components/admin/upload-transfer";
@@ -650,6 +651,78 @@ function ArrayField({
 }
 
 /* ------------------------------------------------------------------ */
+/* Variants                                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A block: a type picker, then whatever fields that type has.
+ *
+ * Changing the type REPLACES the value with a blank of the new shape rather
+ * than merging into it. Merging looks kinder and is not: two blocks can both
+ * have a `heading` meaning entirely different things, so carrying values across
+ * silently reinterprets them, and the client cannot see which fields came from
+ * where. A clean swap is legible — and the previous version is one Undo away in
+ * the version history, which is exactly what that history is for.
+ *
+ * The picker is disabled on a locked field, like every other input here, so a
+ * block whose type is fixed can still have its content edited.
+ */
+function VariantField({
+  node,
+  value,
+  onChange,
+  path,
+  errors,
+  depth,
+}: FieldProps & { node: VariantNode }) {
+  const current =
+    value && typeof value === "object"
+      ? String((value as Record<string, unknown>)[node.discriminator] ?? "")
+      : "";
+  const option =
+    node.options.find((o) => o.value === current) ?? node.options[0];
+
+  if (!option) return null;
+
+  return (
+    <div className="admin-variant">
+      <div className="admin-f admin-variant-pick">
+        <label htmlFor={`${path}-type`}>{node.label || "Type"}</label>
+        <select
+          id={`${path}-type`}
+          value={option.value}
+          disabled={Boolean(node.locked)}
+          onChange={(event) => {
+            const next = node.options.find((o) => o.value === event.target.value);
+            if (next) onChange(structuredClone(next.template));
+          }}
+        >
+          {node.options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        {node.locked && (
+          <p className="admin-help admin-help-lock">{node.locked}</p>
+        )}
+      </div>
+
+      {/* The chosen shape, rendered as the ordinary object it is. The
+          discriminator inside it is a hidden node, so it is not drawn twice. */}
+      <Field
+        node={option.node}
+        value={value}
+        onChange={onChange}
+        path={path}
+        errors={errors}
+        depth={depth}
+      />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Objects                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -714,6 +787,8 @@ export function Field(props: FieldProps) {
       return <ArrayField {...props} node={node} />;
     case "object":
       return <ObjectField {...props} node={node} />;
+    case "variant":
+      return <VariantField {...props} node={node} />;
     case "opaque":
       return (
         <div className="admin-f">
