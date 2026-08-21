@@ -1,4 +1,5 @@
 import type { SiteContent } from "@/content/types";
+import { slugify, uniqueSlug } from "@/lib/admin/slug";
 
 /**
  * Rules the site settings schema cannot state.
@@ -33,6 +34,53 @@ export function derivePhoneHref(phone: string, fallback: string): string {
 }
 
 /**
+ * Gives a newly added contact channel an id.
+ *
+ * `contact.channels[].id` is locked in the editor because an existing row's id
+ * must not change — but a row that has just been added has no id to keep, and
+ * coercion had nothing in storage to restore it from. The result was an "Add
+ * channel" button that appended a row nobody could fill in and no save would
+ * accept: `contact.channels.3.id: expected string to have >=1 characters`,
+ * every time, with no field on screen to fix it.
+ *
+ * So the server assigns one, from the label the client did type. Exactly what
+ * `applyContactFormRules` does for a newly added question, for exactly the same
+ * reason — a key the client should never have to invent, and must not be able
+ * to change afterwards.
+ *
+ * Existing rows are returned untouched: an id is only ever minted for a row
+ * that has none, so this can never renumber the channels already in place.
+ */
+function assignChannelIds(contact: Record<string, unknown>): void {
+  const channels = contact.channels;
+  if (!Array.isArray(channels)) return;
+
+  const taken = new Set(
+    channels
+      .map((channel) =>
+        channel && typeof channel === "object"
+          ? String((channel as Record<string, unknown>).id ?? "")
+          : ""
+      )
+      .filter((id) => id !== "")
+  );
+
+  for (const channel of channels) {
+    if (!channel || typeof channel !== "object") continue;
+    const row = channel as Record<string, unknown>;
+    if (typeof row.id === "string" && row.id !== "") continue;
+
+    const label = typeof row.label === "string" ? row.label : "";
+    const base = `channel-${slugify(label, "new")}`;
+    const id = uniqueSlug(base, taken);
+    // Falling back to a timestamp rather than failing the save: two hundred
+    // channels called the same thing is not a situation worth an error page.
+    row.id = id ?? `channel-${Date.now().toString(36)}`;
+    taken.add(String(row.id));
+  }
+}
+
+/**
  * Applies every site rule to a coerced document, in place.
  *
  * Runs AFTER coercion, because coercion is what restores locked values from
@@ -45,11 +93,14 @@ export function applySiteRules(coerced: unknown): unknown {
   const document = coerced as Record<string, unknown>;
   const contact = document.contact as Record<string, unknown> | undefined;
 
-  if (contact && typeof contact.phone === "string") {
-    contact.phoneHref = derivePhoneHref(
-      contact.phone,
-      typeof contact.phoneHref === "string" ? contact.phoneHref : ""
-    );
+  if (contact) {
+    if (typeof contact.phone === "string") {
+      contact.phoneHref = derivePhoneHref(
+        contact.phone,
+        typeof contact.phoneHref === "string" ? contact.phoneHref : ""
+      );
+    }
+    assignChannelIds(contact);
   }
 
   return document;

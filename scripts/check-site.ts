@@ -32,7 +32,18 @@ import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { locksForSite } from "@/lib/admin/locks";
 import { coerceToTree, stableStringify } from "@/lib/admin/coerce";
 import { applySiteRules, derivePhoneHref } from "@/lib/admin/site-rules";
+import { blankFor } from "@/lib/admin/schema-tree";
+import type { FieldNode } from "@/lib/admin/field-node";
 import { readSiteDocument } from "@/lib/admin/site-read";
+
+/** Loose view of a field node; the tree is walked structurally here. */
+type FieldFor = {
+  kind?: string;
+  fields?: { key: string; node: unknown }[];
+  element?: unknown;
+  fixedLength?: string;
+  locked?: string;
+};
 
 let failures = 0;
 
@@ -128,7 +139,60 @@ async function main(): Promise<void> {
     "a number with no digits keeps the stored link rather than making a broken one"
   );
 
-  /* ---- 4. Nothing in this document is uneditable ---- */
+  /* ---- 4. Every "Add" button in this document can actually save ----
+
+     The failure this catches is specific and was live: a list open for adding,
+     whose new entry contains a LOCKED required field. Coercion restores locked
+     values from storage, a brand-new entry has nothing in storage to restore
+     from, so the row saves as empty and the schema rejects it — with no field
+     on screen to fix, because the field is locked. An Add button that cannot
+     succeed reads as the save being broken.
+
+     So: for every addable list, append what the editor would append, fill the
+     fields a person could actually reach, and require the result to save. */
+  const addable: { path: string; node: FieldFor }[] = [];
+  const collect = (node: unknown, path: string) => {
+    const n = node as FieldFor;
+    if (n.kind === "array" && !n.fixedLength) addable.push({ path, node: n });
+    if (n.kind === "object") for (const f of n.fields ?? []) collect(f.node, path ? `${path}.${f.key}` : f.key);
+    if (n.kind === "array" && n.element) collect(n.element, `${path}[]`);
+  };
+  collect(tree, "");
+
+  for (const { path, node } of addable) {
+    // Skip nested lists: exercising them needs a parent entry that does not
+    // exist yet, and the top-level pass already covers the shape.
+    if (path.includes("[]")) continue;
+
+    const draft = clone(parsed.data) as Record<string, unknown>;
+    const target = path.split(".").reduce<any>((o, k) => o?.[k], draft);
+    if (!Array.isArray(target)) continue;
+
+    const entry = blankFor(node.element as FieldNode) as Record<string, unknown>;
+    // Fill everything a person could reach: unlocked, non-object leaves.
+    for (const field of (node.element as FieldFor).fields ?? []) {
+      const leaf = field.node as FieldFor;
+      if (leaf.locked) continue;
+      if (leaf.kind === "string") entry[field.key] = "Test value";
+      if (leaf.kind === "number") entry[field.key] = 1;
+    }
+    target.push(entry);
+
+    const saved = applySiteRules(coerceToTree(draft, tree, stored));
+    const result = siteContentSchema.safeParse(saved);
+    check(
+      result.success,
+      `"Add" on ${path} produces a row that saves` +
+        (result.success
+          ? ""
+          : ` — BLOCKED at ${result.error.issues
+              .slice(0, 2)
+              .map((i) => i.path.map(String).join("."))
+              .join(", ")}`)
+    );
+  }
+
+  /* ---- 5. Nothing in this document is uneditable ---- */
   let opaque = 0;
   const walk = (node: unknown): void => {
     const n = node as {

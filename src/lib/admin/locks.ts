@@ -211,6 +211,33 @@ export const CATEGORY_LOCKS: LockRule[] = [
  */
 export const SITE_LOCKS: LockRule[] = [
   {
+    /**
+     * TEMPORARY, and the thing that lifts it is the custom-pages feature.
+     *
+     * The list showed an "Add nav" button that could never succeed. A new entry
+     * arrives as `{id:"", label:"", href:""}`; `id` and `href` are locked, so
+     * the client could fill in the label and nothing else, and every save came
+     * back `nav.7.id: expected string to have >=1 characters` with no field on
+     * screen to fix. A button that appends an unsaveable row is worse than no
+     * button — it reads as the save being broken.
+     *
+     * Generating the missing values the way contact channels now do would fix
+     * the id but not the href, and href is the real problem: it has to point at
+     * a page that exists, all eight already have a link, so the only nav entry
+     * anyone could add today is a duplicate of one already there.
+     *
+     * So the list is closed and says why, rather than open and lying. When
+     * pages can be created in the panel there will be somewhere new to point,
+     * and this becomes a picker over real pages instead of a lock.
+     */
+    pattern: "nav",
+    mode: "fixed-length",
+    reason:
+      "These are the site's eight pages, and every one of them already has a " +
+      "link here. A new link needs a new page to point at — once pages can be " +
+      "added in the panel, this list opens up with them.",
+  },
+  {
     pattern: "nav.*.href",
     mode: "readonly",
     reason:
