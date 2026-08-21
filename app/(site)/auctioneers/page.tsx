@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
+import { AuctioneerBio } from "@/components/AuctioneerBio";
 import { at, editable } from "@/lib/editable";
 import { AuctioneersJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { Icon } from "@/components/Icon";
@@ -174,11 +175,11 @@ export default async function AuctioneersRoute() {
                     </p>
                   )}
 
-                  {auctioneer.bio.map((para, i) => (
-                    <p key={i} {...editable(at(who, "bio", i))}>
-                      {para}
-                    </p>
-                  ))}
+                  <AuctioneerBio
+                    bio={auctioneer.bio}
+                    who={who}
+                    name={auctioneer.name}
+                  />
 
                   {/* Named in the accessible label: a page of nine identical
                       "Request this auctioneer" links tells a screen reader user

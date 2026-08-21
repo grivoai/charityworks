@@ -354,7 +354,15 @@ section { position: relative; }
   mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
 }
 .i-track { display: flex; gap: 18px; width: max-content; animation: scroll-back 60s linear infinite; }
-.i-track-wrap:hover .i-track { animation-play-state: paused; }
+/* NOTE: `.i-track-wrap:hover .i-track { animation-play-state: paused }` was
+   removed here, not lost in an edit. Both marquees used to stop under the
+   pointer. On a phone there is no hover state to leave, so a tap that lands on
+   the strip could stick it in the paused state until something else took the
+   :hover away — a strip that had visibly been moving a second earlier just
+   stopped, which reads as the page having hung. The strips now run
+   continuously regardless of hover, touch or click. Same for .t-track below.
+   Motion is still switched off wholesale under prefers-reduced-motion, which
+   is an accessibility setting rather than an interaction. */
 @keyframes scroll-back { from { transform: translateX(-50%); } to { transform: translateX(0); } }
 .i-tile {
   position: relative; flex: 0 0 280px; height: 200px;
@@ -410,7 +418,7 @@ section { position: relative; }
 .testimonials .eyebrow { color: var(--gold-bright); }
 .t-track-wrap { margin-top: 56px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
 .t-track { display: flex; gap: 26px; width: max-content; animation: scroll 46s linear infinite; }
-.t-track-wrap:hover .t-track { animation-play-state: paused; }
+/* Pause-on-hover removed here too — see the note on .i-track-wrap above. */
 @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .t-card {
   width: 380px; flex: 0 0 380px; padding: 30px;
@@ -1410,19 +1418,21 @@ main.is-transitioning {
   .donor-cards { margin-top: 30px; }
 
   /* ---- Reveal stagger ----
-     The d1/d2/d3 delay classes encode a THREE-COLUMN row: they exist so
-     the three cards of a desktop row enter left to right. In the phone's
-     single-column grids each card crosses the observer threshold on its
-     own, several hundred milliseconds apart, so the class no longer
-     staggers anything — it just adds an arbitrary 130-390ms lag to some
-     cards and not others, which reads as jank rather than sequence.
+     The d1/d2/d3 delay classes encode a THREE-COLUMN desktop row: they exist
+     so the three cards of one row enter left to right. None of these grids is
+     three columns here — the why and donor grids are two-up and the steps are
+     one per row — so `index % 3` no longer lines up with anything on screen.
+     It stopped staggering and started adding an arbitrary 130-390ms to some
+     cards and not others.
 
-     Zeroed for the layouts that become one column. Only the bento keeps
-     its delays: it is the one grid that stays two-up below, where the
-     cards of a row genuinely do arrive together and the stagger still
-     means something. Its markup staggers on `index % 4`, which across
-     two columns lands as 0/0.13s on the first row and 0.26/0.39s on the
-     second — still reading top-to-bottom, so it needs no change. */
+     Zeroed rather than re-derived from :nth-child. A position-based stagger
+     would have to know the column count, and that changes at 560px, so it
+     would be right on one side of the breakpoint and wrong on the other. The
+     reveal itself still runs; only the per-card offset goes.
+
+     The bento keeps its delays: it staggers on `index % 4`, which across two
+     columns lands as 0/0.13s on the first row and 0.26/0.39s on the second —
+     still top-to-bottom, so it needs no change. */
   .why-grid > .why-card.reveal,
   .donor-cards > .donor-card.reveal,
   .steps > .step.reveal { transition-delay: 0s; }
@@ -1440,81 +1450,52 @@ main.is-transitioning {
   .hero p.sub { margin-bottom: 22px; }
   .hero-btns { gap: 10px; }
 
-  /* ---- Hero stat cards ----
-     THIS IS A BUG FIX, not a spacing change.
-
-     The four cards are absolutely positioned at fixed insets (s1 top
-     10/left 0, s3 bottom 90/left 20, and so on) inside a .hero-stats box
-     that the 980px query shrinks from 440px tall to 260px. Those insets
-     were measured against the taller box, so on a phone the cards land
-     on top of each other: measured at 375px, s1 and s3 overlap by
-     118x55px and s2 and s4 by 110x3px, and it is worse at 390px
-     (118x48 and 110x39) and at 414px (118x70 and 110x22). The 6s float
-     animation drifts them another 18px into each other. The "80+" card
-     was sitting half-hidden behind "$0 Upfront Cost" on every phone.
-
-     Below 760px they stop floating and become a plain 2x2 grid, which
-     cannot collide at any width and shows all four stats at once. The
-     float animation is dropped with the positioning — it is a decoration
-     that only makes sense for free-floating cards, and animating four
-     tiles in a fixed grid would just wobble the layout. */
-  .hero-stats {
-    position: static;
-    height: auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    max-width: none;
-  }
-  .stat-card {
-    position: static;
-    padding: 16px 18px;
-    animation: none;
-  }
-  /* The desktop insets would still apply as static-position offsets on
-     some engines; clear them so the grid is the only thing placing. */
-  .s1, .s2, .s3, .s4 { top: auto; right: auto; bottom: auto; left: auto; }
-  .stat-card .num { font-size: 1.7rem; }
-  .stat-card .lbl { font-size: 0.78rem; margin-top: 4px; }
-
   /* ---- Why cards ----
-     Nine cards stacked one per row, each spending 74px on a 56px icon
-     tile plus the 18px beneath it before any text starts — 666px of the
-     section's 2,590px was icon gutter.
+     A grid of tiles, not a stack: nine cards one-per-row is what made this
+     section 2,590px in the first place.
 
-     Reflowed to a row: icon in a fixed left column, text beside it. The
-     body copy keeps a ~233px measure, which is a comfortable line; the
-     two-column tile grid this replaced as a candidate would have cut it
-     to ~123px and wrapped these sentences to five or six lines each.
+     TWO columns, not three, and the reason is measured rather than taste.
+     `.wrap` leaves 327px at 375px wide. Split three ways that is a 103px card
+     — about an 80px text column, which renders this copy at TWELVE characters
+     per line. "memorabilia" is eleven characters; it would take a line to
+     itself. Two columns give a 129px text column and ~15 characters, which is
+     tight but reads. Three columns arrive at 560px, where a card is back to
+     ~164px and the text column matches what two-up gives a phone.
 
-     The featured first card keeps its stacked form so the section still
-     opens on something with weight rather than nine identical rows. */
-  .why-grid { gap: 12px; }
-  .why-card { padding: 20px; }
-  .why-grid > .why-card:not(:first-child) {
-    display: grid;
-    grid-template-columns: 40px 1fr;
-    gap: 14px;
-    align-items: start;
+     Flex with a wrapping basis rather than grid-template-columns, matching
+     the note further up this file: these counts are admin-editable, and a
+     fixed column count strands the remainder against the left edge with a
+     hole beside it. Centred wrapping makes any count look deliberate.
+
+     min-width has to be cleared explicitly — the base rule sets 240px, which
+     is wider than the 158px basis and would silently win. */
+  .why-grid { gap: 10px; }
+  .why-grid > .why-card {
+    flex-basis: calc((100% - 10px) / 2);
+    min-width: 0;
   }
-  .why-grid > .why-card:not(:first-child) .why-ico {
-    width: 40px;
-    height: 40px;
-    border-radius: 11px;
-    font-size: 1.15rem;
-    margin-bottom: 0;
-    /* Second row of the icon column, so a card whose text wraps to three
-       lines does not stretch the tile down the side of the card. */
-    grid-row: span 2;
+  .why-card { padding: 14px; }
+  .why-ico {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
   }
-  .why-grid > .why-card:first-child { padding: 24px; }
+  .why-card h3 { font-size: 0.95rem; line-height: 1.15; margin-bottom: 5px; }
+  .why-card p { font-size: 0.82rem; line-height: 1.4; }
+
+  /* The featured card keeps the full width. It carries the most weight on
+     desktop, and spanning the row here means the eight that follow tile as
+     four clean pairs instead of leaving an odd card alone at the end. */
+  .why-grid > .why-card:first-child { flex-basis: 100%; padding: 18px; }
+  .why-grid > .why-card:first-child h3 { font-size: 1.2rem; }
   .why-grid > .why-card:first-child .why-ico {
-    width: 52px;
-    height: 52px;
-    font-size: 1.6rem;
-    margin-bottom: 12px;
+    width: 44px;
+    height: 44px;
+    font-size: 1.4rem;
+    margin-bottom: 10px;
   }
-  .why-grid > .why-card:first-child h3 { font-size: 1.3rem; }
 
   /* ---- How It Works ----
      Same shape of waste as the why cards, one size up: a 92px numbered
@@ -1568,38 +1549,30 @@ main.is-transitioning {
   .i-track { gap: 12px; }
 
   /* ---- Donor perks ----
-     Tried two-up first, on the theory that an icon plus three short lines
-     is small enough to sit half-width. Measured, it was not: at a 123px
-     text column "Buy $100 in Raffle", "Free Vacation Package" and "Raffle
-     buyers cash in." each wrapped to two lines, so a 224px card carried
-     six lines of ragged centred text. That is the cramped result this
-     pass is supposed to avoid, and it saved no height worth having.
+     Two up, which for four cards is a clean 2x2 with no remainder.
 
-     So these take the same horizontal row as the why cards instead: one
-     per row, icon in a fixed left column, text beside it. Same height as
-     the two-up version, none of the wrapping, and the two card grids on
-     the page now read as one idea rather than two. */
+     This is the layout I built, measured as cramped, and backed out of last
+     round — that judgement was wrong, and it was wrong for a specific reason:
+     the cards were still carrying desktop type. At 1.05rem titles and 0.88rem
+     notes every line wrapped. Re-measured at the sizes below, "Every attendee
+     qualifies." and its siblings each fit on ONE line at 22 characters, and
+     the grid comes out at 349px against 571px for the one-per-row version.
+
+     Left-aligned rather than centred. At a short measure, centred text ragged
+     on both edges is most of what read as cramped; a straight left edge does
+     not, and the cards line up with the why grid above them. */
   .donor-cards { gap: 10px; }
   .donor-card {
-    flex-basis: 100%;
+    flex-basis: calc((100% - 10px) / 2);
     min-width: 0;
-    display: grid;
-    grid-template-columns: 40px 1fr;
-    gap: 14px;
-    align-items: start;
+    padding: 16px 14px;
     text-align: left;
-    padding: 16px 18px;
   }
-  .donor-card .emoji {
-    font-size: 1.6rem;
-    margin-bottom: 0;
-    grid-row: span 3;
-    line-height: 1;
-  }
-  .donor-card .emoji .cw-icon { width: 1.6rem; height: 1.6rem; }
-  .donor-card h3 { font-size: 1rem; }
-  .donor-card .arrow { font-size: 0.88rem; }
-  .donor-card p { font-size: 0.86rem; margin-top: 4px; }
+  .donor-card .emoji { font-size: 1.5rem; margin-bottom: 8px; }
+  .donor-card .emoji .cw-icon { width: 1.5rem; height: 1.5rem; }
+  .donor-card h3 { font-size: 0.95rem; }
+  .donor-card .arrow { font-size: 0.82rem; }
+  .donor-card p { font-size: 0.8rem; line-height: 1.4; margin-top: 5px; }
 
   /* ---- Contact form ---- */
   .contact-form { padding: 22px; }
@@ -1651,4 +1624,264 @@ main.is-transitioning {
 .section-cta { margin-top: var(--cta-gap, 46px); }
 @media (max-width: 760px) {
   .section-cta { margin-top: 30px; }
+}
+
+/* ---- Three columns from 560px up ----
+   The phone gets two (see the note in the block above: three columns at 375px
+   measures out at twelve characters per line). Three arrive at 560px, where a
+   card is back to ~164px and its text column matches what two-up gives a
+   phone.
+
+   The upper bound is 980px rather than 760px on purpose. The stylesheet
+   already put this grid at TWO columns for 761-980px, so switching to three
+   only across 560-760px would make the column count run 2 -> 3 -> 2 -> 3 as
+   the window widens. Carrying three all the way to the desktop breakpoint
+   keeps it monotonic and makes the tablet band match the desktop
+   composition, which is the point of the exercise. Above 980px nothing is
+   touched: that range keeps the original rule, gap and card width.
+
+   Nine value props divide evenly into three rows here, so the featured card
+   drops back to being one cell of the first row — the full-width span it
+   takes on a phone exists to keep the remaining eight tiling as clean pairs,
+   and at three columns it would strand two cards in the last row instead. */
+@media (min-width: 560px) and (max-width: 760px) {
+  .why-grid > .why-card { flex-basis: calc((100% - 2 * 10px) / 3); }
+  .why-grid > .why-card:first-child {
+    flex-basis: calc((100% - 2 * 10px) / 3);
+    padding: 14px;
+  }
+  .why-grid > .why-card:first-child h3 { font-size: 0.95rem; }
+  .why-grid > .why-card:first-child .why-ico {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+  }
+}
+@media (min-width: 761px) and (max-width: 980px) {
+  .why-grid > .why-card { flex-basis: calc((100% - 2 * 22px) / 3); }
+}
+
+/* The donor perks stay two-up for the whole phone range and are deliberately
+   NOT carried to three. There are four of them: two-up is an exact 2x2, and
+   three-up would put three on one row and leave the fourth alone underneath.
+   Above 760px they keep the rules they already had (two-up to 980, four
+   across above it). */
+
+/* ================================================================== */
+/* MOBILE NAV DRAWER                                                   */
+/*                                                                     */
+/* The drawer worked in the sense that it slid in. Everything around   */
+/* it was unfinished: the three bars never became a close icon, so the */
+/* button still read "open menu" while the menu was open; the panel    */
+/* slid over the wordmark and cut it in half; there was no backdrop,   */
+/* so the page behind stayed at full brightness and the drawer read as */
+/* a floating rectangle rather than a layer; the page kept scrolling   */
+/* underneath it; and the header's call to action is display:none at   */
+/* this width, which left the primary CTA unreachable on a phone.      */
+/* ================================================================== */
+
+/* The bars are 2.5px with a 5px gap, so each outer bar travels exactly
+   2.5 + 5 = 7.5px to meet the middle before rotating. */
+.nav-toggle span { transform-origin: center; }
+.nav-toggle.open span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+.nav-toggle.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-toggle.open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+.nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(4, 12, 26, 0.6);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s var(--ease);
+}
+
+/* Above 760px the drawer never opens, so the scrim must never be able to
+   cover the page — `.open` is only ever set by the same state that opens a
+   drawer this width does not have. */
+@media (min-width: 761px) {
+  .nav-scrim { display: none; }
+  .nav-links-cta { display: none; }
+}
+
+html.nav-open, body.nav-open { overflow: hidden; }
+
+/* ---- Why the nav loses its blur while the drawer is open ----
+   THIS IS A BUG FIX, and it is the one that made the menu look broken.
+
+   `.nav.scrolled` carries `backdrop-filter: blur(14px)`. A backdrop-filter
+   makes an element a CONTAINING BLOCK for its `position: fixed` descendants —
+   the same rule that `transform` and `filter` follow. Both the drawer and the
+   scrim are fixed children of `.nav`, so the moment the page was scrolled
+   past 40px and `.scrolled` landed, `inset: 0` stopped meaning "the viewport"
+   and started meaning "the 70px navigation bar".
+
+   Measured at 375px while scrolled: the drawer rendered 120px tall and the
+   scrim 70px, against a viewport of 812px. So the menu was a stub hanging off
+   the header with the page showing through underneath — and only when
+   scrolled, which is why it looks fine the instant you land on a page and
+   broken every time after.
+
+   `transition` goes with it. The nav animates backdrop-filter over 0.45s, and
+   a filter mid-transition is still a filter as far as the containing block is
+   concerned — leaving it on would clip the drawer for the first 0.45s of
+   every open, which is most of the time anyone is looking at it. */
+body.nav-open .nav {
+  backdrop-filter: none;
+  transition: none;
+}
+
+@media (max-width: 760px) {
+  .nav-scrim.open { opacity: 1; pointer-events: auto; }
+
+  /* A defined 44px target rather than a 26px glyph with 6px around it, and
+     lifted above the drawer so it stays tappable as the close control. */
+  .nav-toggle {
+    position: relative;
+    z-index: 1002;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  .nav-links {
+    /* Was `justify-content: center`, which pushed seven links into the middle
+       of an 812px panel and left a third of it empty at each end. Top-anchored
+       under a spacer that clears the header, so the first link is where a
+       thumb reaching from the toggle expects it. */
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 2px;
+    padding: 88px 20px 32px;
+    width: min(82vw, 300px);
+    z-index: 1001;
+    overflow-y: auto;
+    box-shadow: -24px 0 60px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Left-aligned and full-bleed within the panel: a 44px-tall row is a real
+     touch target, where a centred inline link is only as tall as its text. */
+  .nav-links a {
+    display: block;
+    padding: 12px 12px;
+    border-radius: 10px;
+    font-size: 1.02rem;
+    transition: color 0.3s, background 0.3s;
+  }
+  .nav-links a:hover { background: rgba(255, 255, 255, 0.06); }
+
+  /* The sliding underline is a desktop affordance — under a left-aligned
+     stack it draws a line beneath one row for no reason. The current route is
+     marked with a rule down the leading edge and the gold text instead. */
+  .nav-links a::after { display: none; }
+  .nav-links a.active {
+    color: var(--gold-bright);
+    background: rgba(224, 168, 46, 0.1);
+    box-shadow: inset 2px 0 0 var(--gold-bright);
+  }
+
+  .nav-links-cta { margin-top: 18px; padding: 0 12px; }
+  .nav-links-cta .btn { display: block; width: 100%; text-align: center; }
+}
+
+/* ================================================================== */
+/* AUCTIONEER ROSTER — PHONE                                           */
+/*                                                                     */
+/* /auctioneers measured 15,630px at 375px: ten profiles averaging     */
+/* 1,082px, of which a 320px portrait and ~563px of bio prose are the  */
+/* two big blocks. Both are addressed here.                            */
+/* ================================================================== */
+
+/* The collapsed paragraphs are CLIPPED, not `display: none`. Same technique
+   as .faq-a, and the note on AuctioneerBio explains why it matters: the copy
+   has to stay in the DOM for search engines whatever the open state. */
+.auc-bio-toggle {
+  display: none;
+  background: none;
+  border: 0;
+  padding: 6px 0 0;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--gold);
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.auc-bio-toggle:hover { color: var(--green); }
+.auc-bio-toggle:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (max-width: 760px) {
+  /* 320px of portrait above the fold on every one of ten profiles was the
+     single largest fixed cost on the page. These are top-anchored portraits
+     (`object-position: center top`), so the face survives the crop. */
+  .auc-portrait { min-height: 200px; }
+  .auc-profile-body { padding: 20px 18px 22px; }
+
+  .auc-bio-toggle { display: inline-block; }
+
+  .auc-bio > p { transition: max-height 0.45s var(--ease), margin 0.35s; }
+  .auc-bio:not(.expanded) > p:not(:first-of-type) {
+    max-height: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+  }
+}
+
+/* ================================================================== */
+/* HERO STAT CARDS — the full width range of the bug                   */
+/* ================================================================== */
+@media (max-width: 980px) {
+  /* ---- Hero stat cards ----
+     THIS IS A BUG FIX, not a spacing change.
+
+     The four cards are absolutely positioned at fixed insets (s1 top
+     10/left 0, s3 bottom 90/left 20, and so on) inside a .hero-stats box
+     that the 980px query shrinks from 440px tall to 260px. Those insets
+     were measured against the taller box, so on a phone the cards land
+     on top of each other: measured at 375px, s1 and s3 overlap by
+     118x55px and s2 and s4 by 110x3px, and it is worse at 390px
+     (118x48 and 110x39) and at 414px (118x70 and 110x22). The 6s float
+     animation drifts them another 18px into each other. The "80+" card
+     was sitting half-hidden behind "$0 Upfront Cost" on every phone.
+
+     They stop floating and become a plain 2x2 grid, which cannot collide
+     at any width and shows all four stats at once. The float animation is
+     dropped with the positioning — it is a decoration that only makes
+     sense for free-floating cards, and animating four tiles in a fixed
+     grid would just wobble the layout.
+
+     SCOPED TO 980px, NOT 760px. The first pass at this fixed it only up
+     to 760px, which left the bug live across the whole 761-980 band —
+     re-measured at 900px it was still producing two overlapping pairs.
+     980px is where `.hero-stats` is shrunk from 440px to 260px, so 980px
+     is where the mismatch between the box and the cards' fixed insets
+     begins, and that is the boundary the fix has to match. */
+  .hero-stats {
+    position: static;
+    height: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    max-width: none;
+  }
+  .stat-card {
+    position: static;
+    padding: 16px 18px;
+    animation: none;
+  }
+  /* The desktop insets would still apply as static-position offsets on
+     some engines; clear them so the grid is the only thing placing. */
+  .s1, .s2, .s3, .s4 { top: auto; right: auto; bottom: auto; left: auto; }
+  .stat-card .num { font-size: 1.7rem; }
+  .stat-card .lbl { font-size: 0.78rem; margin-top: 4px; }
 }
