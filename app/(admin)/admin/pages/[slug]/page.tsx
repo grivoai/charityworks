@@ -95,8 +95,6 @@ export default async function EditPageRoute({
   return (
     <AdminShell admin={admin} wide={showPreview}>
       <nav className="admin-crumbs">
-        <Link href="/admin">Site content</Link>
-        <span aria-hidden="true">›</span>
         <Link href="/admin/pages">Page text</Link>
         <span aria-hidden="true">›</span>
         <span>{PAGE_LABELS[slug]}</span>

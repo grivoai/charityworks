@@ -46,11 +46,6 @@ export default async function PagesIndex() {
 
   return (
     <AdminShell admin={admin}>
-      <nav className="admin-crumbs">
-        <Link href="/admin">Site content</Link>
-        <span aria-hidden="true">›</span>
-        <span>Page text</span>
-      </nav>
 
       <div className="admin-head">
         <h1>Page text</h1>

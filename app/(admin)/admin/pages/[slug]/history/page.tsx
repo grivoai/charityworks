@@ -77,8 +77,6 @@ export default async function PageHistoryRoute({
   return (
     <AdminShell admin={admin}>
       <nav className="admin-crumbs">
-        <Link href="/admin">Site content</Link>
-        <span aria-hidden="true">›</span>
         <Link href="/admin/pages">Page text</Link>
         <span aria-hidden="true">›</span>
         <Link href={`/admin/pages/${slug}`}>{PAGE_LABELS[slug]}</Link>

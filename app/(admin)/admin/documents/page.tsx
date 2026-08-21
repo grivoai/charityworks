@@ -89,11 +89,6 @@ export default async function DocumentsRoute() {
 
   return (
     <AdminShell admin={admin}>
-      <nav className="admin-crumbs">
-        <Link href="/admin">Site content</Link>
-        <span aria-hidden="true">›</span>
-        <span>Documents</span>
-      </nav>
 
       <div className="admin-head">
         <h1>Documents</h1>

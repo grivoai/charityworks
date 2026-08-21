@@ -64,9 +64,9 @@ export default async function AdminDashboard() {
   const show = (n: number | null) => (n === null ? "—" : String(n));
 
   return (
-    <AdminShell admin={admin}>
+    <AdminShell admin={admin} root>
       <div className="admin-head">
-        <h1>Site content</h1>
+        <h1>Dashboard</h1>
         <p>
           Everything here is live. Saving a change publishes it to the website
           within a few seconds — there is no separate publish step, and every

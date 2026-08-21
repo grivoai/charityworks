@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 
 import { siteContentSchema } from "@/content/schema";
@@ -80,11 +79,6 @@ export default async function SiteSettingsRoute({
 
   return (
     <AdminShell admin={admin}>
-      <nav className="admin-crumbs">
-        <Link href="/admin">Site content</Link>
-        <span aria-hidden="true">›</span>
-        <span>Site details</span>
-      </nav>
 
       <div className="admin-head">
         <h1>Site details</h1>

@@ -15,6 +15,7 @@
     "check:visual": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-visual-map.ts",
     "check:site": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-site.ts",
     "check:mfa": "tsx --conditions=react-server scripts/check-mfa.ts",
+    "check:admin-nav": "tsx --conditions=react-server scripts/check-admin-nav.ts",
     "mfa": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/mfa-reset.ts",
     "check:uploads": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-uploads.ts",
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"

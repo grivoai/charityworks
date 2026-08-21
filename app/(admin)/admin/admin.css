@@ -1265,3 +1265,46 @@ a.admin-card:hover {
 .admin-btn.is-small { padding: 5px 12px; font-size: 12.5px; }
 .admin-retry { display: inline-flex; align-items: center; gap: 8px; }
 .admin-retry-note { font-size: 12px; color: #b02a2a; }
+
+/* ---- Back to the dashboard ----
+   A control rather than breadcrumb text. The link this replaces was a 13px grey
+   crumb labelled "Site content" and it read as decoration, which is the whole
+   reason it needed replacing — so this one gets a border, a hit area and a
+   hover state, and says where it goes. */
+.admin-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 18px;
+  padding: 6px 13px 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.admin-back:hover {
+  color: var(--green);
+  border-color: var(--green-soft);
+  background: var(--cream);
+}
+.admin-back:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+/* The arrow leads the label out of the page, so it moves with the hover rather
+   than sitting still while the colour changes around it. */
+.admin-back span { transition: transform 0.2s; }
+.admin-back:hover span { transform: translateX(-2px); }
+
+/* The crumb row survives only where there is an intermediate level to show, so
+   when both are present the back control owns the spacing and the trail sits
+   tight underneath it rather than a second 18px gap down the page. */
+.admin-back + .admin-crumbs { margin-top: -6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-back, .admin-back span { transition: none; }
+}

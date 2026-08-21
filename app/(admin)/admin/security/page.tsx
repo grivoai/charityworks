@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -39,11 +38,6 @@ export default async function SecurityRoute() {
 
   return (
     <AdminShell admin={admin}>
-      <nav className="admin-crumbs">
-        <Link href="/admin">Site content</Link>
-        <span aria-hidden="true">›</span>
-        <span>Security</span>
-      </nav>
 
       <div className="admin-head">
         <h1>Security</h1>

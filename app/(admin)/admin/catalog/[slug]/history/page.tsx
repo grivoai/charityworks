@@ -78,8 +78,6 @@ export default async function CategoryHistoryRoute({
   return (
     <AdminShell admin={admin}>
       <nav className="admin-crumbs">
-        <Link href="/admin">Site content</Link>
-        <span aria-hidden="true">›</span>
         <Link href="/admin/catalog">Auction items</Link>
         <span aria-hidden="true">›</span>
         <Link href={`/admin/catalog/${slug}`}>{current.title}</Link>

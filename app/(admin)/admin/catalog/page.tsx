@@ -49,11 +49,6 @@ export default async function CatalogRoute() {
 
   return (
     <AdminShell admin={admin}>
-      <nav className="admin-crumbs">
-        <Link href="/admin">Site content</Link>
-        <span aria-hidden="true">›</span>
-        <span>Auction items</span>
-      </nav>
 
       <div className="admin-head">
         <h1>Auction items</h1>
