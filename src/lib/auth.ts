@@ -74,10 +74,36 @@ export async function getAdmin(): Promise<AdminUser | null> {
   return data ?? null;
 }
 
-/** The signed-in admin, or a redirect to the login page. */
+/**
+ * The signed-in admin, or a redirect to wherever they still have to go.
+ *
+ * Two gates, in order. The first is authorization: no `admin_users` row, no
+ * panel. The second is the second factor — an account with a verified
+ * authenticator app whose session has not presented a code yet gets the
+ * challenge screen rather than the page it asked for.
+ *
+ * This is the ONLY place the second gate lives, and that is why it belongs
+ * here: all thirteen admin pages and all five write-action modules already call
+ * this function, so there is no route to add and no list to keep in step. A
+ * check placed in the middleware instead would cover the pages and miss every
+ * server action, which is the half that writes.
+ *
+ * Redirecting rather than refusing is deliberate, and follows Supabase's own
+ * guidance: encountering aal1 on the server is usually a tab left open or a
+ * half-finished sign-in, not an attack, and a 403 tells someone in that
+ * position nothing about what to do next.
+ *
+ * `getMfaState` is imported lazily so that the module holding it — and the
+ * Supabase auth client it pulls in — is not loaded on the paths that only need
+ * `getAdmin()`.
+ */
 export async function requireAdmin(): Promise<AdminUser> {
   const admin = await getAdmin();
   if (!admin) redirect("/admin/login");
+
+  const { mfaChallengePending } = await import("@/lib/mfa");
+  if (await mfaChallengePending()) redirect("/admin/login/verify");
+
   return admin;
 }
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/admin/LoginForm";
+import { safeNext } from "@/lib/admin/next-path";
 
 export const metadata: Metadata = {
   title: "Sign in | CharityWorks Admin",
@@ -23,10 +24,9 @@ export default async function LoginPage({
 
   // Validated again in the action — this only decides what to put in the
   // field, and a value arriving from a query string is never trusted twice.
-  const target =
-    typeof next === "string" && /^\/admin(?:\/[\w\-/]*)?$/.test(next)
-      ? next
-      : "/admin";
+  // Shares the one validator with the action and the two-factor screen, so
+  // there is no copy of the rule that can drift into being the lenient one.
+  const target = safeNext(next);
 
   return (
     <div className="admin-login">

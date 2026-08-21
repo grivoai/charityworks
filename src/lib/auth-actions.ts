@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase-auth";
+import { safeNext } from "@/lib/admin/next-path";
+import { getMfaState } from "@/lib/mfa";
 import { getAdmin, touchLastSeen } from "@/lib/auth";
 import {
   isRateLimited,
@@ -11,23 +13,6 @@ import {
 } from "@/lib/auth-throttle";
 
 export type SignInState = { error?: string };
-
-/**
- * Where a `?next=` may point.
- *
- * Only a path inside the admin panel. An unchecked `next` on a login page is
- * an open redirect: an attacker sends `/admin/login?next=https://evil.example`,
- * the victim signs in for real, and lands on a page that can ask them to "confirm"
- * the password they just typed. Anything that is not plainly an internal admin
- * path becomes /admin.
- */
-function safeNext(value: FormDataEntryValue | null): string {
-  if (typeof value !== "string") return "/admin";
-  // Must start with a single slash then "admin". Rejects "//host",
-  // "https://host", "/\\host" and anything outside the panel.
-  if (!/^\/admin(?:\/[\w\-/]*)?$/.test(value)) return "/admin";
-  return value;
-}
 
 /**
  * Repeated-failure throttling lives in `@/lib/auth-throttle`, backed by Postgres
@@ -126,6 +111,19 @@ export async function signIn(
   }
 
   await clearFailures(ip, email);
+
+  /**
+   * The password was right. Whether that is enough depends on the account.
+   *
+   * `touchLastSeen` waits until the second factor has been presented, so "last
+   * seen" records someone who actually got in rather than someone who typed a
+   * password correctly and then walked away from the code screen.
+   */
+  const mfa = await getMfaState();
+  if (mfa.challengePending) {
+    redirect(`/admin/login/verify?next=${encodeURIComponent(next)}`);
+  }
+
   await touchLastSeen(admin.id);
 
   // Outside the try/catch shape above on purpose: redirect() signals by

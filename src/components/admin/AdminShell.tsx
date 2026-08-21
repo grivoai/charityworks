@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { signOut } from "@/lib/auth-actions";
 import type { AdminUser } from "@/lib/auth";
 
@@ -37,6 +39,10 @@ export function AdminShell({
           {admin.name ?? admin.email}
           {admin.role === "owner" ? " · owner" : ""}
         </span>
+
+        <Link href="/admin/security" className="admin-signout">
+          Security
+        </Link>
 
         {/* A form, not a link. Signing out changes state, and a GET that
             changes state can be triggered by anything that prefetches. */}
