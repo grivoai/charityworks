@@ -491,14 +491,16 @@ a.admin-card:hover {
 .admin-btn:hover:not(:disabled) { border-color: var(--green-soft); background: var(--paper); }
 .admin-btn:disabled { opacity: 0.55; cursor: default; }
 
-.admin-btn-primary {
+.admin-btn-primary,
+.admin-btn.is-primary {
   border: 0;
   font-weight: 600;
   background: linear-gradient(135deg, var(--gold-bright), var(--gold));
   color: #1c1403;
 }
 .admin-btn-quiet { margin-top: 12px; }
-.admin-btn-danger { margin-top: 12px; color: #8d2018; border-color: #e6c4c0; }
+.admin-btn-danger,
+.admin-btn.is-danger { margin-top: 12px; color: #8d2018; border-color: #e6c4c0; }
 
 .admin-icon {
   font: inherit;
@@ -1308,3 +1310,106 @@ a.admin-card:hover {
 @media (prefers-reduced-motion: reduce) {
   .admin-back, .admin-back span { transition: none; }
 }
+
+/* ================================================================== */
+/* CUSTOM PAGES                                                        */
+/* ================================================================== */
+
+/* ---- A block: the type picker, then that type's fields ----
+   The picker is set apart from the fields it governs, because changing it
+   replaces them. Left border rather than a full box: a block already sits
+   inside the list's own fieldset, and a second frame around each entry turns
+   a page of six blocks into a page of nested boxes. */
+.admin-variant {
+  border-left: 3px solid var(--line);
+  padding-left: 14px;
+  margin-left: 2px;
+}
+.admin-variant-pick {
+  margin-top: 0;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px dashed var(--line);
+}
+.admin-variant-pick > select {
+  font-weight: 600;
+  color: var(--green);
+}
+
+/* ---- Creating a page ---- */
+.admin-create {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  max-width: 460px;
+}
+.admin-create .admin-field { width: 100%; }
+.admin-create .admin-btn { margin-top: 12px; }
+
+/* The leading slash is part of the address, so it is shown rather than
+   implied — and it is outside the input, because it is not something anyone
+   should have to type or be able to delete. */
+.admin-slug {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding-left: 11px;
+  transition: border-color 0.16s var(--ease);
+}
+.admin-slug:focus-within { border-color: var(--green-soft); }
+.admin-slug > span {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  color: var(--muted);
+}
+.admin-slug > input {
+  border: 0;
+  background: none;
+  padding-left: 2px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  flex: 1;
+  min-width: 0;
+}
+.admin-slug > input:focus { outline: none; box-shadow: none; }
+
+/* ---- Deleting: typed confirmation, not a dialog ----
+   This is the one action in the panel that cannot be undone from the panel,
+   so it asks for the page's own address rather than a click. */
+.admin-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  max-width: 420px;
+  padding: 14px 16px;
+  border: 1px solid #edc3bf;
+  border-radius: 12px;
+  background: #fdf7f6;
+}
+.admin-confirm > label { font-size: 13px; color: #8d2018; line-height: 1.5; }
+.admin-confirm > label code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #fff;
+  border: 1px solid #edc3bf;
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.admin-confirm > input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  width: 100%;
+}
+.admin-confirm-actions { display: flex; align-items: center; gap: 14px; }
+
+.admin-rule {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 18px 0;
+  width: 100%;
+}
+
+/* Neither good nor bad: an unlisted page is working exactly as asked. */
+.admin-chip.is-info { color: #1f4e79; background: #eaf2fa; border-color: #bcd6ee; }

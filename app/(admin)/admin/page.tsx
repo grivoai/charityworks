@@ -48,7 +48,7 @@ async function countOf(table: string): Promise<number | null> {
 export default async function AdminDashboard() {
   const admin = await requireAdmin();
 
-  const [pages, categories, lots, submissions, documents, formFields, navLinks] =
+  const [pages, categories, lots, submissions, documents, formFields, navLinks, customPages] =
     await Promise.all([
       countOf("pages"),
       countOf("catalog_categories"),
@@ -59,6 +59,7 @@ export default async function AdminDashboard() {
       countOf("document_links"),
       countIn(() => getPage("contact"), (page) => page.form.fields),
       countIn(() => getSite(), (site) => site.nav),
+      countOf("custom_pages"),
     ]);
 
   const show = (n: number | null) => (n === null ? "—" : String(n));
@@ -129,6 +130,16 @@ export default async function AdminDashboard() {
           <p>
             Reword the questions, add your own, and change what people see after
             they submit. Edited with the contact page.
+          </p>
+        </Link>
+
+        <Link href="/admin/custom-pages" className="admin-card">
+          <h2>
+            Your pages <span className="admin-count">{show(customPages)}</span>
+          </h2>
+          <p>
+            Pages you add yourself, built from blocks. Publish them in the menu
+            or keep them unlisted for a direct link.
           </p>
         </Link>
 

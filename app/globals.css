@@ -1885,3 +1885,52 @@ body.nav-open .nav {
   .stat-card .num { font-size: 1.7rem; }
   .stat-card .lbl { font-size: 0.78rem; margin-top: 4px; }
 }
+
+/* ================================================================== */
+/* CLIENT-BUILT PAGE BLOCKS                                            */
+/*                                                                     */
+/* Every block reuses a section shell the site already has — .pad,     */
+/* .wrap, .section-title, .cta-band — so these are only the two        */
+/* arrangements that had no existing home: a column of prose, and a    */
+/* picture beside text.                                                */
+/* ================================================================== */
+
+/* Prose written by the client rather than composed by a designer, so the
+   measure is capped rather than trusted. A body typed into a textarea has no
+   natural line length, and full-width paragraphs at 1200px are unreadable. */
+.block-prose { margin-top: 18px; max-width: 68ch; }
+.block-prose p { color: var(--muted); font-size: 1.05rem; line-height: 1.75; }
+.block-prose p + p { margin-top: 1em; }
+.center .block-prose { margin-left: auto; margin-right: auto; }
+
+.block-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+}
+/* Which side the picture sits on is a content choice, so it is a class rather
+   than nth-child: a block moved up or down the page keeps its arrangement. */
+.block-split.is-reversed .block-split-media { order: 2; }
+
+.block-split-media img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+}
+.block-split-body .block-prose { margin-top: 14px; max-width: none; }
+
+@media (max-width: 860px) {
+  /* Stacks with the picture on top whichever side it was on. Honouring
+     `is-reversed` here would put the image below the text in one block and
+     above it in the next, which reads as a mistake rather than a choice once
+     there is only one column. */
+  .block-split { grid-template-columns: 1fr; gap: 22px; }
+  .block-split.is-reversed .block-split-media { order: 0; }
+}
+
+@media (max-width: 760px) {
+  .block-prose { margin-top: 14px; }
+  .block-prose p { font-size: 0.98rem; line-height: 1.65; }
+}

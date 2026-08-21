@@ -54,6 +54,11 @@ export default async function PagesIndex() {
           catalog is edited separately, because a lot belongs to a category
           rather than to a page.
         </p>
+        <p>
+          These eight have fixed layouts and cannot be added to or removed. To
+          make a new page of your own, go to{" "}
+          <Link href="/admin/custom-pages">Your pages</Link>.
+        </p>
       </div>
 
       <ul className="admin-rows">
