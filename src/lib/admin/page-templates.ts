@@ -1,4 +1,4 @@
-import type { PageBlock } from "@/content/schema";
+import type { PageBlockInput } from "@/content/schema";
 
 /**
  * Starting arrangements for a new client-built page.
@@ -24,17 +24,29 @@ import type { PageBlock } from "@/content/schema";
  * one template must not share block ids.
  */
 
-/** A block before it has been given an id. */
+/**
+ * A block before it has been given an id.
+ *
+ * Built from `PageBlockInput`, not `PageBlock`: the layout fields carry
+ * defaults, and a template that does not care about width or spacing should
+ * not have to say so. A template that does care can still set them — the
+ * landing page's catalog teaser runs full width because it asks to.
+ */
+type Strip<T> = Omit<T, "id">;
+
 export type TemplateBlock =
-  | Omit<Extract<PageBlock, { type: "richText" }>, "id">
-  | Omit<Extract<PageBlock, { type: "callToAction" }>, "id" | "cta"> & {
-      cta: Omit<Extract<PageBlock, { type: "callToAction" }>["cta"], "id">;
-    }
-  | Omit<Extract<PageBlock, { type: "questions" }>, "id" | "items"> & {
-      items: Omit<Extract<PageBlock, { type: "questions" }>["items"][number], "id">[];
-    }
-  | Omit<Extract<PageBlock, { type: "enquiryForm" }>, "id">
-  | Omit<Extract<PageBlock, { type: "catalogTeaser" }>, "id">;
+  | Strip<Extract<PageBlockInput, { type: "richText" }>>
+  | (Omit<Extract<PageBlockInput, { type: "callToAction" }>, "id" | "cta"> & {
+      cta: Omit<Extract<PageBlockInput, { type: "callToAction" }>["cta"], "id">;
+    })
+  | (Omit<Extract<PageBlockInput, { type: "questions" }>, "id" | "items"> & {
+      items: Omit<
+        Extract<PageBlockInput, { type: "questions" }>["items"][number],
+        "id"
+      >[];
+    })
+  | Strip<Extract<PageBlockInput, { type: "enquiryForm" }>>
+  | Strip<Extract<PageBlockInput, { type: "catalogTeaser" }>>;
 
 export interface PageTemplate {
   id: string;

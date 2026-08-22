@@ -599,12 +599,69 @@ export const anyPageSchema = z.discriminatedUnion("slug", [
  */
 const blockBase = { id: text };
 
+/**
+ * The layout controls a client may set on a content block.
+ *
+ * Every one is an enum, and that is the whole design: each value maps to a
+ * class that has been written and looked at, so every combination a client can
+ * reach is one somebody designed. A free number here — "margin in pixels" —
+ * would be the same feature with none of that guarantee.
+ *
+ * FACTORIES RATHER THAN CONSTANTS, because the default has to differ per block
+ * to preserve what the site renders today: a rich text block is 860px wide and
+ * left-aligned, while a questions block is 1200px with a centred heading.
+ * Sharing one default would silently restyle every live page on deploy, which
+ * is a strange thing for a feature about choosing layouts to do.
+ *
+ * `.default()` rather than `.optional()` so a block stored before these
+ * existed parses into the shape it already had. `buildFieldTree` peels a
+ * default the same way it peels an optional, so the form draws a select for
+ * each of these without knowing they are new.
+ *
+ * The two band blocks — call to action and enquiry form — deliberately have
+ * none of this. Both render into a dark navy treatment with white text, and a
+ * cream background on either produces white on cream. A control that can only
+ * be used to break the page is not a control.
+ */
+const blockWidth = (fallback: "narrow" | "contained" | "full") =>
+  z
+    .enum(["narrow", "contained", "full"])
+    .describe(
+      "How wide the block runs. Narrow is easiest to read; full spans the window."
+    )
+    .default(fallback);
+
+const blockSpacing = () =>
+  z
+    .enum(["tight", "normal", "loose"])
+    .describe("How much room the block leaves above and below itself.")
+    .default("normal");
+
+const blockAlign = (fallback: "left" | "centre") =>
+  z
+    .enum(["left", "centre"])
+    .describe("Which way the heading and text sit.")
+    .default(fallback);
+
+const blockBackground = () =>
+  z
+    .enum(["auto", "paper", "cream"])
+    .describe(
+      "Auto shades every other automatic block, so reordering never leaves two " +
+        "shaded sections side by side. Choosing paper or cream fixes this one."
+    )
+    .default("auto");
+
 export const richTextBlockSchema = z.object({
   ...blockBase,
   type: z.literal("richText"),
   eyebrow: optionalText.describe("Small label above the heading."),
   heading: optionalText,
   body: text.describe("The paragraph or paragraphs. Blank lines start a new paragraph."),
+  width: blockWidth("narrow"),
+  spacing: blockSpacing(),
+  align: blockAlign("left"),
+  background: blockBackground(),
 });
 
 export const imageAndTextBlockSchema = z.object({
@@ -616,6 +673,12 @@ export const imageAndTextBlockSchema = z.object({
   imageSide: z
     .enum(["left", "right"])
     .describe("Which side the picture sits on. Stacks above the text on a phone either way."),
+  width: blockWidth("contained"),
+  spacing: blockSpacing(),
+  // No `align`: the picture and the text are a two-column grid, and which side
+  // the picture sits on is already `imageSide`. A second control over the same
+  // arrangement would only be a way to disagree with the first.
+  background: blockBackground(),
 });
 
 export const callToActionBlockSchema = z.object({
@@ -631,6 +694,10 @@ export const questionsBlockSchema = z.object({
   type: z.literal("questions"),
   heading: optionalText,
   items: z.array(z.object({ id: text, question: text, answer: text })),
+  width: blockWidth("contained"),
+  spacing: blockSpacing(),
+  align: blockAlign("centre"),
+  background: blockBackground(),
 });
 
 export const enquiryFormBlockSchema = z.object({
@@ -653,6 +720,10 @@ export const catalogTeaserBlockSchema = z.object({
     .min(1)
     .max(12)
     .describe("How many categories to show, newest first."),
+  width: blockWidth("contained"),
+  spacing: blockSpacing(),
+  align: blockAlign("centre"),
+  background: blockBackground(),
 });
 
 export const pageBlockSchema = z.discriminatedUnion("type", [
@@ -688,6 +759,18 @@ export const customPageSchema = z.object({
 });
 
 export type PageBlock = z.infer<typeof pageBlockSchema>;
+
+/**
+ * A block as it is WRITTEN, before defaults are applied.
+ *
+ * `PageBlock` is the parsed shape, in which every layout field is present
+ * because `.default()` has filled it in. A page template is written by hand
+ * and should not have to restate a default to be valid, so it is typed against
+ * the input side instead — where a defaulted field is optional. Typing the
+ * templates against the output side made adding these four fields a
+ * compile error in four templates that were already correct.
+ */
+export type PageBlockInput = z.input<typeof pageBlockSchema>;
 export type CustomPage = z.infer<typeof customPageSchema>;
 export type PageVisibility = z.infer<typeof pageVisibilitySchema>;
 

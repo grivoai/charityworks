@@ -1934,3 +1934,33 @@ body.nav-open .nav {
   .block-prose { margin-top: 14px; }
   .block-prose p { font-size: 0.98rem; line-height: 1.65; }
 }
+
+/* ================================================================== */
+/* BLOCK LAYOUT OPTIONS                                                */
+/*                                                                     */
+/* The width and spacing a client can choose on a content block. Each  */
+/* value is a class rather than a computed style, so the set of pages  */
+/* they can build stays the same as the set somebody has looked at.    */
+/*                                                                     */
+/* Written as .wrap.wrap-full and .pad.pad-tight rather than as bare   */
+/* modifiers: both base classes set the property being overridden, and */
+/* a single-class modifier would tie on specificity and be decided by  */
+/* source order — which is exactly the kind of thing that survives     */
+/* review and then breaks when the file is reordered.                  */
+/* ================================================================== */
+
+/* Full width still keeps .wrap's 24px gutter. Text touching the window
+   edge is not a layout anybody chose; it is the absence of one. */
+.wrap.wrap-full { max-width: none; }
+
+.pad.pad-tight { padding: clamp(40px, 5vw, 70px) 0; }
+.pad.pad-loose { padding: clamp(100px, 13vw, 190px) 0; }
+
+@media (max-width: 760px) {
+  /* The same correction the base .pad gets on a phone: the clamp floors
+     above are doing desktop work at this width. Kept proportional to the
+     base so the three options stay distinguishable rather than collapsing
+     onto one another. */
+  .pad.pad-tight { padding: clamp(30px, 5vw, 70px) 0; }
+  .pad.pad-loose { padding: clamp(68px, 13vw, 190px) 0; }
+}

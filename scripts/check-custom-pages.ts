@@ -19,10 +19,10 @@
  *   npm run check:custom-pages
  */
 
-import { readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-import { customPageSchema } from "@/content/schema";
+import { customPageSchema, pageBlockSchema } from "@/content/schema";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { COMMON_LOCKS } from "@/lib/admin/locks";
 import { BUILT_IN_PAGES, checkSlug, couldBeCustomPage } from "@/lib/reserved-paths";
@@ -231,6 +231,157 @@ check(
   "every template id is distinct"
 );
 
+/* ------------------------------------------------------------------ */
+/* Block layout options                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The layout controls, and the three ways they can quietly stop working.
+ *
+ * 1. A BLOCK STORED BEFORE THEY EXISTED must still parse, and must land on
+ *    the layout it already rendered with. These fields were added to pages
+ *    that were already live, and `.default()` is the only thing standing
+ *    between that and every existing page failing its schema. A default
+ *    changed by hand — narrow to contained, say — would restyle live pages
+ *    on the next deploy with nothing to show it had happened.
+ *
+ * 2. A VALUE WITH NO CLASS renders as an unstyled section. The schema and the
+ *    stylesheet are two files with no compiler between them, so the mapping
+ *    is asserted here rather than assumed.
+ *
+ * 3. THE TWO BAND BLOCKS must stay out of it. Both paint themselves a dark
+ *    navy and write in white; a cream background on either is white on
+ *    cream. Their exclusion is a decision, so it is written down as one.
+ */
+
+/** What a block looked like before layout fields existed. */
+const legacyBlocks: Record<string, Record<string, unknown>> = {
+  richText: { id: "b1", type: "richText", body: "Body." },
+  imageAndText: {
+    id: "b2",
+    type: "imageAndText",
+    image: { src: "/x.jpg", alt: "A photograph." },
+    body: "Body.",
+    imageSide: "left",
+  },
+  questions: { id: "b3", type: "questions", items: [] },
+  catalogTeaser: { id: "b4", type: "catalogTeaser", count: 3 },
+};
+
+/** The layout each block rendered with before the controls existed. */
+const legacyLayout: Record<string, Record<string, string>> = {
+  richText: { width: "narrow", spacing: "normal", align: "left", background: "auto" },
+  imageAndText: { width: "contained", spacing: "normal", background: "auto" },
+  questions: { width: "contained", spacing: "normal", align: "centre", background: "auto" },
+  catalogTeaser: { width: "contained", spacing: "normal", align: "centre", background: "auto" },
+};
+
+for (const [type, block] of Object.entries(legacyBlocks)) {
+  const parsed = pageBlockSchema.safeParse(block);
+  if (!parsed.success) {
+    fail(
+      `a ${type} block stored before the layout fields no longer parses: ` +
+        parsed.error.issues
+          .slice(0, 3)
+          .map((i) => `${i.path.map(String).join(".")} ${i.message}`)
+          .join("; ")
+    );
+    continue;
+  }
+
+  const got = parsed.data as unknown as Record<string, string>;
+  const want = legacyLayout[type];
+  const wrong = Object.entries(want).filter(([k, v]) => got[k] !== v);
+
+  check(
+    wrong.length === 0,
+    wrong.length === 0
+      ? `a legacy ${type} block keeps the layout it already had`
+      : `a legacy ${type} block would be restyled on deploy: ` +
+          wrong
+            .map(([k, v]) => `${k} should default to ${v}, got ${got[k]}`)
+            .join("; ")
+  );
+}
+
+/* Every combination a client can reach is one the schema accepts. */
+{
+  const widths = ["narrow", "contained", "full"];
+  const spacings = ["tight", "normal", "loose"];
+  const aligns = ["left", "centre"];
+  const backgrounds = ["auto", "paper", "cream"];
+  let tried = 0;
+  let rejected = 0;
+
+  for (const [type, block] of Object.entries(legacyBlocks)) {
+    const hasAlign = "align" in legacyLayout[type];
+    for (const width of widths) {
+      for (const spacing of spacings) {
+        for (const background of backgrounds) {
+          for (const align of hasAlign ? aligns : [undefined]) {
+            tried += 1;
+            const candidate: Record<string, unknown> = {
+              ...block,
+              width,
+              spacing,
+              background,
+            };
+            if (align) candidate.align = align;
+            if (!pageBlockSchema.safeParse(candidate).success) rejected += 1;
+          }
+        }
+      }
+    }
+  }
+
+  check(
+    rejected === 0,
+    `all ${tried} layout combinations across the four content blocks are valid` +
+      (rejected === 0 ? "" : ` (${rejected} rejected)`)
+  );
+}
+
+/* Every value maps to a class that exists. */
+{
+  // Comments stripped first, the same way check-admin-nav strips them from
+  // TypeScript: the block comment above these rules NAMES them, so prose
+  // about a class would otherwise satisfy a search for the class. That is
+  // how this check passed a rename of .wrap-full the first time it was tried.
+  const css = readFileSync("app/globals.css", "utf8").replace(
+    /\/\*[\s\S]*?\*\//g,
+    ""
+  );
+  const needed = ["wrap-narrow", "wrap-full", "pad-tight", "pad-loose", "center"];
+
+  // Whole class tokens, not substrings. `css.includes(".wrap-full")` is also
+  // true of `.wrap-fullwidth`, so renaming a class would slip past a plain
+  // search and leave this green while the class it names no longer exists —
+  // which is the exact drift the check is here to catch.
+  const present = (name: string) =>
+    new RegExp("\\." + name + "(?![\\w-])").test(css);
+
+  const missing = needed.filter((name) => !present(name));
+  check(
+    missing.length === 0,
+    missing.length === 0
+      ? `every layout value has a class in globals.css (${needed.length} checked)`
+      : `layout values with no class: ${missing.map((n) => "." + n).join(", ")}`
+  );
+}
+
+/* The band blocks stay out of it, on purpose. */
+for (const type of ["callToAction", "enquiryForm"]) {
+  const option = (pageBlockSchema.def.options as unknown[]).find((o) => {
+    const shape = (o as { def: { shape: Record<string, unknown> } }).def.shape;
+    const lit = shape.type as { def?: { values?: string[] } };
+    return lit?.def?.values?.[0] === type;
+  });
+  const shape = (option as { def: { shape: Record<string, unknown> } }).def.shape;
+  check(
+    !("background" in shape) && !("width" in shape),
+    `${type} carries no layout controls — it paints its own dark band`
+  );
+}
 console.log(
   `\n${failures === 0 ? "CUSTOM PAGES OK" : `${failures} check(s) failed`}\n`
 );

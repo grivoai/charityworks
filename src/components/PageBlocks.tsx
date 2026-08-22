@@ -50,6 +50,86 @@ function Prose({ body }: { body: string }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Layout                                                              */
+/* ------------------------------------------------------------------ */
+
+type Width = "narrow" | "contained" | "full";
+type Spacing = "tight" | "normal" | "loose";
+type Shade = "paper" | "cream";
+
+/**
+ * Each layout value maps to classes that already exist or have been written
+ * for it. Nothing here composes a style from a number, which is what keeps the
+ * set of reachable pages the same as the set of designed ones.
+ */
+const WIDTH: Record<Width, string> = {
+  narrow: "wrap wrap-narrow",
+  contained: "wrap",
+  full: "wrap wrap-full",
+};
+
+const SPACING: Record<Spacing, string> = {
+  tight: "pad pad-tight",
+  normal: "pad",
+  loose: "pad pad-loose",
+};
+
+/** A block carrying layout controls. The two band blocks deliberately do not. */
+type Laid = Extract<PageBlock, { background: Shade | "auto" }>;
+
+const isLaid = (block: PageBlock): block is Laid => "background" in block;
+
+/**
+ * Decides every block's background before any of them render.
+ *
+ * The rule being preserved: two shaded sections must never end up side by side
+ * BY ACCIDENT. That used to be guaranteed by deriving the shade from a block's
+ * index and storing nothing at all, which also meant the client could not
+ * choose. Now they can, so the guarantee has to be kept a different way.
+ *
+ * Each automatic block takes the opposite of whatever resolved before it,
+ * rather than reading its own position. With every block on "auto" that is
+ * exactly the old `index % 2` — the two band blocks still take their turn even
+ * though they paint themselves, so a page built before this renders unchanged.
+ * Where the client has chosen, the next automatic block contrasts with that
+ * choice instead of ignoring it.
+ *
+ * Two creams in a row are still reachable, by choosing cream twice. That is a
+ * decision somebody made and can see in the preview beside them, which is a
+ * different thing from a page that changed because a block was dragged.
+ */
+function shades(blocks: PageBlock[]): Map<string, Shade> {
+  const resolved = new Map<string, Shade>();
+  // Starts on cream so the first automatic block lands on paper, as it does today.
+  let previous: Shade = "cream";
+
+  for (const block of blocks) {
+    const next: Shade =
+      isLaid(block) && block.background !== "auto"
+        ? block.background
+        : previous === "cream"
+          ? "paper"
+          : "cream";
+
+    if (isLaid(block)) resolved.set(block.id, next);
+    previous = next;
+  }
+
+  return resolved;
+}
+
+function sectionProps(block: Laid, shade: Shade | undefined) {
+  return {
+    className: SPACING[block.spacing],
+    style: shade === "cream" ? { background: "var(--cream)" } : undefined,
+  };
+}
+
+function wrapClass(block: Laid, extra = ""): string {
+  return extra ? `${WIDTH[block.width]} ${extra}` : WIDTH[block.width];
+}
+
 export function PageBlocks({
   blocks,
   form,
@@ -61,23 +141,21 @@ export function PageBlocks({
   booking: SiteContent["booking"];
   categories: AuctionItem[];
 }) {
+  const shade = shades(blocks);
+
   return (
     <>
-      {blocks.map((block, index) => {
-        // Alternating background, so consecutive text blocks do not read as one
-        // long undifferentiated column. Derived from position rather than
-        // stored, so reordering does not leave two cream sections adjacent.
-        const shade = index % 2 === 1;
-
+      {blocks.map((block) => {
         switch (block.type) {
           case "richText":
             return (
-              <section
-                key={block.id}
-                className="pad"
-                style={shade ? { background: "var(--cream)" } : undefined}
-              >
-                <div className="wrap wrap-narrow">
+              <section key={block.id} {...sectionProps(block, shade.get(block.id))}>
+                <div
+                  className={wrapClass(
+                    block,
+                    block.align === "centre" ? "center" : ""
+                  )}
+                >
                   {block.eyebrow && <span className="eyebrow">{block.eyebrow}</span>}
                   {block.heading && <h2 className="section-title">{block.heading}</h2>}
                   <div className="block-prose">
@@ -89,15 +167,12 @@ export function PageBlocks({
 
           case "imageAndText":
             return (
-              <section
-                key={block.id}
-                className="pad"
-                style={shade ? { background: "var(--cream)" } : undefined}
-              >
+              <section key={block.id} {...sectionProps(block, shade.get(block.id))}>
                 <div
-                  className={`wrap block-split${
-                    block.imageSide === "right" ? " is-reversed" : ""
-                  }`}
+                  className={wrapClass(
+                    block,
+                    `block-split${block.imageSide === "right" ? " is-reversed" : ""}`
+                  )}
                 >
                   <div className="block-split-media">
                     <Image
@@ -133,14 +208,10 @@ export function PageBlocks({
 
           case "questions":
             return (
-              <section
-                key={block.id}
-                className="pad"
-                style={shade ? { background: "var(--cream)" } : undefined}
-              >
-                <div className="wrap">
+              <section key={block.id} {...sectionProps(block, shade.get(block.id))}>
+                <div className={wrapClass(block)}>
                   {block.heading && (
-                    <div className="center">
+                    <div className={block.align === "centre" ? "center" : undefined}>
                       <h2 className="section-title">{block.heading}</h2>
                     </div>
                   )}
@@ -183,14 +254,10 @@ export function PageBlocks({
 
           case "catalogTeaser":
             return (
-              <section
-                key={block.id}
-                className="pad"
-                style={shade ? { background: "var(--cream)" } : undefined}
-              >
-                <div className="wrap">
+              <section key={block.id} {...sectionProps(block, shade.get(block.id))}>
+                <div className={wrapClass(block)}>
                   {(block.heading || block.lede) && (
-                    <div className="center">
+                    <div className={block.align === "centre" ? "center" : undefined}>
                       {block.heading && (
                         <h2 className="section-title">{block.heading}</h2>
                       )}
