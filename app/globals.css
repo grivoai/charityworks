@@ -1964,3 +1964,68 @@ body.nav-open .nav {
   .pad.pad-tight { padding: clamp(30px, 5vw, 70px) 0; }
   .pad.pad-loose { padding: clamp(68px, 13vw, 190px) 0; }
 }
+
+/* ================================================================== */
+/* COLUMN LAYOUTS                                                      */
+/*                                                                     */
+/* Two or three columns inside one section. The ratio classes set a    */
+/* grid template and nothing else, so a column's contents are laid out */
+/* by the same rules whatever width it happens to be.                  */
+/* ================================================================== */
+
+.block-columns {
+  display: grid;
+  gap: clamp(26px, 4vw, 52px);
+  align-items: start;
+  margin-top: 34px;
+}
+
+/* A section whose heading was left blank should not carry its gap. */
+.section-title + .block-columns,
+.center + .block-columns { margin-top: 34px; }
+.wrap > .block-columns:first-child { margin-top: 0; }
+
+.block-columns.is-equal { grid-template-columns: 1fr 1fr; }
+.block-columns.is-wide-left { grid-template-columns: 1.5fr 1fr; }
+.block-columns.is-wide-right { grid-template-columns: 1fr 1.5fr; }
+.block-columns.is-thirds { grid-template-columns: repeat(3, 1fr); }
+
+/* Each column stacks its own pieces, and holds them at the top so two
+   columns of unequal length line up along their first line rather than
+   floating apart at their centres. */
+.block-column {
+  display: grid;
+  gap: 22px;
+  align-content: start;
+  min-width: 0;
+}
+
+.column-title {
+  font-size: clamp(1.05rem, 1.6vw, 1.28rem);
+  line-height: 1.28;
+  margin: 0 0 10px;
+}
+
+.block-column-media img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+.block-column-cta { margin-top: 2px; }
+
+/* One column on a phone, at the same 860px boundary the image-and-text
+   split already stacks at, so a page mixing the two changes shape once
+   rather than twice. Written out per ratio instead of with !important:
+   each of those selectors is one class on .block-columns, so a bare
+   .block-columns here would lose to them on specificity. */
+@media (max-width: 860px) {
+  .block-columns.is-equal,
+  .block-columns.is-wide-left,
+  .block-columns.is-wide-right,
+  .block-columns.is-thirds {
+    grid-template-columns: 1fr;
+  }
+  .block-columns { gap: 30px; }
+}

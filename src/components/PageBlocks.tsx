@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import type { PageBlock } from "@/content/schema";
+import type { ColumnItem, PageBlock } from "@/content/schema";
 import type { AuctionItem, ContactPage, SiteContent } from "@/content/types";
 import { Cta } from "@/components/Section";
 import { BentoGrid } from "@/components/BentoGrid";
@@ -48,6 +48,47 @@ function Prose({ body }: { body: string }) {
       ))}
     </>
   );
+}
+
+/**
+ * One piece inside a column.
+ *
+ * Headings here are h3, under the block's h2, under the page's h1. A column is
+ * a subdivision of a section rather than a section of its own, and the outline
+ * a screen reader announces should say so.
+ */
+function ColumnPiece({ item }: { item: ColumnItem }) {
+  switch (item.type) {
+    case "text":
+      return (
+        <div className="block-column-text">
+          {item.heading && <h3 className="column-title">{item.heading}</h3>}
+          <div className="block-prose">
+            <Prose body={item.body} />
+          </div>
+        </div>
+      );
+
+    case "image":
+      return (
+        <div className="block-column-media">
+          <Image
+            src={item.image.src}
+            alt={item.image.alt}
+            width={item.image.width ?? 800}
+            height={item.image.height ?? 600}
+            sizes="(max-width: 860px) 100vw, 33vw"
+          />
+        </div>
+      );
+
+    case "button":
+      return (
+        <div className="block-column-cta">
+          <Cta cta={item.cta} />
+        </div>
+      );
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -271,6 +312,36 @@ export function PageBlocks({
                 </div>
               </section>
             );
+
+          case "columns": {
+            /* Three columns are equal whatever the ratio says, which is what
+               the field's own description tells the client. Read off the
+               column count rather than stored beside it, so the two can never
+               disagree about a page that already exists. */
+            const arrangement =
+              block.columns.length >= 3 ? "thirds" : block.ratio;
+
+            return (
+              <section key={block.id} {...sectionProps(block, shade.get(block.id))}>
+                <div className={wrapClass(block)}>
+                  {block.heading && (
+                    <div className={block.align === "centre" ? "center" : undefined}>
+                      <h2 className="section-title">{block.heading}</h2>
+                    </div>
+                  )}
+                  <div className={`block-columns is-${arrangement}`}>
+                    {block.columns.map((column) => (
+                      <div key={column.id} className="block-column">
+                        {column.items.map((item) => (
+                          <ColumnPiece key={item.id} item={item} />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            );
+          }
         }
       })}
     </>

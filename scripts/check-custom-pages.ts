@@ -135,11 +135,12 @@ check(!clash.ok && /already uses/.test(clash.reason), "a slug another page holds
 /* ------------------------------------------------------------------ */
 
 let opaque = 0;
-let variants = 0;
+/** How many options each variant node offers, in the order they are reached. */
+const variantSizes: number[] = [];
 const walk = (node: unknown) => {
   const n = node as { kind?: string; fields?: { node: unknown }[]; element?: unknown; options?: { node: unknown }[] };
   if (n.kind === "opaque") opaque++;
-  if (n.kind === "variant") variants++;
+  if (n.kind === "variant") variantSizes.push((n.options ?? []).length);
   if (n.kind === "object") for (const f of n.fields ?? []) walk(f.node);
   if (n.kind === "array" && n.element) walk(n.element);
   if (n.kind === "variant") for (const o of n.options ?? []) walk(o.node);
@@ -147,9 +148,34 @@ const walk = (node: unknown) => {
 walk(buildFieldTree(customPageSchema, COMMON_LOCKS));
 
 check(opaque === 0, "no field of a custom page is uneditable");
+/**
+ * Both unions the editor has to draw, counted by their options.
+ *
+ * There are two, and they are different sizes on purpose: the page's block
+ * list, and the smaller set of things that may sit inside a column. Asserting
+ * the SIZES rather than just the count is what makes this catch a block type
+ * quietly dropped from a union — the shape of the tree would be unchanged and
+ * a bare count of two would still pass.
+ *
+ * A third variant appearing means something has been nested that was not meant
+ * to be. Columns holding page blocks rather than column items would show up
+ * here as recursion the editor cannot draw, which is the failure this is
+ * really watching for.
+ */
+const PAGE_BLOCK_TYPES = 7;
+const COLUMN_ITEM_TYPES = 3;
+
 check(
-  variants === 1,
-  `the block list is a variant node the editor can draw (found ${variants})`
+  variantSizes.length === 2,
+  `the editor draws exactly two unions — page blocks and column items (found ${variantSizes.length})`
+);
+check(
+  variantSizes.includes(PAGE_BLOCK_TYPES),
+  `the block list offers all ${PAGE_BLOCK_TYPES} block types (found ${variantSizes.join(", ")})`
+);
+check(
+  variantSizes.includes(COLUMN_ITEM_TYPES),
+  `a column offers all ${COLUMN_ITEM_TYPES} item types (found ${variantSizes.join(", ")})`
 );
 
 /* ------------------------------------------------------------------ */
@@ -351,7 +377,23 @@ for (const [type, block] of Object.entries(legacyBlocks)) {
     /\/\*[\s\S]*?\*\//g,
     ""
   );
-  const needed = ["wrap-narrow", "wrap-full", "pad-tight", "pad-loose", "center"];
+  const needed = [
+    "wrap-narrow",
+    "wrap-full",
+    "pad-tight",
+    "pad-loose",
+    "center",
+    // Columns. `block-column` is a prefix of `block-columns`, which is
+    // exactly why the match below is token-aware rather than a substring.
+    "block-columns",
+    "block-column",
+    "is-equal",
+    "is-wide-left",
+    "is-wide-right",
+    "is-thirds",
+    "column-title",
+    "block-column-media",
+  ];
 
   // Whole class tokens, not substrings. `css.includes(".wrap-full")` is also
   // true of `.wrap-fullwidth`, so renaming a class would slip past a plain
@@ -381,6 +423,104 @@ for (const type of ["callToAction", "enquiryForm"]) {
     !("background" in shape) && !("width" in shape),
     `${type} carries no layout controls — it paints its own dark band`
   );
+}
+/* ------------------------------------------------------------------ */
+/* Columns                                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Columns hold their own small union, and must never hold page blocks.
+ *
+ * The bound is the interesting half. Two and three are laid out; one is not a
+ * column layout and four in a 1200px page gives each 280px, narrower than the
+ * measure any of the three item shapes was drawn for. Both refusals have to
+ * explain themselves, for the same reason every slug refusal does.
+ */
+{
+  const item = (n: number) => ({
+    id: `ci${n}`,
+    type: "text" as const,
+    body: `Column ${n}.`,
+  });
+  const column = (n: number) => ({ id: `col${n}`, items: [item(n)] });
+  const block = (count: number) => ({
+    id: "cb1",
+    type: "columns",
+    ratio: "equal",
+    columns: Array.from({ length: count }, (_, i) => column(i + 1)),
+  });
+
+  for (const count of [2, 3]) {
+    check(
+      pageBlockSchema.safeParse(block(count)).success,
+      `a ${count}-column block is valid`
+    );
+  }
+
+  for (const count of [1, 4]) {
+    const parsed = pageBlockSchema.safeParse(block(count));
+    check(!parsed.success, `${count} column(s) is refused`);
+    if (!parsed.success) {
+      const said = parsed.error.issues.map((i) => i.message).join(" ");
+      check(
+        /column/i.test(said) && !/^Invalid/i.test(said),
+        "  …and says why, rather than just \"invalid\""
+      );
+    }
+  }
+
+  /* Every item shape a column offers is valid inside one. */
+  const shapes: Record<string, unknown> = {
+    text: { id: "i1", type: "text", body: "Words." },
+    image: { id: "i2", type: "image", image: { src: "/x.jpg", alt: "A photograph." } },
+    button: {
+      id: "i3",
+      type: "button",
+      cta: { id: "c1", label: "Go", href: "/contact", variant: "primary" },
+    },
+  };
+  for (const [name, shape] of Object.entries(shapes)) {
+    const candidate = {
+      id: "cb2",
+      type: "columns",
+      ratio: "equal",
+      columns: [{ id: "cA", items: [shape] }, { id: "cB", items: [] }],
+    };
+    check(
+      pageBlockSchema.safeParse(candidate).success,
+      `a column may hold a ${name}`
+    );
+  }
+
+  /* And must not hold a page block. A column taking a richText — the page-scale
+     shape rather than the column-scale one — is what nesting would look like
+     on its way in. */
+  const nested = {
+    id: "cb3",
+    type: "columns",
+    ratio: "equal",
+    columns: [
+      { id: "cA", items: [{ id: "n1", type: "richText", body: "Words." }] },
+      { id: "cB", items: [] },
+    ],
+  };
+  check(
+    !pageBlockSchema.safeParse(nested).success,
+    "a column refuses a page block, so columns cannot nest"
+  );
+
+  /* The columns block still carries the Tier 1 layout controls. */
+  const laid = pageBlockSchema.safeParse(block(2));
+  if (laid.success) {
+    const got = laid.data as unknown as Record<string, string>;
+    check(
+      got.width === "contained" &&
+        got.spacing === "normal" &&
+        got.align === "left" &&
+        got.background === "auto",
+      "a columns block defaults to the same layout as the other content blocks"
+    );
+  }
 }
 console.log(
   `\n${failures === 0 ? "CUSTOM PAGES OK" : `${failures} check(s) failed`}\n`

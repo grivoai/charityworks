@@ -726,6 +726,100 @@ export const catalogTeaserBlockSchema = z.object({
   background: blockBackground(),
 });
 
+/* ------------------------------------------------------------------ */
+/* Columns                                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * What may sit inside a column.
+ *
+ * A SEPARATE, SMALLER UNION THAN `pageBlockSchema`, and deliberately not that
+ * one. Letting a column hold page blocks would make the schema recursive —
+ * columns inside columns inside columns — which `buildFieldTree` would walk
+ * until it ran out of stack, and which is where page builders reliably produce
+ * layouts nobody can read on a phone. There is no such thing as a nested
+ * column here, and there is nothing to disable to keep it that way.
+ *
+ * The three shapes are chosen for a NARROW MEASURE rather than reused from the
+ * page-scale blocks. An `imageAndText` block is already a two-column split, so
+ * putting one inside a column is a split inside a split; a call to action and
+ * an enquiry form are both full-width dark bands. Those three are excluded by
+ * not being in this union, which is a stronger statement than excluding them
+ * in a comment.
+ */
+export const columnTextSchema = z.object({
+  id: text,
+  type: z.literal("text"),
+  heading: optionalText,
+  body: text.describe("The paragraph or paragraphs. Blank lines start a new paragraph."),
+});
+
+export const columnImageSchema = z.object({
+  id: text,
+  type: z.literal("image"),
+  image: imageRefSchema,
+});
+
+export const columnButtonSchema = z.object({
+  id: text,
+  type: z.literal("button"),
+  cta: ctaRefSchema,
+});
+
+export const columnItemSchema = z.discriminatedUnion("type", [
+  columnTextSchema,
+  columnImageSchema,
+  columnButtonSchema,
+]);
+
+export const pageColumnSchema = z.object({
+  id: text,
+  items: z.array(columnItemSchema),
+});
+
+/**
+ * Two or three columns side by side, stacking on a phone.
+ *
+ * `ratio` is the one thing here that is not obvious. It sets the split for TWO
+ * columns and has no effect on three, which are always equal — that is written
+ * into its description because the form renders descriptions, and a control
+ * that quietly does nothing in one configuration is the fault this feature has
+ * already produced more than once.
+ *
+ * The count is not validated against the ratio, and that is deliberate. Tying
+ * them together needs a cross-field rule, which in Zod means wrapping this
+ * object in a refinement — and a wrapped object is no longer a plain
+ * `ZodObject`, which is what `discriminatedUnion` requires of its members and
+ * what `buildFieldTree` reads a shape off. The cost of the rule is larger than
+ * the cost of the thing it would prevent, which is a column layout that is
+ * merely equal rather than the ratio somebody picked. Nothing is hidden and
+ * nothing is lost either way: the renderer lays out whatever columns exist.
+ *
+ * Bounded at two and three. One column is not a column layout, and four in a
+ * 1200px page gives each 280px, which is narrower than the measure any of the
+ * three item shapes was designed for.
+ */
+export const columnsBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("columns"),
+  heading: optionalText,
+  ratio: z
+    .enum(["equal", "wide-left", "wide-right"])
+    .describe(
+      "The split between TWO columns. Three columns are always equal, and this " +
+        "is ignored for them."
+    )
+    .default("equal"),
+  columns: z
+    .array(pageColumnSchema)
+    .min(2, "A column layout needs at least two columns.")
+    .max(3, "Three columns is the most that fits; use two for anything longer."),
+  width: blockWidth("contained"),
+  spacing: blockSpacing(),
+  align: blockAlign("left"),
+  background: blockBackground(),
+});
+
 export const pageBlockSchema = z.discriminatedUnion("type", [
   richTextBlockSchema,
   imageAndTextBlockSchema,
@@ -733,6 +827,7 @@ export const pageBlockSchema = z.discriminatedUnion("type", [
   questionsBlockSchema,
   enquiryFormBlockSchema,
   catalogTeaserBlockSchema,
+  columnsBlockSchema,
 ]);
 
 /**
@@ -759,6 +854,8 @@ export const customPageSchema = z.object({
 });
 
 export type PageBlock = z.infer<typeof pageBlockSchema>;
+export type ColumnItem = z.infer<typeof columnItemSchema>;
+export type PageColumn = z.infer<typeof pageColumnSchema>;
 
 /**
  * A block as it is WRITTEN, before defaults are applied.
