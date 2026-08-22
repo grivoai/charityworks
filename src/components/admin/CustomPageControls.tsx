@@ -26,15 +26,25 @@ function Submit({ label, busy, className }: { label: string; busy: string; class
  * with immediate effect, and putting them behind the same Save button would
  * mean an unsaved draft could be published, or a page deleted as a side effect
  * of a typo being corrected.
+ *
+ * `inNav` is passed in rather than inferred from `visibility`, because the two
+ * are not the same fact and reading one off the other was wrong. Publishing a
+ * page with `visibility: "public"` makes it ELIGIBLE for the menu — it starts
+ * appearing as an option in the nav picker under Site details — but somebody
+ * still has to add it. This panel used to say "Listed in the site's menu" on
+ * the strength of `visibility` alone, which was untrue for every page nobody
+ * had added yet, i.e. every newly published page.
  */
 export function CustomPageControls({
   slug,
   published,
   visibility,
+  inNav,
 }: {
   slug: string;
   published: boolean;
   visibility: "public" | "unlisted";
+  inNav: boolean;
 }) {
   const [pubState, pubAction] = useActionState<LifecycleState, FormData>(setPublished, {});
   const [delState, delAction] = useActionState<LifecycleState, FormData>(deleteCustomPage, {});
@@ -52,9 +62,16 @@ export function CustomPageControls({
         {published ? (
           <>
             Live at <a href={`/${slug}`} target="_blank" rel="noreferrer">/{slug}</a>.{" "}
-            {visibility === "unlisted"
-              ? "Unlisted: it is not in the menu and search engines are told to ignore it, but anyone with the link can open it. It is not private."
-              : "Listed in the site's menu."}
+            {visibility === "unlisted" ? (
+              "Unlisted: it is not in the menu and search engines are told to ignore it, but anyone with the link can open it. It is not private."
+            ) : inNav ? (
+              "In the site's menu, and in the sitemap."
+            ) : (
+              <>
+                In the sitemap, but not in the menu — add a link to it under{" "}
+                <a href="/admin/site">Site details</a> if you want one there.
+              </>
+            )}
           </>
         ) : (
           "A draft. Nothing is served at this address until you publish it."

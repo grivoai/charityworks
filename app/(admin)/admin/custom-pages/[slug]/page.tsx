@@ -8,6 +8,7 @@ import { CustomPageEditor } from "@/components/admin/CustomPageEditor";
 import { CustomPageControls } from "@/components/admin/CustomPageControls";
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
+import { getSite } from "@/lib/content";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { COMMON_LOCKS } from "@/lib/admin/locks";
 import { countRevisions } from "@/lib/admin/revisions";
@@ -81,6 +82,11 @@ export default async function EditCustomPageRoute({
     );
   }
 
+  // Whether the menu actually links here, rather than whether it could. See
+  // the note in CustomPageControls.
+  const site = await getSite();
+  const inNav = site.nav.some((link) => link.href === `/${slug}`);
+
   const historyCount = await countRevisions("custom-page", slug);
   const tree = buildFieldTree(customPageSchema, LOCKS);
 
@@ -110,10 +116,12 @@ export default async function EditCustomPageRoute({
         slug={slug}
         published={data.published}
         visibility={parsed.data.visibility}
+        inNav={inNav}
       />
 
       <CustomPageEditor
         slug={slug}
+        published={data.published}
         tree={tree}
         initial={parsed.data as unknown as Record<string, unknown>}
         historyCount={historyCount}
