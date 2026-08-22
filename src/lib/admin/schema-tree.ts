@@ -161,6 +161,18 @@ function unwrap(schema: Internal): Unwrapped {
   return { inner: current, optional, description };
 }
 
+/** The value of an array's `min`, when it has one. */
+function minItems(schema: Internal): number | undefined {
+  for (const check of schema?.def?.checks ?? []) {
+    const name = check?._zod?.def?.check ?? check?.check;
+    if (name !== "min_length") continue;
+    const value =
+      check?._zod?.def?.minimum ?? check?.def?.minimum ?? check?.minimum;
+    if (typeof value === "number") return value;
+  }
+  return undefined;
+}
+
 function checkNames(schema: Internal): string[] {
   return (schema?.def?.checks ?? []).map(
     (c: Internal) => c?._zod?.def?.check ?? c?.check ?? ""
@@ -299,11 +311,13 @@ function toNode(schema: Internal, ctx: Context): FieldNode {
               reason: protectRule.reason,
             }
           : undefined;
+      const min = minItems(inner);
       const node: ArrayNode = {
         ...base,
         kind: "array",
         element,
         template: blankFor(element),
+        ...(min ? { minLength: min } : {}),
         ...(fixedLength ? { fixedLength } : {}),
         ...(protect ? { protect } : {}),
       };
@@ -433,8 +447,21 @@ export function blankFor(node: FieldNode): unknown {
       return node.value;
     case "image":
       return { src: "", alt: "" };
+    /**
+     * At the minimum the schema asks for, not empty.
+     *
+     * Only one list in the content schema has a minimum — a columns block needs
+     * two — but the rule is written against the schema rather than against that
+     * block, because "starts below its own minimum" is a property of any list
+     * with one, not a fact about columns.
+     *
+     * The entries are blanks and carry no ids; `withFreshId` mints those when
+     * the entry is actually created, and it recurses for exactly this reason.
+     */
     case "array":
-      return [];
+      return Array.from({ length: node.minLength ?? 0 }, () =>
+        blankFor(node.element)
+      );
     case "object": {
       const out: Record<string, unknown> = {};
       for (const { key, node: child } of node.fields) {

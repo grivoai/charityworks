@@ -74,6 +74,15 @@ export interface ArrayNode extends NodeBase {
   /** Set when items may be edited but not added or removed, holding the reason. */
   fixedLength?: string;
   /**
+   * How many entries the schema insists on, when it insists on any.
+   *
+   * Carried so a blank parent can start AT that minimum rather than below it.
+   * A columns block whose list starts empty is invalid the moment it is
+   * created, and reports so against a list the client has not touched yet —
+   * an error about something they have not done.
+   */
+  minLength?: number;
+  /**
    * Set when the list can grow, but some of its entries cannot be removed.
    *
    * Data rather than a predicate, because this tree is serialised to the

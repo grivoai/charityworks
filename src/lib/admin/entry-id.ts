@@ -40,12 +40,44 @@ export function idPrefix(path: string): string {
  * onto the new one.
  */
 export function withFreshId<T>(template: T, path: string): T {
-  const copy = JSON.parse(JSON.stringify(template ?? null)) as T;
-  if (copy && typeof copy === "object" && !Array.isArray(copy)) {
-    const record = copy as Record<string, unknown>;
-    if ("id" in record) {
-      record.id = `${idPrefix(path)}-${Math.random().toString(36).slice(2, 8)}`;
-    }
+  const copy = JSON.parse(JSON.stringify(template ?? null)) as unknown;
+  return freshen(copy, idPrefix(path)) as T;
+}
+
+const mint = (prefix: string) =>
+  `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
+
+/** "columns" → "column", so a nested entry's id reads like its neighbours'. */
+const singular = (key: string) => (key.endsWith("s") ? key.slice(0, -1) : key);
+
+/**
+ * Every id in the value, not only the one at the top.
+ *
+ * A template is not always flat. A call to action carries a `cta` with an id of
+ * its own, and a columns block now starts with the two columns its schema
+ * requires — each of which has an id, and each of which holds items that have
+ * ids too. Minting only the outermost left those empty, which is the same
+ * unsaveable, undiagnosable state as an empty block id: refused on a field the
+ * form does not draw.
+ *
+ * The prefix comes from the key the value sits under, so ids read as what they
+ * are — `column-x7k2mq` inside `columns`, `cta-9fq4lr` inside `cta`. Values
+ * with no `id` field, such as an image reference, are walked and left alone.
+ */
+function freshen(value: unknown, prefix: string): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => freshen(entry, prefix));
   }
-  return copy;
+
+  if (!value || typeof value !== "object") return value;
+
+  const record = value as Record<string, unknown>;
+  if ("id" in record) record.id = mint(prefix);
+
+  for (const [key, child] of Object.entries(record)) {
+    if (key === "id" || !child || typeof child !== "object") continue;
+    record[key] = freshen(child, singular(key));
+  }
+
+  return record;
 }

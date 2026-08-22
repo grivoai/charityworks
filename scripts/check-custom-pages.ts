@@ -656,6 +656,106 @@ for (const type of ["callToAction", "enquiryForm"]) {
     "adding a list entry mints an id too"
   );
 }
+/* ------------------------------------------------------------------ */
+/* Creating a block leaves only visible work                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * THE RULE BOTH REPORTED BUGS BROKE.
+ *
+ * A newly created block is not expected to be valid — it has no body text
+ * yet, no heading, no image. That is fine, and it is what the client is
+ * there to do. What is not fine is a block that is invalid in a way they
+ * cannot see: the editor counts the failures and says how many fields need
+ * attention, so a failure on a field the form never draws is a number with
+ * nothing behind it, and no amount of scrolling finds the field.
+ *
+ * Two shipped. A block's own `id` was emptied by the type picker, and a call
+ * to action's `cta.id` was never minted at all. Both are `hideInForm`.
+ *
+ * So the assertion is not "a new block is valid" — it is that everything
+ * still wrong with it is something the client can SEE. That is the property
+ * that was actually violated, and it holds for blocks nobody has written yet.
+ */
+{
+  const tree = buildFieldTree(customPageSchema, COMMON_LOCKS) as unknown as {
+    fields: { key: string; node: Record<string, unknown> }[];
+  };
+  const variant = (tree.fields.find((f) => f.key === "blocks")!.node as Record<string, unknown>)
+    .element as { options: { value: string; template: unknown; node: unknown }[] };
+
+  type Node = Record<string, unknown>;
+
+  /** Walks a field path to the node that draws it, if anything does. */
+  const nodeAt = (root: Node, path: (string | number)[]): Node | undefined => {
+    let node: Node | undefined = root;
+    for (const step of path) {
+      if (!node) return undefined;
+      // An image is a leaf that draws its own insides — the picker, and the alt
+      // text beside it. `src` and `alt` are visible through it even though the
+      // tree has no nodes for them, so the walk stops here rather than falling
+      // off the end and reporting a field the client can plainly see.
+      if (node.kind === "image") return node;
+      if (node.kind === "variant") {
+        const options = (node.options ?? []) as { node: Node }[];
+        node = options
+          .map((o) => nodeAt(o.node, [step]))
+          .find(Boolean);
+        continue;
+      }
+      if (typeof step === "number" || node.kind === "array") {
+        node = node.element as Node | undefined;
+        if (typeof step === "string") {
+          node = nodeAt(node as Node, [step]);
+        }
+        continue;
+      }
+      const fields = (node.fields ?? []) as { key: string; node: Node }[];
+      node = fields.find((f) => f.key === step)?.node;
+    }
+    return node;
+  };
+
+  for (const option of variant.options) {
+    const made = withFreshId(option.template, "blocks.1");
+    const parsed = pageBlockSchema.safeParse(made);
+    if (parsed.success) {
+      check(true, `a new ${option.value} block is ready to save as created`);
+      continue;
+    }
+
+    const hidden = parsed.error.issues.filter((issue) => {
+      const node = nodeAt(option.node as Node, issue.path as (string | number)[]);
+      return !node || node.hideInForm === true;
+    });
+
+    check(
+      hidden.length === 0,
+      hidden.length === 0
+        ? `a new ${option.value} block only needs fields the form draws`
+        : `a new ${option.value} block is invalid on ${hidden
+            .map((i) => i.path.map(String).join("."))
+            .join(", ")} — which the form never draws, so nobody can fix it`
+    );
+  }
+
+  /* And the seeding that makes the columns block start valid. */
+  const cols = variant.options.find((o) => o.value === "columns")!;
+  const seeded = (cols.template as { columns?: unknown[] }).columns ?? [];
+  check(
+    seeded.length === 2,
+    `a columns block starts with the two columns its schema requires (found ${seeded.length})`
+  );
+
+  const mintedCols = (withFreshId(cols.template, "blocks.1") as {
+    columns: { id: string }[];
+  }).columns;
+  check(
+    mintedCols.every((c) => c.id.startsWith("column-")) &&
+      new Set(mintedCols.map((c) => c.id)).size === mintedCols.length,
+    "each seeded column gets its own id, so two of them are never one React key"
+  );
+}
 console.log(
   `\n${failures === 0 ? "CUSTOM PAGES OK" : `${failures} check(s) failed`}\n`
 );
