@@ -24,6 +24,7 @@ import { join } from "node:path";
 
 import { customPageSchema, pageBlockSchema } from "@/content/schema";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
+import { withFreshId } from "@/lib/admin/entry-id";
 import { COMMON_LOCKS } from "@/lib/admin/locks";
 import { BUILT_IN_PAGES, checkSlug, couldBeCustomPage } from "@/lib/reserved-paths";
 import {
@@ -521,6 +522,139 @@ for (const type of ["callToAction", "enquiryForm"]) {
       "a columns block defaults to the same layout as the other content blocks"
     );
   }
+}
+/* ------------------------------------------------------------------ */
+/* Entry ids                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Every way of creating an entry has to mint an id.
+ *
+ * `id` is the one required field the form never draws — `schema-tree` marks
+ * it `hideInForm` because editing one has no visible effect and a duplicate
+ * breaks the list. That makes an empty id the worst possible validation
+ * failure: the save is refused, the editor reports that one field needs
+ * attention, and there is no field on screen to attend to. Scrolling the
+ * whole block finds nothing, because the invalid field is not there.
+ *
+ * It reached production once. Changing a block's TYPE replaced the value
+ * with a verbatim clone of the chosen shape's template, and a template
+ * carries `id: ""` because it has no identity of its own. Building a Columns
+ * block that way could not be saved, and two entries switched that way
+ * collapsed onto the same React key — which is what let a row's type picker
+ * keep showing the previous shape while the fields under it were the new
+ * one's.
+ *
+ * So the templates are asserted to be unsaveable as-is, and the minting is
+ * asserted to fix them. The first half is what makes the second half matter.
+ */
+{
+  const tree = buildFieldTree(customPageSchema, COMMON_LOCKS) as unknown as {
+    fields: { key: string; node: Record<string, unknown> }[];
+  };
+  const blocks = tree.fields.find((f) => f.key === "blocks")!.node as Record<string, unknown>;
+  const variant = blocks.element as {
+    options: { value: string; template: unknown; node: unknown }[];
+  };
+
+  const idOf = (v: unknown) => (v as { id?: unknown })?.id;
+  const minted: string[] = [];
+
+  for (const option of variant.options) {
+    check(
+      idOf(option.template) === "",
+      `the ${option.value} template carries no id of its own, so one must be minted`
+    );
+
+    const made = withFreshId(option.template, "blocks.1") as Record<string, unknown>;
+    const id = String(made.id ?? "");
+    minted.push(id);
+    check(
+      id.startsWith("block-") && id.length > "block-".length,
+      `switching a block to ${option.value} mints an id (${id})`
+    );
+  }
+
+  check(
+    new Set(minted).size === minted.length,
+    "two entries switched to a type never share an id, so they never share a React key"
+  );
+
+  /* The exact save that was refused: a Columns block reached by switching a
+     block's type, two columns, each one Text item with a body and no
+     heading. Rebuilt from the operations the form performs rather than
+     written out, so it exercises the templates rather than a copy of them. */
+  const cols = variant.options.find((o) => o.value === "columns")!;
+  const colsNode = (cols.node as { fields: { key: string; node: Record<string, unknown> }[] })
+    .fields.find((f) => f.key === "columns")!.node;
+  const colObj = colsNode.element as { fields: { key: string; node: Record<string, unknown> }[] };
+  const itemsNode = colObj.fields.find((f) => f.key === "items")!.node;
+  const itemVariant = itemsNode.element as {
+    options: { value: string; template: unknown }[];
+  };
+  const textTemplate = itemVariant.options.find((o) => o.value === "text")!.template;
+
+  const block = withFreshId(cols.template, "blocks.1") as Record<string, unknown>;
+  const columns: unknown[] = [];
+  for (let c = 0; c < 2; c += 1) {
+    const column = withFreshId(colsNode.template, "blocks.1.columns") as Record<string, unknown>;
+    const item = withFreshId(textTemplate, `blocks.1.columns.${c}.items`) as Record<string, unknown>;
+    item.body = "Body text.";
+    item.heading = "";
+    column.items = [item];
+    columns.push(column);
+  }
+  block.columns = columns;
+
+  const built = pageBlockSchema.safeParse(block);
+  check(
+    built.success,
+    built.success
+      ? "a Columns block built the way the form builds it saves, with headings left blank"
+      : `a Columns block built the way the form builds it cannot be saved: ` +
+          built.error.issues
+            .map((i) => `${i.path.map(String).join(".")} ${i.message}`)
+            .join("; ")
+  );
+
+  /* And the same block WITHOUT minting is refused — which is the whole
+     reason the minting exists. */
+  const bare = JSON.parse(JSON.stringify(block)) as Record<string, unknown>;
+  bare.id = "";
+  check(
+    !pageBlockSchema.safeParse(bare).success,
+    "an entry with an empty id is still refused, so the minting is load-bearing"
+  );
+}
+/**
+ * ...and that the picker actually calls it.
+ *
+ * The checks above exercise `withFreshId`. They would all still pass if the
+ * type picker went back to cloning the template verbatim, because they never
+ * touch the call site — so the call site is asserted from the source, the way
+ * check-admin-nav asserts that pages use AdminShell.
+ *
+ * Comments are stripped first: the note beside that line explains the bug it
+ * fixes and names the call it replaced, so prose about the fault would
+ * otherwise read as the fault.
+ */
+{
+  const form = readFileSync("src/components/admin/SchemaFields.tsx", "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+
+  check(
+    /onChange\(\s*newEntry\(\s*next\.template\s*,\s*path\s*\)\s*\)/.test(form),
+    "the type picker mints an id for the shape it switches to"
+  );
+  check(
+    !/structuredClone\(\s*next\.template\s*\)/.test(form),
+    "…and does not clone the template verbatim, which would leave the id empty"
+  );
+  check(
+    /onChange\(\[\s*\.\.\.items\s*,\s*newEntry\(/.test(form),
+    "adding a list entry mints an id too"
+  );
 }
 console.log(
   `\n${failures === 0 ? "CUSTOM PAGES OK" : `${failures} check(s) failed`}\n`

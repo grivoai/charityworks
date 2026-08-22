@@ -10,6 +10,7 @@ import type {
   VariantNode,
 } from "@/lib/admin/field-node";
 import { FIELD_PATH_ATTR, domId } from "@/lib/admin/dom";
+import { withFreshId } from "@/lib/admin/entry-id";
 import { putFile } from "@/components/admin/upload-transfer";
 import { ImagePicker } from "@/components/admin/ImagePicker";
 import { Icon, ICON_SLUGS } from "@/components/Icon";
@@ -89,21 +90,12 @@ function summarize(value: unknown, fallback: string): string {
   return fallback;
 }
 
-/** "faqs" → "faq", so a new entry's identifier reads like the others. */
-function idPrefix(path: string): string {
-  const last = path.split(".").pop() ?? "item";
-  return last.endsWith("s") ? last.slice(0, -1) : last;
-}
+/* Minting lives in `entry-id.ts` so the check script can exercise it without
+   pulling React in. See the note there for why an empty id is the worst kind
+   of invalid: it is the one required field the form never draws. */
 
 function newEntry(template: unknown, path: string): unknown {
-  const copy = JSON.parse(JSON.stringify(template ?? null)) as unknown;
-  if (copy && typeof copy === "object" && !Array.isArray(copy)) {
-    const record = copy as Record<string, unknown>;
-    if ("id" in record) {
-      record.id = `${idPrefix(path)}-${Math.random().toString(36).slice(2, 8)}`;
-    }
-  }
-  return copy;
+  return withFreshId(template, path);
 }
 
 /**
@@ -767,7 +759,20 @@ function VariantField({
           disabled={Boolean(node.locked)}
           onChange={(event) => {
             const next = node.options.find((o) => o.value === event.target.value);
-            if (next) onChange(structuredClone(next.template));
+            /* A fresh id, not a bare clone of the template.
+             *
+             * Every option's template carries `id: ""`, because a template has
+             * no identity of its own. Cloning it verbatim left the entry with
+             * an empty id, which fails `min(1)` on a field marked
+             * `hideInForm` — so the save was refused for a field the client
+             * could not see, could not reach, and had never touched.
+             *
+             * It also gave two entries the same React key the moment a second
+             * one was switched, since `ArrayField` keys by id. That is what let
+             * a row's type picker keep showing the previous shape's name while
+             * the fields under it were already the new one's.
+             */
+            if (next) onChange(newEntry(next.template, path));
           }}
         >
           {node.options.map((o) => (
