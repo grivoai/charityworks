@@ -60,11 +60,26 @@ interface Outline {
  * while looking at a version of it almost none of their visitors see. Scaling
  * costs one multiplication in each direction and is worth it for that.
  */
-type DeviceName = "desktop" | "phone";
+type DeviceName = "desktop" | "tablet" | "largePhone" | "phone";
 
-const DEVICES: Record<DeviceName, { label: string; width: number }> = {
+/**
+ * The widths worth checking, not every width that exists.
+ *
+ * Each one sits just inside a breakpoint the stylesheet actually changes at,
+ * because a preset that renders the same layout as its neighbour teaches the
+ * client nothing and costs them a click to discover that. 834 is an iPad in
+ * portrait, 430 the largest phone in common use, 390 a mainstream one — and
+ * the phone pair straddle the 428px boundary where the hero and the card
+ * grids reflow.
+ *
+ * `narrow` drives the centring of the stage: anything phone-width is centred
+ * in the column rather than pinned left, where it reads as a mistake.
+ */
+const DEVICES: Record<DeviceName, { label: string; width: number; narrow?: true }> = {
   desktop: { label: "Desktop", width: 1280 },
-  phone: { label: "Phone", width: 390 },
+  tablet: { label: "Tablet", width: 834 },
+  largePhone: { label: "Large phone", width: 430, narrow: true },
+  phone: { label: "Phone", width: 390, narrow: true },
 };
 
 /** How long a click here suppresses the focus handler's scroll-back. */
@@ -134,6 +149,7 @@ export function PagePreview({
   path,
   label,
   pages,
+  canPointAndEdit = true,
 }: {
   slug: string;
   /** The public route this page renders at, e.g. `/faqs`. */
@@ -141,13 +157,27 @@ export function PagePreview({
   label: string;
   /** Every page, so a click on borrowed content can offer the right editor. */
   pages: PreviewPage[];
+  /**
+   * Whether clicking the page can find the field that sets it.
+   *
+   * True for the eight built-in pages, whose markup carries `data-cw` markers
+   * that `check:visual` keeps in step with the schema. False for a client-built
+   * page: `PageBlocks` has no markers, so "Point & edit" would put a
+   * transparent sheet over the frame and swallow every click without ever
+   * finding a field — a control that looks like it does something and does
+   * nothing. When false the mode toggle is not offered at all and the frame
+   * stays browsable.
+   */
+  canPointAndEdit?: boolean;
 }) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const [collapsed, setCollapsed] = useState(false);
-  const [mode, setMode] = useState<"edit" | "browse">("edit");
+  const [mode, setMode] = useState<"edit" | "browse">(
+    canPointAndEdit ? "edit" : "browse"
+  );
   const [device, setDevice] = useState<DeviceName>("desktop");
   const [scale, setScale] = useState(1);
   const [ready, setReady] = useState(false);
@@ -579,6 +609,7 @@ export function PagePreview({
       <div className="admin-preview-bar">
         <span className="admin-preview-title">{label}</span>
 
+        {canPointAndEdit && (
         <div className="admin-seg" role="group" aria-label="What clicking does">
           <button
             type="button"
@@ -601,6 +632,7 @@ export function PagePreview({
             Browse
           </button>
         </div>
+        )}
 
         <div className="admin-seg" role="group" aria-label="Preview width">
           {(Object.keys(DEVICES) as DeviceName[]).map((name) => (
@@ -665,7 +697,7 @@ export function PagePreview({
       )}
 
       <div
-        className={`admin-preview-stage${device === "phone" ? " is-narrow" : ""}`}
+        className={`admin-preview-stage${DEVICES[device].narrow ? " is-narrow" : ""}`}
         ref={stageRef}
       >
         <iframe
@@ -723,9 +755,11 @@ export function PagePreview({
       </div>
 
       <p className="admin-preview-foot">
-        {mode === "edit"
-          ? "Click anything highlighted to jump to its field. Scroll here as usual; links stay put."
-          : "The page behaves normally — use this to click through to another one."}
+        {!canPointAndEdit
+          ? "The page as it will look. Change the wording in the form beside it."
+          : mode === "edit"
+            ? "Click anything highlighted to jump to its field. Scroll here as usual; links stay put."
+            : "The page behaves normally — use this to click through to another one."}
       </p>
     </aside>
   );

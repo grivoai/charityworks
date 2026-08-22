@@ -42,6 +42,10 @@ const NO_FRAME: Record<string, string> = {
   "login/page.tsx": "not signed in — there is nowhere to go back to",
   "login/verify/page.tsx":
     "the two-factor challenge — a link past it would be a way around it",
+  "custom-pages/[slug]/preview/page.tsx":
+    "rendered inside the preview iframe, wearing the site's chrome rather " +
+    "than the panel's — admin furniture in there would be previewing the " +
+    "wrong thing. The way out is the editor around the frame.",
 };
 
 function pagesUnder(dir: string, prefix = ""): string[] {

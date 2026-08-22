@@ -1413,3 +1413,102 @@ a.admin-card:hover {
 
 /* Neither good nor bad: an unlisted page is working exactly as asked. */
 .admin-chip.is-info { color: #1f4e79; background: #eaf2fa; border-color: #bcd6ee; }
+
+/* ------------------------------------------------------------------ */
+/* Starting templates, on the create form                              */
+/* ------------------------------------------------------------------ */
+
+/* A fieldset, so the four options are announced as one group. The legend
+   matches the label styling of an ordinary field rather than a browser
+   default, which would sit at a different weight to every other caption on
+   the form. */
+.admin-templates { border: 0; padding: 0; margin-bottom: 16px; }
+.admin-templates > legend {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+/* auto-fit rather than a fixed count: the create form sits in a narrow panel
+   on a phone and beside the preview on a desktop, and one column at 220px is
+   the point where the description stops being readable. */
+.admin-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.admin-template {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  cursor: pointer;
+  transition: border-color 0.12s var(--ease), background 0.12s var(--ease);
+}
+.admin-template:hover { border-color: rgba(10, 31, 61, 0.28); }
+.admin-template.is-on {
+  border-color: var(--gold);
+  background: var(--cream);
+}
+
+/* The radio itself is not drawn — the card is the control. It stays in the
+   DOM and focusable so the group is still keyboard-operable and still posts
+   a value; :focus-visible on it lights the card. */
+.admin-template > input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.admin-template:has(> input:focus-visible) {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.admin-template-label { font-size: 13.5px; font-weight: 600; }
+.admin-template-note { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+
+/* ------------------------------------------------------------------ */
+/* Dragging a list entry                                               */
+/* ------------------------------------------------------------------ */
+
+/* grab/grabbing is the whole affordance here, since the handle carries no
+   label and is hidden from assistive technology — the arrows beside it are
+   what a keyboard uses. */
+.admin-drag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 2px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.admin-drag:hover { background: rgba(10, 31, 61, 0.06); color: var(--ink); }
+.admin-drag:active { cursor: grabbing; }
+
+/* The row being carried. Kept visible rather than hidden so the list does not
+   appear to lose an entry mid-drag. */
+.admin-item.is-dragging { opacity: 0.45; }
+
+/* Where it would land. A top border rather than a filled background: the row
+   underneath still has to be readable to judge the drop. */
+.admin-item.is-drop-target {
+  box-shadow: inset 0 3px 0 0 var(--gold);
+  border-color: var(--gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-template { transition: none; }
+}

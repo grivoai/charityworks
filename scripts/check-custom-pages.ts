@@ -26,6 +26,11 @@ import { customPageSchema } from "@/content/schema";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { COMMON_LOCKS } from "@/lib/admin/locks";
 import { BUILT_IN_PAGES, checkSlug, couldBeCustomPage } from "@/lib/reserved-paths";
+import {
+  PAGE_TEMPLATES,
+  DEFAULT_TEMPLATE_ID,
+  templateById,
+} from "@/lib/admin/page-templates";
 
 let failures = 0;
 const ok = (m: string) => console.log(`  ok    ${m}`);
@@ -145,6 +150,85 @@ check(opaque === 0, "no field of a custom page is uneditable");
 check(
   variants === 1,
   `the block list is a variant node the editor can draw (found ${variants})`
+);
+
+/* ------------------------------------------------------------------ */
+/* Starting templates                                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Every template still builds a page the schema accepts.
+ *
+ * A template is written by hand against a schema that is not, so the two drift
+ * the moment a block gains a required field. The failure is quiet in the worst
+ * way: `createCustomPage` parses the document it has just assembled, and a
+ * template that no longer fits turns into "That page could not be created. Try
+ * a different title." — a message about the title, for a fault in the
+ * template, shown to somebody whose title was fine.
+ *
+ * Ids are minted here the way the action mints them, because a template
+ * deliberately carries none.
+ */
+const mintId = (prefix: string) =>
+  `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
+
+for (const template of PAGE_TEMPLATES) {
+  const blocks = template.blocks.map((block) => {
+    const built: Record<string, unknown> = { ...block, id: mintId("block") };
+    if (block.type === "questions") {
+      built.items = block.items.map((item) => ({ ...item, id: mintId("q") }));
+    }
+    if (block.type === "callToAction") {
+      built.cta = { ...block.cta, id: mintId("cta") };
+    }
+    return built;
+  });
+
+  const parsed = customPageSchema.safeParse({
+    slug: "template-probe",
+    title: "Template Probe",
+    visibility: "public",
+    seo: {
+      title: "Template Probe",
+      description: "Template Probe — CharityWorks.",
+      targetTerms: [],
+      path: "/template-probe",
+    },
+    intro: template.intro,
+    blocks,
+  });
+
+  check(
+    parsed.success,
+    parsed.success
+      ? `template "${template.id}" builds a valid page (${blocks.length} block(s))`
+      : `template "${template.id}" does not fit the schema: ` +
+          parsed.error.issues
+            .slice(0, 3)
+            .map((i) => `${i.path.map(String).join(".")} ${i.message}`)
+            .join("; ")
+  );
+}
+
+/* Ids are minted per creation, never written into a template: two pages built
+   from one template sharing block ids is exactly how coercion comes to hand
+   one block's protected values to another. */
+for (const template of PAGE_TEMPLATES) {
+  check(
+    !JSON.stringify(template.blocks).includes('"id"'),
+    `template "${template.id}" carries no hard-coded ids`
+  );
+}
+
+check(
+  templateById(undefined).id === DEFAULT_TEMPLATE_ID &&
+    templateById("no-such-template").id === DEFAULT_TEMPLATE_ID,
+  "an unknown template id falls back to the blank one rather than failing"
+);
+
+check(
+  new Set(PAGE_TEMPLATES.map((t) => t.id)).size === PAGE_TEMPLATES.length,
+  "every template id is distinct"
 );
 
 console.log(

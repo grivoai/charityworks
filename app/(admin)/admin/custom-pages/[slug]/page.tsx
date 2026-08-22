@@ -6,6 +6,8 @@ import { customPageSchema } from "@/content/schema";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { CustomPageEditor } from "@/components/admin/CustomPageEditor";
 import { CustomPageControls } from "@/components/admin/CustomPageControls";
+import { PagePreview } from "@/components/admin/PagePreview";
+import { getPublishedCustomPages } from "@/lib/custom-pages";
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
 import { getSite } from "@/lib/content";
@@ -87,6 +89,18 @@ export default async function EditCustomPageRoute({
   const site = await getSite();
   const inNav = site.nav.some((link) => link.href === `/${slug}`);
 
+  /**
+   * The preview points at the admin route, not at `/${slug}`.
+   *
+   * A draft is not served publicly, so the public address is a 404 for exactly
+   * the page somebody is building. See the note on that route.
+   *
+   * `pages` carries the published custom pages so that clicking a link inside
+   * the frame lands somewhere the panel can name. A draft is deliberately not
+   * in that list: it has no public address to click through to.
+   */
+  const others = await getPublishedCustomPages();
+
   const historyCount = await countRevisions("custom-page", slug);
   const tree = buildFieldTree(customPageSchema, LOCKS);
 
@@ -97,7 +111,7 @@ export default async function EditCustomPageRoute({
     : "Not edited yet";
 
   return (
-    <AdminShell admin={admin}>
+    <AdminShell admin={admin} wide>
       <nav className="admin-crumbs">
         <Link href="/admin/custom-pages">Your pages</Link>
         <span aria-hidden="true">›</span>
@@ -119,15 +133,32 @@ export default async function EditCustomPageRoute({
         inNav={inNav}
       />
 
-      <CustomPageEditor
-        slug={slug}
-        published={data.published}
-        tree={tree}
-        initial={parsed.data as unknown as Record<string, unknown>}
-        historyCount={historyCount}
-        updatedLabel={updatedLabel}
-        restored={restored === "1"}
-      />
+      <div className="admin-split has-preview">
+        <div className="admin-split-editor">
+          <CustomPageEditor
+            slug={slug}
+            published={data.published}
+            tree={tree}
+            initial={parsed.data as unknown as Record<string, unknown>}
+            historyCount={historyCount}
+            updatedLabel={updatedLabel}
+            restored={restored === "1"}
+          />
+        </div>
+
+        <PagePreview
+          slug={slug}
+          path={`/admin/custom-pages/${slug}/preview`}
+          label={parsed.data.title}
+          canPointAndEdit={false}
+          pages={others.map((page) => ({
+            slug: page.slug,
+            label: page.title,
+            path: `/${page.slug}`,
+            editorHref: `/admin/custom-pages/${page.slug}`,
+          }))}
+        />
+      </div>
     </AdminShell>
   );
 }

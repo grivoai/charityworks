@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 
 import { createCustomPage, type CreateState } from "@/lib/admin/custom-page-actions";
 import { slugify } from "@/lib/admin/slug";
+import { PAGE_TEMPLATES, DEFAULT_TEMPLATE_ID } from "@/lib/admin/page-templates";
 
 function Submit() {
   const { pending } = useFormStatus();
@@ -34,6 +35,7 @@ export function CreatePageForm() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [touched, setTouched] = useState(false);
+  const [template, setTemplate] = useState(DEFAULT_TEMPLATE_ID);
 
   const shown = touched ? slug : title ? slugify(title, "page") : "";
 
@@ -80,6 +82,33 @@ export function CreatePageForm() {
             keeps it.
           </p>
         </div>
+
+        <fieldset className="admin-field admin-templates">
+          <legend>Start from</legend>
+          <div className="admin-template-grid">
+            {PAGE_TEMPLATES.map((option) => (
+              <label
+                key={option.id}
+                className={`admin-template${template === option.id ? " is-on" : ""}`}
+              >
+                <input
+                  type="radio"
+                  name="template"
+                  value={option.id}
+                  checked={template === option.id}
+                  onChange={() => setTemplate(option.id)}
+                />
+                <span className="admin-template-label">{option.label}</span>
+                <span className="admin-template-note">{option.description}</span>
+              </label>
+            ))}
+          </div>
+          <p className="admin-help">
+            A template only fills the page in to start with. Every block it adds
+            can be edited, reordered or removed, and the placeholder wording is
+            written to be replaced.
+          </p>
+        </fieldset>
 
         <Submit />
       </form>

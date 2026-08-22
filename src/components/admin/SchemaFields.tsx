@@ -524,12 +524,42 @@ function ArrayField({
   const replace = (index: number, next: unknown) =>
     onChange(items.map((item, i) => (i === index ? next : item)));
 
-  const move = (index: number, by: number) => {
-    const target = index + by;
-    if (target < 0 || target >= items.length) return;
+  /**
+   * Dragging state.
+   *
+   * `armed` is separate from `dragIndex` because the whole row is the drag
+   * surface but only the handle may start a drag. Marking the row draggable
+   * unconditionally would mean a drag begun on a text input selected-and-moved
+   * the row instead of selecting text, which is the behaviour people complain
+   * about in every editor that gets this wrong.
+   */
+  const [armed, setArmed] = useState<number | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  /**
+   * Lifts one entry out and puts it back at `to`.
+   *
+   * Insertion, not the swap the arrows do. For a one-step move the two are the
+   * same, so the arrows share this path; for a drag across several rows they
+   * are not, and swapping would leave the row that was dropped on stranded at
+   * the far end of the list rather than shifted by one.
+   */
+  const moveTo = (from: number, to: number) => {
+    if (from === to) return;
+    if (from < 0 || to < 0 || from >= items.length || to >= items.length) return;
     const next = [...items];
-    [next[index], next[target]] = [next[target], next[index]];
+    const [held] = next.splice(from, 1);
+    next.splice(to, 0, held);
     onChange(next);
+  };
+
+  const move = (index: number, by: number) => moveTo(index, index + by);
+
+  const endDrag = () => {
+    setArmed(null);
+    setDragIndex(null);
+    setOverIndex(null);
   };
 
   const isScalar = node.element.kind === "string" || node.element.kind === "number";
@@ -559,13 +589,56 @@ function ArrayField({
               : `i-${index}`;
 
           return (
-            <li key={key} className="admin-item">
+            <li
+              key={key}
+              className={[
+                "admin-item",
+                dragIndex === index ? "is-dragging" : "",
+                dragIndex !== null && dragIndex !== index && overIndex === index
+                  ? "is-drop-target"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              draggable={armed === index}
+              onDragStart={(event) => {
+                setDragIndex(index);
+                event.dataTransfer.effectAllowed = "move";
+                // Firefox will not start a drag without payload on the transfer.
+                event.dataTransfer.setData("text/plain", String(index));
+              }}
+              onDragOver={(event) => {
+                if (dragIndex === null) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+                if (overIndex !== index) setOverIndex(index);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (dragIndex !== null) moveTo(dragIndex, index);
+                endDrag();
+              }}
+              onDragEnd={endDrag}
+            >
               {!isScalar && (
                 <div className="admin-item-head">
                   <span className="admin-item-title">
                     {summarize(item, `Entry ${index + 1}`)}
                   </span>
                   <div className="admin-item-tools">
+                    {/* Pointer-only, and hidden from assistive technology on
+                        purpose: the two arrows beside it already do this job
+                        from the keyboard, and announcing a control that cannot
+                        be operated without a pointer is worse than silence. */}
+                    <span
+                      className="admin-drag"
+                      title="Drag to reorder"
+                      aria-hidden="true"
+                      onPointerDown={() => setArmed(index)}
+                      onPointerUp={() => setArmed(null)}
+                    >
+                      ⠿
+                    </span>
                     <button
                       type="button"
                       className="admin-icon"
