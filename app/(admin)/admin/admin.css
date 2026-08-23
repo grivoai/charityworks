@@ -632,6 +632,21 @@ a.admin-card:hover {
 @media (max-width: 560px) {
   .admin-bar { padding: 0 16px; gap: 12px; }
   .admin-who { display: none; }
+
+  /* Four controls plus a wordmark do not fit a phone. The badge goes first —
+     it labels a panel that is unmistakably the panel — and the back link
+     shrinks to its arrow. The label is CLIPPED, not removed, so the control
+     still announces itself as "Dashboard". */
+  .admin-badge { display: none; }
+  .admin-back { padding: 6px 11px; gap: 0; }
+  .admin-back-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .admin-main { padding: 28px 16px 60px; }
 
   .admin-section { padding: 18px 16px; }
@@ -723,6 +738,19 @@ a.admin-card:hover {
   font-weight: 500;
 }
 .admin-seg button:not(.is-on):hover { background: #f3f1ea; color: var(--ink); }
+
+/* The back/forward pair: arrows rather than words, so they read as browser
+   controls and take the space of one label between them. */
+.admin-seg.is-icons button {
+  padding: 5px 11px;
+  font-size: 13px;
+  line-height: 1.1;
+}
+.admin-seg button:disabled {
+  color: rgba(93, 107, 98, 0.4);
+  cursor: default;
+}
+.admin-seg button:disabled:hover { background: none; }
 
 .admin-preview-note {
   font-size: 12.5px;
@@ -857,13 +885,53 @@ a.admin-card:hover {
   box-shadow: var(--shadow-sm);
 }
 
+/* The summary IS the collapsed row: one line carrying who, how it went and
+   when. Everything else lives in the fold, so a hundred enquiries can be
+   scanned in one screen instead of scrolled through. */
 .admin-enquiry-head {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 6px;
+  cursor: pointer;
+  list-style: none;
+  padding-left: 20px;
+  position: relative;
 }
+/* Safari still draws the default triangle without this. */
+.admin-enquiry-head::-webkit-details-marker { display: none; }
+
+/* Our own marker, so it can sit at the left of a wrapping flex row rather than
+   wherever the browser would put it. */
+.admin-enquiry-head::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-top: -4px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s var(--ease);
+}
+[open] > .admin-enquiry-head::before {
+  transform: rotate(45deg);
+  margin-top: -3px;
+}
+.admin-enquiry-head:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.admin-enquiry-body {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
 .admin-enquiry-who { font-weight: 600; font-size: 15px; }
 .admin-enquiry-when { margin-left: auto; font-size: 12.5px; color: var(--muted); }
 
@@ -1272,43 +1340,41 @@ a.admin-card:hover {
    A control rather than breadcrumb text. The link this replaces was a 13px grey
    crumb labelled "Site content" and it read as decoration, which is the whole
    reason it needed replacing — so this one gets a border, a hit area and a
-   hover state, and says where it goes. */
+   hover state, and says where it goes.
+
+   It now sits IN THE STICKY BAR rather than at the top of the page, so it is
+   drawn in light on green: the same pill as Security and Sign out beside it,
+   which is what stops the bar reading as three unrelated things. */
 .admin-back {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 18px;
   padding: 6px 13px 6px 11px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(248, 245, 236, 0.3);
   border-radius: 999px;
-  background: #fff;
+  background: none;
   font-size: 13px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--cream);
   text-decoration: none;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  transition: background 0.18s var(--ease), border-color 0.18s var(--ease);
 }
 .admin-back:hover {
-  color: var(--green);
-  border-color: var(--green-soft);
-  background: var(--cream);
+  background: rgba(248, 245, 236, 0.1);
+  border-color: rgba(248, 245, 236, 0.55);
 }
 .admin-back:focus-visible {
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
 }
 /* The arrow leads the label out of the page, so it moves with the hover rather
-   than sitting still while the colour changes around it. */
-.admin-back span { transition: transform 0.2s; }
-.admin-back:hover span { transform: translateX(-2px); }
-
-/* The crumb row survives only where there is an intermediate level to show, so
-   when both are present the back control owns the spacing and the trail sits
-   tight underneath it rather than a second 18px gap down the page. */
-.admin-back + .admin-crumbs { margin-top: -6px; }
+   than sitting still while the colour changes around it. The label beside it
+   stays put — both sliding would read as the whole pill drifting. */
+.admin-back > span[aria-hidden] { transition: transform 0.2s; }
+.admin-back:hover > span[aria-hidden] { transform: translateX(-2px); }
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-back, .admin-back span { transition: none; }
+  .admin-back, .admin-back > span[aria-hidden] { transition: none; }
 }
 
 /* ================================================================== */
@@ -1511,4 +1577,175 @@ a.admin-card:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .admin-template { transition: none; }
+  .admin-enquiry-head::before { transition: none; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Template thumbnails                                                 */
+/* ------------------------------------------------------------------ */
+
+/* A miniature page, built from the template's own blocks — see TemplateThumb.
+   Everything here is a grey bar where words go: the question at this point is
+   what SHAPE the page is, and at 96px tall nothing else would be legible.
+
+   Fixed height with the overflow clipped, deliberately. A template with six
+   blocks should LOOK longer than one with two, and scaling each to fit would
+   erase exactly the difference somebody is comparing. */
+.tt {
+  display: block;
+  height: 96px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+}
+.admin-template.is-on .tt { border-color: var(--gold); }
+
+.tt-band { display: block; padding: 6px 0; }
+.tt-band.is-tight { padding: 4px 0; }
+.tt-band.is-loose { padding: 9px 0; }
+.tt-band.is-cream { background: var(--cream); }
+
+/* The two blocks that paint their own band. Same green as the site's. */
+.tt-band.is-dark { background: var(--green); padding: 8px 0; }
+
+/* Every custom page renders its title above the blocks, so every thumbnail
+   opens with one — including Blank, which is a titled page rather than
+   nothing. */
+.tt-band.is-hero {
+  background: var(--cream);
+  padding: 10px 0 8px;
+  border-bottom: 1px solid rgba(10, 31, 61, 0.07);
+}
+
+/* The three widths, at the proportions the real page uses. */
+.tt-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0 auto;
+}
+.tt-inner.is-narrow { width: 56%; }
+.tt-inner.is-contained { width: 78%; }
+.tt-inner.is-full { width: 92%; }
+.tt-inner.is-centre { align-items: center; }
+
+.tt-bar {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(10, 31, 61, 0.17);
+}
+.tt-bar.is-title { height: 5px; background: rgba(10, 31, 61, 0.42); }
+.tt-bar.is-sub { background: rgba(10, 31, 61, 0.26); }
+.tt-bar.is-eyebrow { background: var(--gold); opacity: 0.7; }
+
+.tt-band.is-dark .tt-bar { background: rgba(248, 245, 236, 0.34); }
+.tt-band.is-dark .tt-bar.is-title { background: rgba(248, 245, 236, 0.78); }
+
+.tt-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tt-split { display: flex; gap: 6px; align-items: center; width: 100%; }
+.tt-split.is-reversed { flex-direction: row-reverse; }
+.tt-split > .tt-img { flex: 0 0 42%; }
+
+.tt-img {
+  display: block;
+  height: 26px;
+  border-radius: 3px;
+  background: rgba(10, 31, 61, 0.13);
+  border: 1px solid rgba(10, 31, 61, 0.08);
+}
+.tt-img.is-small { height: 18px; }
+
+.tt-pill {
+  display: block;
+  width: 34px;
+  height: 8px;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: var(--gold-bright);
+}
+.tt-pill.is-small { width: 24px; height: 6px; }
+
+.tt-rows { display: flex; flex-direction: column; gap: 3px; width: 100%; }
+.tt-qa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 5px;
+  border: 1px solid rgba(10, 31, 61, 0.1);
+  border-radius: 3px;
+  background: #fff;
+}
+.tt-chevron {
+  flex: none;
+  width: 4px;
+  height: 4px;
+  border-right: 1px solid rgba(10, 31, 61, 0.35);
+  border-bottom: 1px solid rgba(10, 31, 61, 0.35);
+  transform: rotate(45deg);
+}
+
+/* Inside the dark enquiry band, so the boxes are drawn in light on green. */
+.tt-fields { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; margin-top: 2px; }
+.tt-field {
+  flex: 1 1 calc(50% - 4px);
+  height: 9px;
+  border-radius: 2px;
+  background: rgba(248, 245, 236, 0.16);
+  border: 1px solid rgba(248, 245, 236, 0.26);
+}
+.tt-field.is-wide { flex-basis: 100%; height: 14px; }
+
+.tt-cards { display: flex; gap: 5px; width: 100%; margin-top: 2px; }
+.tt-card {
+  flex: 1;
+  height: 22px;
+  border-radius: 3px;
+  background: rgba(10, 31, 61, 0.1);
+  border: 1px solid rgba(10, 31, 61, 0.08);
+}
+
+.tt-cols { display: flex; gap: 6px; width: 100%; margin-top: 2px; }
+.tt-col { display: flex; flex-direction: column; gap: 3px; flex: 1 1 0; min-width: 0; }
+.tt-cols.is-wide-left > .tt-col:first-child { flex-grow: 1.7; }
+.tt-cols.is-wide-right > .tt-col:last-child { flex-grow: 1.7; }
+.tt-col-empty {
+  display: block;
+  height: 20px;
+  border: 1px dashed rgba(10, 31, 61, 0.18);
+  border-radius: 3px;
+}
+
+/* Blank: a titled page with nothing on it yet. Dashed, because it is an
+   invitation rather than a block. */
+.tt-empty {
+  display: block;
+  width: 78%;
+  height: 34px;
+  margin: 12px auto;
+  border: 1px dashed rgba(10, 31, 61, 0.2);
+  border-radius: 4px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Site preview frame                                                  */
+/* ------------------------------------------------------------------ */
+
+/* Inside the preview iframe, not in the panel. The site's nav is
+   `position: fixed`, so the first section needs the clearance the site's own
+   pages give it; the viewport height beneath it is what lets the frame scroll
+   at all, which is the only way to see the nav's scrolled state. */
+section.site-preview-body {
+  padding-top: clamp(132px, 15vw, 180px);
+  min-height: 100vh;
 }

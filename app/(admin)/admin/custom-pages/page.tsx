@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { CreatePageForm } from "@/components/admin/CreatePageForm";
+import { TemplateThumb } from "@/components/admin/TemplateThumb";
+import { PAGE_TEMPLATES } from "@/lib/admin/page-templates";
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
 import { formatWhen } from "@/lib/admin/page-meta";
@@ -70,7 +72,18 @@ export default async function CustomPagesIndex() {
         </p>
       )}
 
-      <CreatePageForm />
+      {/* The thumbnails are drawn here rather than in the form, and handed down
+          as elements. The form is a client component; drawing them there would
+          pull the content schema — and zod with it — into the admin's client
+          bundle to render four pictures that never change. */}
+      <CreatePageForm
+        thumbs={Object.fromEntries(
+          PAGE_TEMPLATES.map((template) => [
+            template.id,
+            <TemplateThumb key={template.id} template={template} />,
+          ])
+        )}
+      />
 
       {rows.length === 0 && !error && (
         <div className="admin-empty">

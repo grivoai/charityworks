@@ -25,12 +25,14 @@ import { join } from "node:path";
 import { customPageSchema, pageBlockSchema } from "@/content/schema";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { withFreshId } from "@/lib/admin/entry-id";
+import { resolveShades } from "@/content/block-shades";
 import { COMMON_LOCKS } from "@/lib/admin/locks";
 import { BUILT_IN_PAGES, checkSlug, couldBeCustomPage } from "@/lib/reserved-paths";
 import {
   PAGE_TEMPLATES,
   DEFAULT_TEMPLATE_ID,
   templateById,
+  withTemplateIds,
 } from "@/lib/admin/page-templates";
 
 let failures = 0;
@@ -196,20 +198,10 @@ check(
  * Ids are minted here the way the action mints them, because a template
  * deliberately carries none.
  */
-const mintId = (prefix: string) =>
-  `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
-
 for (const template of PAGE_TEMPLATES) {
-  const blocks = template.blocks.map((block) => {
-    const built: Record<string, unknown> = { ...block, id: mintId("block") };
-    if (block.type === "questions") {
-      built.items = block.items.map((item) => ({ ...item, id: mintId("q") }));
-    }
-    if (block.type === "callToAction") {
-      built.cta = { ...block.cta, id: mintId("cta") };
-    }
-    return built;
-  });
+  /* Through the shared helper, not a copy of it. A check that mints ids its own
+     way proves that ITS way works, which is not the question. */
+  const blocks = withTemplateIds(template.blocks);
 
   const parsed = customPageSchema.safeParse({
     slug: "template-probe",
@@ -756,6 +748,102 @@ for (const type of ["callToAction", "enquiryForm"]) {
     "each seeded column gets its own id, so two of them are never one React key"
   );
 }
+/* ------------------------------------------------------------------ */
+/* Shading, and the picture of it in the template picker               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The alternation rule, now that two things depend on it.
+ *
+ * It moved into `block-shades` when the template picker needed to draw the
+ * same banding in miniature, and a rule with two readers is worth pinning
+ * down: an automatic block contrasts with what RESOLVED before it, not with
+ * its own index, and a block that paints its own dark band still takes its
+ * turn. Get the second part wrong and every page built before the layout
+ * controls existed shifts by one band.
+ */
+{
+  check(
+    JSON.stringify(resolveShades(["auto", "auto", "auto", "auto"])) ===
+      JSON.stringify(["paper", "cream", "paper", "cream"]),
+    "a page of automatic blocks alternates from paper, as it did before the controls existed"
+  );
+
+  check(
+    JSON.stringify(resolveShades(["auto", null, "auto"])) ===
+      JSON.stringify(["paper", null, "paper"]),
+    "a self-painting band takes its turn, so the blocks around it are unchanged by it"
+  );
+
+  check(
+    JSON.stringify(resolveShades(["auto", "cream", "auto"])) ===
+      JSON.stringify(["paper", "cream", "paper"]),
+    "an automatic block contrasts with a chosen shade rather than ignoring it"
+  );
+
+  check(
+    JSON.stringify(resolveShades(["cream", "cream"])) ===
+      JSON.stringify(["cream", "cream"]),
+    "two creams in a row are reachable by choosing them twice, and only that way"
+  );
+}
+
+/**
+ * The thumbnail draws the template it names.
+ *
+ * IT IS DERIVED RATHER THAN DRAWN, which is the whole reason it is allowed to
+ * exist: four hand-made pictures would be right the day they were made and
+ * wrong the first time a block was added to a template — and wrong in the way
+ * that matters, because a picture is believed without being read.
+ *
+ * Derivation buys that only while every block survives it. `TemplateThumb`
+ * parses each block through the schema to pick up the layout defaults, and
+ * DROPS any that fail rather than crashing the create form. That is the right
+ * behaviour there and the wrong thing to discover in production, so the
+ * dropping is what is checked: a template whose blocks do not all parse would
+ * advertise a page shorter than the one it makes.
+ */
+{
+  for (const template of PAGE_TEMPLATES) {
+    const drawn = withTemplateIds(template.blocks).filter(
+      (block) => pageBlockSchema.safeParse(block).success
+    ).length;
+
+    check(
+      drawn === template.blocks.length,
+      drawn === template.blocks.length
+        ? `the "${template.id}" thumbnail draws all ${drawn} of its blocks`
+        : `the "${template.id}" thumbnail would draw ${drawn} of ${template.blocks.length} ` +
+            `blocks — the rest do not parse, so the picture promises less than the page`
+    );
+  }
+
+  /* Every block type has a case. The typecheck already enforces this through
+     Glyph's return type, but a `default:` added later would satisfy the
+     compiler and quietly draw nothing, so the cases are named here too. */
+  const thumb = readFileSync("src/components/admin/TemplateThumb.tsx", "utf8");
+  const types = (pageBlockSchema.def.options as unknown[]).map((option) => {
+    const shape = (option as { def: { shape: Record<string, unknown> } }).def.shape;
+    return (shape.type as { def: { values: string[] } }).def.values[0];
+  });
+
+  const undrawn = types.filter((type) => !thumb.includes(`case "${type}":`));
+  check(
+    undrawn.length === 0,
+    undrawn.length === 0
+      ? `every block type is drawn in the picker (${types.length} checked)`
+      : `block types with no thumbnail case: ${undrawn.join(", ")}`
+  );
+
+  /* And the picker renders them. Everything above is a picture nobody sees if
+     this one line goes. */
+  const picker = readFileSync("src/components/admin/CreatePageForm.tsx", "utf8");
+  check(
+    picker.includes("{thumbs[option.id]}"),
+    "the create form shows each template's thumbnail beside its name"
+  );
+}
+
 console.log(
   `\n${failures === 0 ? "CUSTOM PAGES OK" : `${failures} check(s) failed`}\n`
 );

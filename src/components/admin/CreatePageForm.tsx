@@ -30,7 +30,19 @@ function Submit() {
  * auctions. Once touched, the field stops following the title, so an edit is
  * not overwritten by the next keystroke in the box above.
  */
-export function CreatePageForm() {
+export function CreatePageForm({
+  thumbs,
+}: {
+  /**
+   * A wireframe per template id, drawn on the server.
+   *
+   * Elements rather than data: they are derived from the schema, and taking
+   * them as rendered nodes is what keeps that derivation — and zod — on the
+   * server side of this boundary. A template with no thumbnail simply shows
+   * none, so this form does not break if one is ever left out.
+   */
+  thumbs: Record<string, React.ReactNode>;
+}) {
   const [state, formAction] = useActionState<CreateState, FormData>(createCustomPage, {});
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -98,6 +110,7 @@ export function CreatePageForm() {
                   checked={template === option.id}
                   onChange={() => setTemplate(option.id)}
                 />
+                {thumbs[option.id]}
                 <span className="admin-template-label">{option.label}</span>
                 <span className="admin-template-note">{option.description}</span>
               </label>
@@ -106,7 +119,8 @@ export function CreatePageForm() {
           <p className="admin-help">
             A template only fills the page in to start with. Every block it adds
             can be edited, reordered or removed, and the placeholder wording is
-            written to be replaced.
+            written to be replaced. The pictures are sketches of the
+            arrangement, not the finished page.
           </p>
         </fieldset>
 

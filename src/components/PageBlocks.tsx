@@ -1,6 +1,11 @@
 import Image from "next/image";
 
 import type { ColumnItem, PageBlock } from "@/content/schema";
+import {
+  shadeBlocks,
+  type LaidBlock,
+  type Shade,
+} from "@/content/block-shades";
 import type { AuctionItem, ContactPage, SiteContent } from "@/content/types";
 import { Cta } from "@/components/Section";
 import { BentoGrid } from "@/components/BentoGrid";
@@ -97,7 +102,6 @@ function ColumnPiece({ item }: { item: ColumnItem }) {
 
 type Width = "narrow" | "contained" | "full";
 type Spacing = "tight" | "normal" | "loose";
-type Shade = "paper" | "cream";
 
 /**
  * Each layout value maps to classes that already exist or have been written
@@ -115,11 +119,6 @@ const SPACING: Record<Spacing, string> = {
   normal: "pad",
   loose: "pad pad-loose",
 };
-
-/** A block carrying layout controls. The two band blocks deliberately do not. */
-type Laid = Extract<PageBlock, { background: Shade | "auto" }>;
-
-const isLaid = (block: PageBlock): block is Laid => "background" in block;
 
 /**
  * Decides every block's background before any of them render.
@@ -141,33 +140,28 @@ const isLaid = (block: PageBlock): block is Laid => "background" in block;
  * different thing from a page that changed because a block was dragged.
  */
 function shades(blocks: PageBlock[]): Map<string, Shade> {
-  const resolved = new Map<string, Shade>();
-  // Starts on cream so the first automatic block lands on paper, as it does today.
-  let previous: Shade = "cream";
+  /* The rule itself lives in `block-shades`, because the template picker draws
+     the same banding in miniature and two copies of an alternation that depends
+     on what resolved BEFORE each block would not stay in step. What is local
+     here is putting the answers, which come back by position, back onto ids. */
+  const resolved = shadeBlocks(blocks);
 
-  for (const block of blocks) {
-    const next: Shade =
-      isLaid(block) && block.background !== "auto"
-        ? block.background
-        : previous === "cream"
-          ? "paper"
-          : "cream";
-
-    if (isLaid(block)) resolved.set(block.id, next);
-    previous = next;
-  }
-
-  return resolved;
+  const byId = new Map<string, Shade>();
+  blocks.forEach((block, index) => {
+    const shade = resolved[index];
+    if (shade) byId.set(block.id, shade);
+  });
+  return byId;
 }
 
-function sectionProps(block: Laid, shade: Shade | undefined) {
+function sectionProps(block: LaidBlock, shade: Shade | undefined) {
   return {
     className: SPACING[block.spacing],
     style: shade === "cream" ? { background: "var(--cream)" } : undefined,
   };
 }
 
-function wrapClass(block: Laid, extra = ""): string {
+function wrapClass(block: LaidBlock, extra = ""): string {
   return extra ? `${WIDTH[block.width]} ${extra}` : WIDTH[block.width];
 }
 

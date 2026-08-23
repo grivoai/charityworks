@@ -25,7 +25,7 @@ export async function SiteChrome({ children }: { children: React.ReactNode }) {
       <main id="main">
         <AnimatedLayout>{children}</AnimatedLayout>
       </main>
-      <Footer />
+      <Footer site={site} />
       <RevealObserver />
       <OrganizationJsonLd />
     </>

@@ -114,9 +114,11 @@ export default async function EnquiriesRoute() {
       <div className="admin-head">
         <h1>Enquiries</h1>
         <p>
-          Everyone who has filled in a form on the site, newest first. Every
-          enquiry is kept here whether or not it reached the pipeline, so a
-          delivery problem costs a follow-up rather than the enquiry itself.
+          Everyone who has filled in a form on the site, newest first. Click a
+          row to see everything they sent; anything that has not reached the
+          pipeline is open already, because that is the one thing here that
+          needs you. Every enquiry is kept whether or not it was passed on, so
+          a delivery problem costs a follow-up rather than the enquiry itself.
         </p>
       </div>
 
@@ -138,55 +140,75 @@ export default async function EnquiriesRoute() {
       <ul className="admin-enquiries">
         {rows.map((row) => {
           const delivery = DELIVERY[row.webhook_status];
+          const needsAttention =
+            row.webhook_status === "failed" || row.webhook_status === "pending";
+
           return (
             <li key={row.id} className="admin-enquiry">
-              <div className="admin-enquiry-head">
-                <span className="admin-enquiry-who">
-                  {row.name ?? "Someone"}
-                  {row.org ? ` · ${row.org}` : ""}
-                </span>
-                <span className={`admin-chip is-${delivery.tone}`}>{delivery.label}</span>
-                {(row.webhook_status === "failed" ||
-                  row.webhook_status === "pending") && (
-                  <RetryOne leadId={row.lead_id} />
-                )}
-                <span className="admin-enquiry-when" title={formatExact(row.submitted_at)}>
-                  {formatWhen(row.submitted_at)}
-                </span>
-              </div>
+              {/* `details`, not a click handler: this page has no client
+                  JavaScript at all, and the native element already brings the
+                  keyboard behaviour, the expanded state a screen reader
+                  announces, and find-in-page opening the row it lands in.
+                  Writing that by hand would be several dozen lines that are
+                  worse. */}
+              <details className="admin-enquiry-fold" open={needsAttention}>
+                <summary className="admin-enquiry-head">
+                  <span className="admin-enquiry-who">
+                    {row.name ?? "Someone"}
+                    {row.org ? ` · ${row.org}` : ""}
+                  </span>
+                  <span className={`admin-chip is-${delivery.tone}`}>
+                    {delivery.label}
+                  </span>
+                  <span
+                    className="admin-enquiry-when"
+                    title={formatExact(row.submitted_at)}
+                  >
+                    {formatWhen(row.submitted_at)}
+                  </span>
+                </summary>
 
-              <div className="admin-enquiry-contact">
-                {row.email && <a href={`mailto:${row.email}`}>{row.email}</a>}
-                {row.phone && <a href={`tel:${row.phone}`}>{row.phone}</a>}
-                {row.event_date && <span>Event: {row.event_date}</span>}
-              </div>
+                <div className="admin-enquiry-body">
+                  <div className="admin-enquiry-contact">
+                    {row.email && <a href={`mailto:${row.email}`}>{row.email}</a>}
+                    {row.phone && <a href={`tel:${row.phone}`}>{row.phone}</a>}
+                    {row.event_date && <span>Event: {row.event_date}</span>}
+                  </div>
 
-              {row.message && <p className="admin-enquiry-message">{row.message}</p>}
+                  {row.message && <p className="admin-enquiry-message">{row.message}</p>}
 
-              {row.custom &&
-                Object.entries(row.custom).filter(([, v]) => v !== "").length > 0 && (
-                  <dl className="admin-enquiry-custom">
-                    {Object.entries(row.custom)
-                      .filter(([, value]) => value !== "")
-                      .map(([key, value]) => (
-                        <div key={key}>
-                          <dt>{askedAs(key)}</dt>
-                          <dd>{value}</dd>
-                        </div>
-                      ))}
-                  </dl>
-                )}
+                  {row.custom &&
+                    Object.entries(row.custom).filter(([, v]) => v !== "").length > 0 && (
+                      <dl className="admin-enquiry-custom">
+                        {Object.entries(row.custom)
+                          .filter(([, value]) => value !== "")
+                          .map(([key, value]) => (
+                            <div key={key}>
+                              <dt>{askedAs(key)}</dt>
+                              <dd>{value}</dd>
+                            </div>
+                          ))}
+                      </dl>
+                    )}
 
-              <p className="admin-enquiry-meta">
-                {SOURCE_LABELS[row.source] ?? row.source}
-                {row.interest_label ? ` · asked about ${row.interest_label}` : ""}
-                {row.interest_category ? ` (${row.interest_category})` : ""}
-              </p>
+                  <p className="admin-enquiry-meta">
+                    {SOURCE_LABELS[row.source] ?? row.source}
+                    {row.interest_label ? ` · asked about ${row.interest_label}` : ""}
+                    {row.interest_category ? ` (${row.interest_category})` : ""}
+                  </p>
 
-              <p className={`admin-enquiry-delivery is-${delivery.tone}`}>
-                {delivery.note}
-                {row.webhook_last_error ? ` — ${row.webhook_last_error}` : ""}
-              </p>
+                  <p className={`admin-enquiry-delivery is-${delivery.tone}`}>
+                    {delivery.note}
+                    {row.webhook_last_error ? ` — ${row.webhook_last_error}` : ""}
+                  </p>
+
+                  {/* Inside the fold rather than beside the chip: a `form` is
+                      not valid inside a `summary`, and the summary is a button
+                      — a second control nested in it would be reached by the
+                      same click that opens the row. */}
+                  {needsAttention && <RetryOne leadId={row.lead_id} />}
+                </div>
+              </details>
             </li>
           );
         })}

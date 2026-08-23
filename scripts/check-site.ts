@@ -37,6 +37,8 @@ import type { FieldNode } from "@/lib/admin/field-node";
 import { BUILT_IN_PAGES } from "@/lib/reserved-paths";
 import { getServiceClient } from "@/lib/supabase";
 import { readSiteDocument } from "@/lib/admin/site-read";
+import { PREVIEW_CHANNEL } from "@/lib/admin/preview-channel";
+import { readFileSync } from "node:fs";
 
 /** Loose view of a field node; the tree is walked structurally here. */
 type FieldFor = {
@@ -239,6 +241,49 @@ async function main(): Promise<void> {
   };
   walk(tree);
   check(opaque === 0, "every field in the document can be edited in the panel");
+
+  /* ---------------------------------------------------------------- */
+  /* The live preview                                                   */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * This is the one editor whose preview shows UNSAVED work, and the only one
+   * that needs to: saving here publishes to every page at once, so the moment
+   * to catch a wrong phone number is before the save rather than after it.
+   *
+   * The draft reaches the frame by `postMessage`, which has no contract of its
+   * own — a typo in either half produces silence, and silence is
+   * indistinguishable from a frame that has not finished loading. So the
+   * agreement is asserted here: both ends name the shared channel constant
+   * rather than a literal, and both ignore anything from another origin.
+   */
+  const panel = readFileSync("src/components/admin/PagePreview.tsx", "utf8");
+  const frame = readFileSync("src/components/admin/SitePreviewFrame.tsx", "utf8");
+  const editor = readFileSync("app/(admin)/admin/site/page.tsx", "utf8");
+
+  check(
+    editor.includes("liveDraft") && editor.includes("/admin/site/preview"),
+    "the site editor previews the draft route rather than a saved page"
+  );
+
+  for (const [half, source] of [
+    ["panel", panel],
+    ["frame", frame],
+  ] as const) {
+    check(
+      source.includes("PREVIEW_CHANNEL"),
+      `the preview ${half} names the shared channel rather than the literal "${PREVIEW_CHANNEL}"`
+    );
+    check(
+      source.includes("event.origin !== window.location.origin"),
+      `the preview ${half} ignores messages from another origin`
+    );
+  }
+
+  check(
+    frame.includes('type: "ready"') && panel.includes('type !== "ready"'),
+    "the frame announces itself when it hydrates, so the first draft is never missed"
+  );
 
   console.log(
     `\n${failures === 0 ? "SITE DETAILS OK" : `${failures} check(s) failed`}\n`

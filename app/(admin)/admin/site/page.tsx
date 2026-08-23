@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { siteContentSchema } from "@/content/schema";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { SiteEditor } from "@/components/admin/SiteEditor";
+import { PagePreview } from "@/components/admin/PagePreview";
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
@@ -85,7 +86,7 @@ export default async function SiteSettingsRoute({
     : "Not edited since the site was set up";
 
   return (
-    <AdminShell admin={admin}>
+    <AdminShell admin={admin} wide>
 
       <div className="admin-head">
         <h1>Site details</h1>
@@ -97,13 +98,33 @@ export default async function SiteSettingsRoute({
         </p>
       </div>
 
-      <SiteEditor
-        tree={tree}
-        initial={parsed.data as unknown as Record<string, unknown>}
-        historyCount={historyCount}
-        updatedLabel={updatedLabel}
-        restored={restored === "1"}
-      />
+      {/* The one preview in the panel that shows unsaved work, because this is
+          the one record with no draft state: saving here publishes to every
+          page at once. See SitePreviewFrame.
+
+          `canPointAndEdit` is off for the same reason it is off for a custom
+          page — the chrome carries no `data-cw` markers, so a click would find
+          nothing and the mode would be a control that does nothing. */}
+      <div className="admin-split has-preview">
+        <div className="admin-split-editor">
+          <SiteEditor
+            tree={tree}
+            initial={parsed.data as unknown as Record<string, unknown>}
+            historyCount={historyCount}
+            updatedLabel={updatedLabel}
+            restored={restored === "1"}
+          />
+        </div>
+
+        <PagePreview
+          slug="site"
+          path="/admin/site/preview"
+          label="Header and footer"
+          canPointAndEdit={false}
+          liveDraft
+          pages={[]}
+        />
+      </div>
     </AdminShell>
   );
 }

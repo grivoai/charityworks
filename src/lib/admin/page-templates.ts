@@ -183,3 +183,40 @@ export function templateById(id: string | undefined): PageTemplate {
     PAGE_TEMPLATES.find((template) => template.id === DEFAULT_TEMPLATE_ID)!
   );
 }
+
+/**
+ * Gives a template's blocks the ids the schema requires.
+ *
+ * Ids are minted rather than written into the template because a template is
+ * reused: two pages created from one would otherwise carry identical block
+ * ids, and coercion matches a submitted block to its stored self BY ID. Two
+ * blocks sharing an id is precisely the case that lets one block's protected
+ * values land on another.
+ *
+ * The same applies one level down, to a questions block's entries and a call
+ * to action's button, both of which carry ids of their own.
+ *
+ * IT LIVES HERE BECAUSE THREE CALLERS NEED IT. The create action performs it,
+ * the template picker's thumbnails need real blocks to draw (a template block
+ * will not parse without an id, and an unparsed block is one the picture
+ * silently leaves out), and `check:custom-pages` validates every template
+ * through it. It cannot live with the action — that module is `"use server"`,
+ * so it may only export async functions — which is how the first two copies
+ * came to exist. `withFreshId` is not this: that one REPLACES ids on a value
+ * that already has them, which a template deliberately does not.
+ */
+export function withTemplateIds(blocks: TemplateBlock[]): unknown[] {
+  const mint = (prefix: string) =>
+    `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
+
+  return blocks.map((block) => {
+    const built: Record<string, unknown> = { ...block, id: mint("block") };
+    if (block.type === "questions") {
+      built.items = block.items.map((item) => ({ ...item, id: mint("q") }));
+    }
+    if (block.type === "callToAction") {
+      built.cta = { ...block.cta, id: mint("cta") };
+    }
+    return built;
+  });
+}

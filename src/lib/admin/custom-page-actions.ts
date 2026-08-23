@@ -14,7 +14,7 @@ import { toFieldErrors } from "@/lib/admin/field-errors";
 import { ensureBaseline, getRevision, recordRevision } from "@/lib/admin/revisions";
 import { checkSlug } from "@/lib/reserved-paths";
 import { slugify, uniqueSlug } from "@/lib/admin/slug";
-import { templateById, type TemplateBlock } from "@/lib/admin/page-templates";
+import { templateById, withTemplateIds } from "@/lib/admin/page-templates";
 import type { SaveState } from "@/lib/admin/page-actions";
 
 /**
@@ -74,34 +74,6 @@ function publish(slug: string): void {
 /* Create                                                              */
 /* ------------------------------------------------------------------ */
 
-/**
- * Gives a template's blocks the ids the schema requires.
- *
- * Ids are minted here rather than written into the template because a template
- * is reused: two pages created from one would otherwise carry identical block
- * ids, and coercion matches a submitted block to its stored self BY ID. Two
- * blocks sharing an id is precisely the case that lets one block's protected
- * values land on another.
- *
- * The same applies one level down, to a questions block's entries and a call
- * to action's button, both of which carry ids of their own.
- */
-function withIds(blocks: TemplateBlock[]): unknown[] {
-  const mint = (prefix: string) =>
-    `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
-
-  return blocks.map((block) => {
-    const built: Record<string, unknown> = { ...block, id: mint("block") };
-    if (block.type === "questions") {
-      built.items = block.items.map((item) => ({ ...item, id: mint("q") }));
-    }
-    if (block.type === "callToAction") {
-      built.cta = { ...block.cta, id: mint("cta") };
-    }
-    return built;
-  });
-}
-
 export interface CreateState {
   message?: string;
 }
@@ -155,7 +127,7 @@ export async function createCustomPage(
       path: `/${slug}`,
     },
     intro: template.intro,
-    blocks: withIds(template.blocks),
+    blocks: withTemplateIds(template.blocks),
   };
 
   const parsed = customPageSchema.safeParse(document);

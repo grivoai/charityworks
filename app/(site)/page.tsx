@@ -7,6 +7,7 @@ import { BentoGrid } from "@/components/BentoGrid";
 import { DonorIncentive } from "@/components/DonorIncentive";
 import { TestimonialMarquee } from "@/components/TestimonialMarquee";
 import { ContactForm } from "@/components/ContactForm";
+import { ContactChannels } from "@/components/ContactChannels";
 import { CountUp } from "@/components/CountUp";
 import { HeroSlideshow } from "@/components/HeroSlideshow";
 import { ItemMarquee } from "@/components/ItemMarquee";
@@ -326,25 +327,7 @@ export default async function HomePage() {
               </span>
             </p>
 
-            <div className="contact-info">
-              {site.contact.channels.map((channel, index) => (
-                <div key={channel.id} className={`ci-row reveal d${index + 1}`}>
-                  <div className="ci-ico" aria-hidden="true">
-                    <Icon name={channel.icon} />
-                  </div>
-                  <div>
-                    <div className="lbl">{channel.label}</div>
-                    {channel.href ? (
-                      <a href={channel.href} className="val">
-                        {channel.value}
-                      </a>
-                    ) : (
-                      <div className="val">{channel.value}</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ContactChannels channels={site.contact.channels} />
 
             <p className="home-contact-alt reveal d3">
               Prefer the full page?{" "}

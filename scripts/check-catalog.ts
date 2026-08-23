@@ -22,6 +22,8 @@
  *   npm run check:catalog
  */
 
+import { readFileSync } from "node:fs";
+
 import { auctionItemSchema } from "@/content/schema";
 import type { AuctionItem } from "@/content/types";
 import type { FieldNode } from "@/lib/admin/field-node";
@@ -196,6 +198,50 @@ async function main(): Promise<void> {
       }
     }
 
+    /* 5. Dragging a lot into a new place must reach the site.
+     *
+     * Lots have been reorderable by dragging since page blocks were: the drag
+     * lives in `ArrayField`, which is generic over every list in every
+     * schema-derived form, so nothing about it is specific to the catalog.
+     * What is specific — and what nothing asserted until now — is the CONTRACT
+     * underneath it. Three files have to agree and none of them mentions the
+     * others: the form's array order becomes `position` in the write plan, and
+     * the assembler reads lots back in `position` order.
+     *
+     * Break the middle link and nothing looks wrong. The editor still drags,
+     * the save still succeeds, the history still records it — and the site
+     * renders the old order forever. That is the failure this catches. */
+    const reorderable = category.groups.find((group) => group.items.length >= 2);
+    if (reorderable) {
+      const [first, second, ...rest] = reorderable.items;
+      const dragged: AuctionItem = {
+        ...category,
+        groups: category.groups.map((group) =>
+          group.id === reorderable.id
+            ? { ...group, items: [second, first, ...rest] }
+            : group
+        ),
+      };
+
+      const plan = planCategoryWrite(dragged, category);
+      const written = plan.items
+        .filter((item) => item.group_id === reorderable.id)
+        .sort((a, b) => a.position - b.position)
+        .map((item) => item.id);
+      const expected = [second.id, first.id, ...rest.map((item) => item.id)];
+
+      if (stableStringify(written) !== stableStringify(expected)) {
+        fail(
+          `${category.slug}: dragging a lot did not change the rows that would ` +
+            `be written — expected ${expected.slice(0, 3).join(", ")}, ` +
+            `got ${written.slice(0, 3).join(", ")}`
+        );
+      }
+      if (plan.archive.length > 0 || plan.created.length > 0) {
+        fail(`${category.slug}: reordering lots planned to retire or create one`);
+      }
+    }
+
     console.log(
       `  ok    ${category.slug.padEnd(22)} ${String(lots.length).padStart(3)} lots, ` +
         `${category.groups.length} group${category.groups.length === 1 ? "" : "s"}`
@@ -207,6 +253,29 @@ async function main(): Promise<void> {
       `${out.locked.length} locked (${out.locked.join(", ")})`
   );
   console.log(`  ${categories.length} categories, ${totalLots} lots`);
+
+  /* The other two links in the ordering chain, read from the source.
+   *
+   * A plan that carries the order is worth nothing if the read ignores it, and
+   * a contract that holds is worth nothing if the handle that exercises it has
+   * gone. Neither is reachable from the data, so both are asserted the way
+   * check-admin-nav asserts its frame: from the file that has to keep them. */
+  const assembler = readFileSync("src/lib/content-source-supabase.ts", "utf8");
+  const itemsRead = assembler.slice(assembler.indexOf('.from("catalog_items")'));
+  if (!/\.order\("position"\)/.test(itemsRead.slice(0, 400))) {
+    fail(
+      "lots are no longer read in `position` order, so dragging one would " +
+        "change the stored rows and nothing on the site"
+    );
+  }
+
+  const form = readFileSync("src/components/admin/SchemaFields.tsx", "utf8");
+  if (!/draggable=\{armed === index\}/.test(form)) {
+    fail(
+      "list entries are no longer draggable, so lots can only be reordered by " +
+        "retyping them"
+    );
+  }
 
   /* The locks that protect the ids must actually be in place. */
   for (const expected of ["slug", "seo.path", "groups (fixed length)"]) {

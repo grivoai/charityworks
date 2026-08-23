@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { FIELD_PATH_ATTR, MARK_ATTR } from "@/lib/admin/dom";
+import { PREVIEW_CHANNEL, type PreviewMessage } from "@/lib/admin/preview-channel";
 
 /**
  * The live page, beside the form that edits it.
@@ -88,6 +89,9 @@ const ECHO_GUARD_MS = 700;
 /** Reading `location` across the frame is cheap; a click through to another page is not. */
 const LOCATION_POLL_MS = 400;
 
+/** Fast enough to read as live while typing, slow enough to be free. */
+const DRAFT_POLL_MS = 250;
+
 function rectOf(el: Element): Outline | null {
   const r = el.getBoundingClientRect();
   if (r.width === 0 && r.height === 0) return null;
@@ -150,6 +154,7 @@ export function PagePreview({
   label,
   pages,
   canPointAndEdit = true,
+  liveDraft = false,
 }: {
   slug: string;
   /** The public route this page renders at, e.g. `/faqs`. */
@@ -169,6 +174,19 @@ export function PagePreview({
    * stays browsable.
    */
   canPointAndEdit?: boolean;
+  /**
+   * Whether the frame is fed the form's unsaved contents as they are typed.
+   *
+   * False everywhere except the site editor, and that is not caution — it is
+   * what the frame can do with them. A page preview loads a route that renders
+   * a stored document; handing it a draft would mean re-rendering the page in
+   * the browser from admin state, which is a second renderer to keep in step
+   * with the real one. The site's chrome is small enough to render from props,
+   * so `/admin/site/preview` does, and it is also the only record here that
+   * publishes the instant it is saved — the one place seeing the change first
+   * is worth the machinery.
+   */
+  liveDraft?: boolean;
 }) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -187,6 +205,26 @@ export function PagePreview({
   const [notice, setNotice] = useState<React.ReactNode>(null);
   const [dirty, setDirty] = useState(false);
   const [elsewhere, setElsewhere] = useState<string | null>(null);
+
+  /**
+   * Where the frame has been, and where in that it currently is.
+   *
+   * KEPT HERE RATHER THAN READ FROM THE FRAME, and that is a safety property
+   * rather than a preference. An iframe's navigations join the TOP-LEVEL
+   * session history, so `contentWindow.history.back()` on a frame that has not
+   * navigated walks the ADMIN page backwards instead — out of the editor,
+   * taking any unsaved work with it. `history.length` cannot tell those apart,
+   * because it counts the whole joint history.
+   *
+   * Observing the frame's own navigations is the only thing that can: Back is
+   * offered only when this trail proves there is somewhere inside the frame to
+   * go back to, so the dangerous case is unreachable rather than merely
+   * unlikely.
+   */
+  const [trail, setTrail] = useState<{ path: string[]; at: number }>({
+    path: [path],
+    at: 0,
+  });
 
   /* The elements currently outlined, so scrolling can re-measure them. */
   const hoverEl = useRef<Element | null>(null);
@@ -511,9 +549,37 @@ export function PagePreview({
         here = null; // navigated off-origin; treat as elsewhere
       }
       setElsewhere(here && here !== path ? here : null);
+
+      /* The same poll keeps the trail, so there is one place that decides where
+         the frame is. Which way it moved is worked out by comparison rather
+         than by a flag set when the buttons are pressed: a flag has to be
+         cleared on a timeout, and gets it wrong exactly when a navigation is
+         slow — which is when somebody is most likely to press again. */
+      if (here === null) return;
+      setTrail((current) => {
+        if (here === current.path[current.at]) return current;
+        if (current.at > 0 && here === current.path[current.at - 1]) {
+          return { ...current, at: current.at - 1 };
+        }
+        if (here === current.path[current.at + 1]) {
+          return { ...current, at: current.at + 1 };
+        }
+        // Somewhere new: whatever was ahead is no longer reachable, exactly as
+        // a browser drops its forward entries when you navigate off a back.
+        return {
+          path: [...current.path.slice(0, current.at + 1), here],
+          at: current.at + 1,
+        };
+      });
     }, LOCATION_POLL_MS);
     return () => window.clearInterval(timer);
   }, [ready, path]);
+
+  /* A reload remounts the frame under a new key, so it is a new browsing
+     context with a history of its own. The trail has to start again with it. */
+  useEffect(() => {
+    setTrail({ path: [path], at: 0 });
+  }, [reloadKey, path]);
 
   /* ---------------------------------------------------------------- */
   /* Staying honest about what the frame is showing                    */
@@ -553,6 +619,54 @@ export function PagePreview({
     window.addEventListener("cw:saved", onSaved);
     return () => window.removeEventListener("cw:saved", onSaved);
   }, []);
+
+  /* ---------------------------------------------------------------- */
+  /* Sending the draft into the frame                                  */
+  /* ---------------------------------------------------------------- */
+
+  useEffect(() => {
+    if (!liveDraft) return;
+
+    const input = document.querySelector<HTMLInputElement>(
+      'form.admin-form input[name="data"]'
+    );
+    if (!input) return;
+
+    let sent: string | null = null;
+
+    const post = (force = false) => {
+      const win = frameRef.current?.contentWindow;
+      if (!win) return;
+      if (!force && input.value === sent) return;
+      sent = input.value;
+      win.postMessage(
+        { channel: PREVIEW_CHANNEL, type: "draft", data: input.value } satisfies PreviewMessage,
+        window.location.origin
+      );
+    };
+
+    /* Polled rather than observed. The value of a hidden input is written by
+       React as a property, and whether that also lands as an ATTRIBUTE — which
+       is the only thing a MutationObserver can watch — is an implementation
+       detail of the renderer rather than a guarantee. A quarter-second poll
+       reading `input.value` is a handful of string comparisons and cannot be
+       wrong about it. */
+    const timer = window.setInterval(() => post(), DRAFT_POLL_MS);
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const message = event.data as PreviewMessage | null;
+      if (message?.channel !== PREVIEW_CHANNEL || message.type !== "ready") return;
+      // The frame has just hydrated, and may have missed everything so far.
+      post(true);
+    };
+    window.addEventListener("message", onMessage);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("message", onMessage);
+    };
+  }, [liveDraft, reloadKey]);
 
   /* ---------------------------------------------------------------- */
   /* The other direction: focus a field, find it on the page           */
@@ -653,6 +767,29 @@ export function PagePreview({
           ))}
         </div>
 
+        {/* Only ever enabled when the trail says the frame itself has somewhere
+            to go — see the note on `trail`. */}
+        <div className="admin-seg is-icons" role="group" aria-label="Page history">
+          <button
+            type="button"
+            onClick={() => frameRef.current?.contentWindow?.history.back()}
+            disabled={trail.at === 0}
+            title="Back"
+            aria-label="Back"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            onClick={() => frameRef.current?.contentWindow?.history.forward()}
+            disabled={trail.at >= trail.path.length - 1}
+            title="Forward"
+            aria-label="Forward"
+          >
+            →
+          </button>
+        </div>
+
         <button
           type="button"
           className="admin-btn admin-btn-quiet"
@@ -685,8 +822,9 @@ export function PagePreview({
 
       {!elsewhere && dirty && (
         <p className="admin-preview-note">
-          This is the saved page. Your unsaved edits will appear here once you
-          save.
+          {liveDraft
+            ? "This is how your unsaved changes will look. Nothing is live until you save."
+            : "This is the saved page. Your unsaved edits will appear here once you save."}
         </p>
       )}
 
@@ -755,11 +893,13 @@ export function PagePreview({
       </div>
 
       <p className="admin-preview-foot">
-        {!canPointAndEdit
-          ? "The page as it will look. Change the wording in the form beside it."
-          : mode === "edit"
-            ? "Click anything highlighted to jump to its field. Scroll here as usual; links stay put."
-            : "The page behaves normally — use this to click through to another one."}
+        {liveDraft
+          ? "The header, footer and contact rows, updating as you type. Every page on the site carries these."
+          : !canPointAndEdit
+            ? "The page as it will look. Change the wording in the form beside it."
+            : mode === "edit"
+              ? "Click anything highlighted to jump to its field. Scroll here as usual; links stay put."
+              : "The page behaves normally — use this to click through to another one."}
       </p>
     </aside>
   );

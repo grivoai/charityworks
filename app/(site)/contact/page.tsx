@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getPage, getSite } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { ContactForm } from "@/components/ContactForm";
+import { ContactChannels } from "@/components/ContactChannels";
 import { Icon } from "@/components/Icon";
 import { getInterestLookup } from "@/lib/interests";
 import { editable } from "@/lib/editable";
@@ -43,28 +44,7 @@ export default async function ContactRoute() {
             </p>
 
             <h2 className="sr-only">How to reach us</h2>
-            <div className="contact-info">
-              {site.contact.channels.map((channel, index) => (
-                <div
-                  key={channel.id}
-                  className={`ci-row reveal d${index + 1}`}
-                >
-                  <div className="ci-ico" aria-hidden="true">
-                    <Icon name={channel.icon} />
-                  </div>
-                  <div>
-                    <div className="lbl">{channel.label}</div>
-                    {channel.href ? (
-                      <a href={channel.href} className="val">
-                        {channel.value}
-                      </a>
-                    ) : (
-                      <div className="val">{channel.value}</div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ContactChannels channels={site.contact.channels} />
 
             <p className="mobile-note reveal d3">
               <span className="inline-ico" aria-hidden="true"><Icon name="smartphone" /></span>{" "}

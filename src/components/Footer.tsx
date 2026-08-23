@@ -1,9 +1,18 @@
 import Link from "next/link";
-import { getSite } from "@/lib/content";
+import type { SiteContent } from "@/content/types";
 
-/** Server component, so it reads the content layer directly rather than taking props. */
-export async function Footer() {
-  const site = await getSite();
+/**
+ * Takes the site record rather than reading it, as `Nav` beside it already did.
+ *
+ * It used to call `getSite()` itself, which made it an async server component
+ * and therefore renderable in exactly one place. The site preview needs the
+ * same footer driven by a DRAFT — the form's state, which exists only in the
+ * browser — and no amount of caching makes a server read able to show that.
+ *
+ * Nothing here is server-only now: props in, markup out, so the same component
+ * renders on the public site and inside the preview frame.
+ */
+export function Footer({ site }: { site: SiteContent }) {
   const year = new Date().getFullYear();
 
   return (

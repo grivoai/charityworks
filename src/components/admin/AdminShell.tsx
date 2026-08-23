@@ -45,6 +45,11 @@ export function AdminShell({
         </span>
         <span className="admin-badge">Admin</span>
 
+        {/* In the bar rather than in the page, so it does not scroll away. The
+            bar is already sticky; on a long editor the way out used to be
+            several screens above wherever the client was working. */}
+        {!root && <AdminBack />}
+
         <span className="admin-bar-spacer" />
 
         <span className="admin-who">
@@ -66,10 +71,7 @@ export function AdminShell({
       </header>
 
       <main className="admin-main">
-        <div className={`admin-wrap${wide ? " is-wide" : ""}`}>
-          {!root && <AdminBack />}
-          {children}
-        </div>
+        <div className={`admin-wrap${wide ? " is-wide" : ""}`}>{children}</div>
       </main>
     </>
   );
