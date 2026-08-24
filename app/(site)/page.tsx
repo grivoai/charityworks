@@ -9,6 +9,7 @@ import { TestimonialMarquee } from "@/components/TestimonialMarquee";
 import { ContactForm } from "@/components/ContactForm";
 import { ContactChannels } from "@/components/ContactChannels";
 import { HeroSlideshow } from "@/components/HeroSlideshow";
+import { HeroVideo } from "@/components/HeroVideo";
 import { ItemMarquee } from "@/components/ItemMarquee";
 import { Icon } from "@/components/Icon";
 import { editable } from "@/lib/editable";
@@ -115,7 +116,63 @@ export default async function HomePage() {
             <div className="hero-btns">
               <Cta cta={hero.primaryCta} path="hero.primaryCta" />
               <Cta cta={hero.secondaryCta} path="hero.secondaryCta" />
+              {/* Third control in the row, beside "How It Works", because it
+                  answers the same question that button does — this one in two
+                  minutes of video rather than a page. Renders nothing at all
+                  when the record has no video. */}
+              {hero.video && (
+                <HeroVideo
+                  heading={hero.video.heading}
+                  lede={hero.video.lede}
+                  embedUrl={hero.video.embedUrl}
+                  linkLabel={hero.video.linkLabel}
+                  path="hero.video"
+                />
+              )}
             </div>
+
+            {/* ---- The free donor incentive, promoted out of the fold ----
+                The offer that costs the nonprofit nothing was previously only
+                discoverable by scrolling past four sections to reach #donor.
+                It sits with the copy rather than in the tile stack on the
+                right: the tiles are doors into the catalog, and filing the one
+                free thing on the page among three things to buy is what made
+                it read as a fourth category. Gold rather than glass for the
+                same reason. */}
+            {hero.offer && (
+              <Link href={hero.offer.href} className="hero-offer">
+                <span
+                  className="hero-offer-ico"
+                  aria-hidden="true"
+                  {...editable("hero.offer.icon")}
+                >
+                  <Icon name={hero.offer.icon} />
+                </span>
+                <span className="hero-offer-text">
+                  <span
+                    className="hero-offer-name"
+                    {...editable("hero.offer.label")}
+                  >
+                    {hero.offer.label}
+                  </span>
+                  <span
+                    className="hero-offer-sub"
+                    {...editable("hero.offer.sub")}
+                  >
+                    {hero.offer.sub}
+                  </span>
+                </span>
+                {hero.offer.cue && (
+                  <span
+                    className="hero-offer-cue"
+                    aria-hidden="true"
+                    {...editable("hero.offer.cue")}
+                  >
+                    {hero.offer.cue}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {/* The experience figure, demoted out of the card treatment beside
                 it. It is the one number here that is about the company rather

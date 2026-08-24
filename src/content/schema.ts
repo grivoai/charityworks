@@ -417,6 +417,73 @@ export const homePageSchema = z.object({
         href: text.describe("Where the card goes. A path like /auction-items/vacations."),
       })
     ),
+    /**
+     * The donor incentive, promoted into the hero.
+     *
+     * It sits with the copy rather than in the tile stack on purpose. The tiles
+     * are doors into the catalog — things the visitor can go and buy. This is a
+     * different kind of claim: a free gift the nonprofit gives its donors at no
+     * cost to itself, and the one genuinely free thing on the page. Filed as a
+     * fourth tile it would read as a fourth category and be believed less, not
+     * more.
+     *
+     * Optional, so the offer can be taken out of the hero by clearing it rather
+     * than by a deploy — the same reason the FAQ video block is optional.
+     *
+     * WORDING IS LOAD-BEARING HERE. The package is hotels and shows donated by
+     * partners; it is not travel, and it is not a free vacation in the sense a
+     * visitor scanning a hero would assume. `label` is the line most likely to
+     * be read alone, so it is the line that has to survive being read alone.
+     */
+    offer: z
+      .object({
+        icon: text.describe(
+          "Icon name from the site's set. 'sparkles' reads as a gift rather than as travel."
+        ),
+        label: text.describe(
+          'The headline claim, e.g. "Free Vegas Giveaway". Say what it actually is — ' +
+            'not "Free Vacations", which reads as the catalog being free.'
+        ),
+        sub: text.describe("The qualifying line beneath it — what the package actually includes."),
+        href: text.describe(
+          'Where it goes. "#donor" is the incentive section further down this page.'
+        ),
+        cue: optionalText.describe(
+          'The small gold prompt, e.g. "See how it works →". Optional.'
+        ),
+      })
+      .optional(),
+    /**
+     * The walkthrough video, offered as a control beside "How It Works" rather
+     * than as a player.
+     *
+     * An always-visible iframe in the hero would put a third-party frame in
+     * front of the first paint and push the tiles off the fold, so this stores
+     * the URL and a `linkLabel`, and the hero renders a button that opens the
+     * player in a dialog. That is why the field is `linkLabel` and not
+     * `caption` as on the FAQ page — the string is the control, not a note
+     * under a frame.
+     *
+     * `embedUrl` is checked against `lib/embeds.ts` on save and again where it
+     * renders, for the reason set out on the FAQ page's copy of this block.
+     */
+    video: z
+      .object({
+        heading: text.describe("The dialog's title, e.g. 'How donation matching works'."),
+        lede: optionalText.describe("A line under the title inside the dialog. Optional."),
+        embedUrl: text
+          .refine(isAllowedEmbed, { message: embedProblem("") ?? "" })
+          .describe(
+            "The player address, from " +
+              EMBED_HOSTS +
+              ". For Google Drive that is the file address ending in /preview, " +
+              "not /view — /view shows a sign-in wall inside a frame."
+          ),
+        linkLabel: text.describe(
+          'The button in the hero, e.g. "Watch: How Donation Matching Works".'
+        ),
+      })
+      .optional(),
   }),
   why: z.object({ header: sectionHeaderSchema, items: z.array(valuePropSchema) }),
   process: z.object({

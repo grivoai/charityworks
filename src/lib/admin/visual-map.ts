@@ -88,6 +88,12 @@ export const PAGE_NOT_VISIBLE: Partial<Record<PageSlug, NotVisibleRule[]>> = {
       pattern: "closing.cta.label",
       reason: "The closing section ends with the enquiry form, not a button.",
     },
+    {
+      pattern: "hero.video.embedUrl",
+      reason:
+        "The player's address. It is what the frame loads, never text on the " +
+        "page, so there is nothing to click — the form is the way in.",
+    },
   ],
   auctioneers: [
     {
@@ -264,6 +270,22 @@ export const PAGE_DEFERRED: Partial<Record<PageSlug, NotVisibleRule[]>> = {
         "A line under the video, for a credit or a note. The markup is there " +
         "and it becomes clickable the moment one is written — no caption is " +
         "set today, so there is nothing rendered to click.",
+    },
+    /**
+     * The block itself is empty on this page now: the donation-matching video
+     * moved to the home hero, and the field stayed optional precisely so it
+     * could be cleared here without a deploy. The markup is unchanged and the
+     * whole block becomes clickable again the moment a video is set.
+     */
+    {
+      pattern: "video.heading",
+      reason:
+        "No video is set on this page — the donation-matching one moved to " +
+        "the home hero. The block renders, and this with it, as soon as one is.",
+    },
+    {
+      pattern: "video.lede",
+      reason: "The line under that title, in the same unset block.",
     },
   ],
   auctioneers: [

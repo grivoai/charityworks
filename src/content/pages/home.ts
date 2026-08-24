@@ -71,6 +71,31 @@ export const homePage: HomePage = {
         href: "/auctioneers",
       },
     ],
+    // The donor incentive, promoted into the hero. Points at #donor further
+    // down this page, which is where the offer is actually explained.
+    //
+    // "Free Vegas Giveaway", not "Free Vacations": the package is hotels and
+    // shows donated by partners, and a hero line reading "free vacations" on a
+    // page whose main business is selling vacation packages claims something
+    // the client cannot honour. The sub-line carries the qualifier rather than
+    // leaving the headline to be read alone.
+    offer: {
+      icon: "sparkles",
+      label: "Free Vegas Giveaway",
+      sub: "Hotels & shows for every donor — free to your nonprofit",
+      href: "#donor",
+      cue: "See how →",
+    },
+    // Opens in a dialog rather than embedding — see HeroVideo for why the
+    // frame is mounted only while it is open.
+    video: {
+      heading: "How donation matching works",
+      lede:
+        "A short walkthrough of matching gifts, and how they lift what a paddle raise brings in.",
+      embedUrl:
+        "https://drive.google.com/file/d/1nLCpPgzkKCQ6MxfT9-frUY28noxADT8K/preview",
+      linkLabel: "Watch: How Donation Matching Works",
+    },
   },
 
   why: {
