@@ -86,6 +86,18 @@ export function coerceToTree(
     }
 
     case "array": {
+      /**
+       * An optional list that is absent stays absent.
+       *
+       * Coercing it to `[]` would rewrite the document on a save that changed
+       * nothing — the shape check compares a save with no edits against what is
+       * stored, and `undefined -> []` is a difference. It is also a difference
+       * with a meaning: a question with no tick-box options is not the same
+       * record as a question that never had any.
+       */
+      if (value === undefined || value === null) {
+        return node.optional ? undefined : [];
+      }
       if (!Array.isArray(value)) return [];
 
       /**

@@ -67,6 +67,34 @@ const readDocument = unstable_cache(
   { tags: [DOCUMENTS_TAG] }
 );
 
+/**
+ * Every slug that resolves to a document today.
+ *
+ * One query, cached under the same tag as the documents themselves, because
+ * the catalog needs to know which of its lots have a brochure and asking per
+ * lot would be twenty-seven round trips to answer one question. Used to decide
+ * whether to render a lot's download button at all: a slug that matches nothing
+ * shows no button rather than a link to a 404.
+ */
+const readDocumentSlugs = unstable_cache(
+  async (): Promise<string[]> => {
+    const { data, error } = await getServiceClient()
+      .from("document_links")
+      .select("slug");
+    if (error) {
+      throw new Error(`[documents] could not list the links: ${error.message}`);
+    }
+    return (data ?? []).map((row) => row.slug);
+  },
+  ["document-slugs"],
+  { tags: [DOCUMENTS_TAG] }
+);
+
+export async function getDocumentSlugs(): Promise<Set<string>> {
+  if (!isDatabaseConfigured()) return new Set();
+  return new Set(await readDocumentSlugs());
+}
+
 /** The document a link points at today, or null if there is no such link. */
 export async function getDocument(slug: string): Promise<PublicDocument | null> {
   if (!isDatabaseConfigured()) return null;

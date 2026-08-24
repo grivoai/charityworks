@@ -8,7 +8,6 @@ import { DonorIncentive } from "@/components/DonorIncentive";
 import { TestimonialMarquee } from "@/components/TestimonialMarquee";
 import { ContactForm } from "@/components/ContactForm";
 import { ContactChannels } from "@/components/ContactChannels";
-import { CountUp } from "@/components/CountUp";
 import { HeroSlideshow } from "@/components/HeroSlideshow";
 import { ItemMarquee } from "@/components/ItemMarquee";
 import { Icon } from "@/components/Icon";
@@ -17,8 +16,8 @@ import { testimonials } from "@/content/collections/testimonials";
 
 /**
  * Runs before the hero paints. On the first visit of a session (and only when
- * motion is welcome) it flags the document so the CSS intro animations play and
- * the stat numbers count up; it records the visit so a reload or a scroll back
+ * motion is welcome) it flags the document so the CSS intro animations play; it
+ * records the visit so a reload or a scroll back
  * up never replays it, and clears the flag shortly after so a client-side
  * navigation back to the home page shows the finished state instead. Kept inline
  * and synchronous so there is no flash of the final layout before it animates.
@@ -29,8 +28,8 @@ import { testimonials } from "@/content/collections/testimonials";
  * Every intro rule is gated on `[data-home-intro="play"]`, so this is a hard
  * deadline rather than a tidy-up: an animation still running when the attribute
  * is removed loses its rule mid-flight and snaps to its final state. The
- * sequence in globals.css ends at ~3.05s (stat card 4: 2.16s delay + 0.9s), so
- * this carries ~1.4s of headroom. Raise it before lengthening anything there.
+ * sequence in globals.css ends at ~2.84s (hero tile 3: 1.94s delay + 0.9s), so
+ * this carries ~1.6s of headroom. Raise it before lengthening anything there.
  */
 const INTRO_CLEAR_MS = 4500;
 
@@ -117,18 +116,57 @@ export default async function HomePage() {
               <Cta cta={hero.primaryCta} path="hero.primaryCta" />
               <Cta cta={hero.secondaryCta} path="hero.secondaryCta" />
             </div>
+
+            {/* The experience figure, demoted out of the card treatment beside
+                it. It is the one number here that is about the company rather
+                than about something the visitor can go and look at, so it sits
+                with the copy as a credential rather than competing with three
+                cards that lead somewhere. */}
+            <p className="hero-badge">
+              <span className="hero-badge-ico" aria-hidden="true">
+                <Icon name="shield-check" />
+              </span>
+              <strong {...editable("hero.badge.value")}>
+                {hero.badge.value}
+              </strong>{" "}
+              <span {...editable("hero.badge.label")}>{hero.badge.label}</span>
+            </p>
           </div>
 
-          <div className="hero-stats">
-            {hero.stats.map((stat, index) => (
-              <div key={stat.id} className={`stat-card s${index + 1}`}>
-                <div className="num" {...editable(`hero.stats.${index}.value`)}>
-                  <CountUp value={stat.value} />
-                </div>
-                <div className="lbl" {...editable(`hero.stats.${index}.label`)}>
-                  {stat.label}
-                </div>
-              </div>
+          {/* Doors, not statistics. These were four floating counters; the two
+              categories the client sells most of and the auctioneer roster are
+              worth more above the fold than a tally of them, and each card is
+              now a single link with the whole tile as its hit area. */}
+          <div className="hero-tiles">
+            {hero.tiles.map((tile, index) => (
+              <Link
+                key={tile.id}
+                href={tile.href}
+                className={`hero-tile t${index + 1}`}
+              >
+                <span
+                  className="hero-tile-ico"
+                  aria-hidden="true"
+                  {...editable(`hero.tiles.${index}.icon`)}
+                >
+                  <Icon name={tile.icon} />
+                </span>
+                <span
+                  className="hero-tile-name"
+                  {...editable(`hero.tiles.${index}.label`)}
+                >
+                  {tile.label}
+                </span>
+                <span
+                  className="hero-tile-sub"
+                  {...editable(`hero.tiles.${index}.sub`)}
+                >
+                  {tile.sub}
+                </span>
+                <span className="hero-tile-cue" aria-hidden="true">
+                  Browse &rarr;
+                </span>
+              </Link>
             ))}
           </div>
         </div>

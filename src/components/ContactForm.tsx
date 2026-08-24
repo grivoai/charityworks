@@ -81,7 +81,7 @@ export function ContactForm({
     try {
       // Hidden context inputs are part of the form, so FormData collects them
       // alongside the visible fields with no special handling here.
-      const payload = Object.fromEntries(new FormData(formEl).entries());
+      const payload = collect(new FormData(formEl));
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -155,7 +155,55 @@ export function ContactForm({
           <LeadContextFields source={source} interests={interests} />
         </Suspense>
 
-        {form.fields.map((field, index) => (
+        {form.fields.map((field, index) => {
+          /* A group of boxes rather than one input, so it is a fieldset with a
+             legend rather than a label pointing at a single id — there is no
+             one control for a label to be `for`. Rendered before the ordinary
+             branch below because almost none of that markup applies. */
+          if (field.type === "checkboxes") {
+            const options = field.options ?? [];
+            // Nothing to tick. Rendering an empty bordered box with a heading
+            // and no controls would look like something failed to load.
+            if (options.length === 0) return null;
+            return (
+              <fieldset
+                key={field.id}
+                className={`field field-checks${
+                  field.width === "full" ? " full" : ""
+                }`}
+              >
+                <legend {...editable(at(path, "fields", index, "label"))}>
+                  {field.label}
+                  {field.required && <span className="sr-only"> (required)</span>}
+                </legend>
+                <div className="check-row">
+                  {options.map((option, optionIndex) => (
+                    <label
+                      key={option}
+                      className="check"
+                      htmlFor={fieldId(`${field.id}-${optionIndex}`)}
+                    >
+                      <input
+                        id={fieldId(`${field.id}-${optionIndex}`)}
+                        type="checkbox"
+                        name={field.name}
+                        value={option}
+                      />
+                      <span
+                        {...editable(
+                          at(path, "fields", index, "options", optionIndex)
+                        )}
+                      >
+                        {option}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            );
+          }
+
+          return (
           <div
             key={field.id}
             className={`field${field.width === "full" ? " full" : ""}`}
@@ -186,7 +234,17 @@ export function ContactForm({
               />
             )}
           </div>
-        ))}
+          );
+        })}
+
+        {/* Above the button rather than under the heading: someone reads a
+            form top to bottom and hesitates at the end of it, with the cursor
+            over the thing they are not sure they want to press. */}
+        {form.note && (
+          <p className="form-note" {...editable(at(path, "note"))}>
+            {form.note}
+          </p>
+        )}
 
         <button
           type="submit"
@@ -254,6 +312,25 @@ type SubmittedLead = {
 /** FormData entries are string | File; only the string case is meaningful here. */
 function asText(value: FormDataEntryValue | undefined): string {
   return typeof value === "string" ? value : "";
+}
+
+/**
+ * FormData -> the flat object the endpoint parses.
+ *
+ * `Object.fromEntries` was enough while every input had a distinct name. A
+ * `checkboxes` question puts several inputs under ONE name, and fromEntries
+ * keeps only the last of them — three boxes ticked would have arrived as one
+ * answer, silently, with no error anywhere. Repeated names are joined instead,
+ * which is also the shape the answer is read in downstream: one string per
+ * question.
+ */
+function collect(data: FormData): Record<string, string> {
+  const payload: Record<string, string> = {};
+  for (const [key, value] of data.entries()) {
+    const text = asText(value);
+    payload[key] = key in payload ? `${payload[key]}, ${text}` : text;
+  }
+  return payload;
 }
 
 /**

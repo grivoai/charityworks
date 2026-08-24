@@ -70,13 +70,21 @@ const nextConfig: NextConfig = {
       { source: "/travel_voucher", destination: "/auction-items/vacations", permanent: true },
       { source: "/trips", destination: "/auction-items/vacations", permanent: true },
       { source: "/best-items", destination: "/auction-items", permanent: true },
+      /* Categories that became groups of /auction-items/vacations. Their lots
+         all still exist at the same ids under the same names — only the page
+         they sit on changed — so these are ordinary moved-page redirects, not
+         the "no equivalent" case below. Both were live pages with their own
+         search listings and their own request links, so the hop stays. */
+      { source: "/auction-items/bucket-list-trips", destination: "/auction-items/vacations", permanent: true },
+      { source: "/auction-items/meet-and-greets", destination: "/auction-items/vacations", permanent: true },
       // Enquiry / roster / results equivalents.
+      // Was sent home while there was nowhere for it to go; there is now.
+      { source: "/newsletter-pdfs", destination: "/newsletters", permanent: true },
       { source: "/inquire-page", destination: "/contact", permanent: true },
       { source: "/client-list", destination: "/testimonials", permanent: true },
       { source: "/virtual-auction", destination: "/auction-info", permanent: true },
       // No equivalent on the new site — sent home rather than to a soft 404.
       { source: "/cbid", destination: "/", permanent: true },
-      { source: "/newsletter-pdfs", destination: "/", permanent: true },
       { source: "/travel-terms", destination: "/", permanent: true },
       { source: "/terms-conditions", destination: "/", permanent: true },
       { source: "/terms-and-conditions-voucher", destination: "/", permanent: true },

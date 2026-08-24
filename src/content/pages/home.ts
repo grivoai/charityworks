@@ -41,11 +41,35 @@ export const homePage: HomePage = {
       href: "/auction-info",
       variant: "secondary",
     },
-    stats: [
-      { id: "stat-items", value: "80+", label: "Auction Items" },
-      { id: "stat-states", value: "All 50", label: "States Served" },
-      { id: "stat-cost", value: "$0", label: "Upfront Cost" },
-      { id: "stat-years", value: "30+", label: "Years Experience" },
+    // The one figure still treated as a figure. The other three cards became
+    // ways into the catalog; a count of items is worth less to a visitor than
+    // a door marked "guitars".
+    badge: { value: "30+", label: "Years Experience" },
+    // Straight into the two categories the client sells most of, plus the
+    // auctioneer roster. Sub-lines are the categories' own blurbs rather than
+    // new copy, so the tile and the page it opens say the same thing.
+    tiles: [
+      {
+        id: "hero-tile-guitars",
+        icon: "guitar",
+        label: "Hand-Signed Guitars",
+        sub: "Celebrity & rock legends",
+        href: "/auction-items/signed-guitars",
+      },
+      {
+        id: "hero-tile-vacations",
+        icon: "palm-tree",
+        label: "Affordable Vacations",
+        sub: "Crowd-pleasing getaways",
+        href: "/auction-items/vacations",
+      },
+      {
+        id: "hero-tile-auctioneers",
+        icon: "gavel",
+        label: "Elite Auctioneers",
+        sub: "They drive bids higher",
+        href: "/auctioneers",
+      },
     ],
   },
 

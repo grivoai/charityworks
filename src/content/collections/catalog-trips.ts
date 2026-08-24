@@ -16,6 +16,21 @@ const DIR = "/images/catalog/trips";
  * Vacations / Bucket List Trips / Meet & Greets is an editorial judgement made
  * here, not something the client specified. Move items freely between the
  * three arrays.
+ *
+ * The three are now three GROUPS of one category rather than three categories
+ * of their own — one page to browse instead of three — so moving an item
+ * between these arrays now moves it between headings on the same page.
+ *
+ * `documentSlug` is the brochure the client already hands out, imported from the
+ * old site into Documents by `scripts/import-trip-brochures.ts`. It is the
+ * permanent `/d/` address rather than a file, so replacing the PDF in the admin
+ * repoints every lot that names it without touching this file.
+ *
+ * `affordableTier: true` on every lot in `vacationItems` is what draws the gold
+ * star on the category page. It is not a new judgement: the client's own split
+ * put these fourteen in "Affordable Vacations", and the star is that grouping
+ * surviving the merge in a form a bidder can see at a glance. Nothing here
+ * states a price, which is the rule everywhere else in the catalog too.
  */
 
 /* ------------------------------------------------------------------ */
@@ -24,6 +39,8 @@ const DIR = "/images/catalog/trips";
 export const vacationItems: CategoryItem[] = [
   {
     id: "trip-catalina-baja-cruise",
+    documentSlug: "catalina-baja-cruise",
+    affordableTier: true,
     name: "Catalina & Baja Cruise for Two",
     description:
       "Five days and four nights aboard a Catalina and Baja sailing, based on an inside cabin for two.",
@@ -35,6 +52,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-dream-vacation-getaway",
+    documentSlug: "dream-vacation-getaway",
+    affordableTier: true,
     name: "Dream Vacation Getaway",
     description:
       "Eight days and seven nights in a studio to one-bedroom unit for two adults and two children, with thousands of destinations to choose from.",
@@ -45,6 +64,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-disneyland-anaheim",
+    documentSlug: "disneyland-anaheim",
+    affordableTier: true,
     name: "Disneyland Experience, Anaheim",
     description:
       "Four days and three nights in Anaheim with park tickets and hotel for two adults and two children.",
@@ -55,6 +76,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-outrigger-waikiki",
+    documentSlug: "outrigger-waikiki",
+    affordableTier: true,
     name: "Outrigger Waikiki Beach Resort",
     description:
       "Six days and five nights in an ocean front room at the Outrigger Waikiki Beach Resort.",
@@ -65,6 +88,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-hilton-huntington-beach",
+    documentSlug: "hilton-huntington-beach",
+    affordableTier: true,
     name: "Hilton Huntington Beach Oceanfront",
     description:
       "Six days and five nights oceanfront at the Hilton Huntington Beach resort.",
@@ -75,6 +100,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-tahoe-marriott",
+    documentSlug: "tahoe-marriott-timber-lodge",
+    affordableTier: true,
     name: "Lake Tahoe Marriott Timber Lodge",
     description:
       "Eight days and seven nights in a two-bedroom villa at the Marriott Timber Lodge, South Lake Tahoe.",
@@ -85,6 +112,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-disney-world-orlando",
+    documentSlug: "disney-world-orlando",
+    affordableTier: true,
     name: "Disney World, Orlando",
     description:
       "Three-day family four-pack of park hopper tickets plus four nights' accommodation in Orlando.",
@@ -95,6 +124,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-cancun-all-inclusive",
+    documentSlug: "cancun-all-inclusive",
+    affordableTier: true,
     name: "All-Inclusive Cancún",
     description:
       "Five days and four nights all-inclusive for two adults and two children at the Royal Sunset or Sunset Marina.",
@@ -105,6 +136,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-tahoe-hilton-club",
+    documentSlug: "tahoe-hilton-club",
+    affordableTier: true,
     name: "Lake Tahoe Hilton Club",
     description:
       "Eight days and seven nights at the Lake Tahoe Hilton Club resort.",
@@ -115,6 +148,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-mayan-luxury",
+    documentSlug: "mayan-luxury-resort",
+    affordableTier: true,
     name: "Mayan Luxury Resort, Mexico",
     description:
       "Five nights at a Mayan luxury resort, with the winner choosing from six destinations.",
@@ -125,6 +160,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-luxury-4-night",
+    documentSlug: "luxury-4-night-getaway",
+    affordableTier: true,
     name: "All-Inclusive Luxury 4-Night Getaway",
     description:
       "Four nights all-inclusive across Mexico, the Caribbean or Central America, with more than thirty properties to choose from.",
@@ -135,6 +172,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-golf-sedona",
+    documentSlug: "golf-sedona",
+    affordableTier: true,
     name: "Golf in Sedona, Arizona",
     description:
       "Five nights for two in Sedona with a $300 golf allowance at the course of your choice.",
@@ -145,6 +184,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-viva-las-vegas",
+    documentSlug: "viva-las-vegas",
+    affordableTier: true,
     name: "Viva Las Vegas",
     description:
       "Four days and three nights in Las Vegas with a choice of four hotels.",
@@ -155,6 +196,8 @@ export const vacationItems: CategoryItem[] = [
   },
   {
     id: "trip-stronghold-arnold",
+    documentSlug: "stronghold-arnold",
+    affordableTier: true,
     name: "The Stronghold Mountain Home, Arnold CA",
     description:
       "A stay at The Stronghold in Arnold, California, with a private lake, hot tub and more.",
@@ -171,6 +214,7 @@ export const vacationItems: CategoryItem[] = [
 export const bucketListItems: CategoryItem[] = [
   {
     id: "trip-sphere-las-vegas",
+    documentSlug: "sphere-las-vegas",
     name: "The Sphere, Las Vegas — Two-Night Experience",
     description:
       "A two-night Las Vegas experience built around a show at The Sphere, valid for any residency.",
@@ -181,6 +225,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-atlantis-bahamas",
+    documentSlug: "atlantis-bahamas",
     name: "Atlantis Harborside, Bahamas",
     description:
       "Five days and four nights at Atlantis Harborside on Paradise Island, Bahamas.",
@@ -192,6 +237,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-aulani-oahu",
+    documentSlug: "aulani-oahu",
     name: "Aulani, a Disney Resort — O'ahu",
     description:
       "Five days and four nights at Aulani, Disney's resort on O'ahu, Hawai'i.",
@@ -202,6 +248,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-african-safari",
+    documentSlug: "african-photo-safari",
     name: "African Photo Safari, South Africa",
     description:
       "Six days and six nights in South Africa for two, including meals and guided safari.",
@@ -213,6 +260,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-ultimate-beach",
+    documentSlug: "ultimate-beach-destination",
     name: "Ultimate Beach Destination",
     description:
       "Eight days and seven nights with the winner's choice of Bali, Spain, Hawai'i or Puerto Vallarta.",
@@ -223,6 +271,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-wrigley-field",
+    documentSlug: "wrigley-field-chicago",
     name: "Wrigley Field Getaway, Chicago",
     description:
       "Unlimited food and beverages during the game at Wrigley Field, plus two nights at the Hyatt Magnificent Mile.",
@@ -233,6 +282,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-nascar",
+    documentSlug: "nascar-driving-experience",
     name: "Ultimate NASCAR Driving Experience",
     description:
       "An eight-minute stock car driving experience, available at more than eleven speedways.",
@@ -244,6 +294,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-hawaii-or-ireland",
+    documentSlug: "hawaii-or-ireland",
     name: "Hawai'i or Ireland",
     description:
       "Eight days and seven nights in two bedrooms, with the winner choosing Hawai'i or Ireland.",
@@ -254,6 +305,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-tuscan-sun",
+    documentSlug: "under-the-tuscan-sun",
     name: "Under the Tuscan Sun Apartment",
     description:
       "Seven days and six nights in an apartment in Tuscany, Italy.",
@@ -264,6 +316,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-sushi-party",
+    documentSlug: "sushi-party-for-20",
     name: "Sushi Party for 20 in Your Home",
     description:
       "A chef-prepared sushi party for twenty guests in your own home. Bay Area cities unless approved in advance.",
@@ -274,6 +327,7 @@ export const bucketListItems: CategoryItem[] = [
   },
   {
     id: "trip-spirits-experience",
+    documentSlug: "spirits-experience-for-10",
     name: "Unforgettable Spirits Experience for 10",
     description:
       "A guided tasting experience for ten guests across a curated selection of spirits.",
@@ -290,6 +344,7 @@ export const bucketListItems: CategoryItem[] = [
 export const meetGreetItems: CategoryItem[] = [
   {
     id: "trip-warriors-franco-finn",
+    documentSlug: "warriors-tickets-meet-greet",
     name: "Golden State Warriors Tickets & HypeMan Franco Finn Meet and Greet",
     description:
       "Two lower bowl tickets to a Golden State Warriors game, plus a meet and greet with Warriors HypeMan Franco Finn.",
@@ -300,6 +355,7 @@ export const meetGreetItems: CategoryItem[] = [
   },
   {
     id: "trip-andrea-bocelli",
+    documentSlug: "andrea-bocelli-meet-greet",
     name: "Andrea Bocelli — Premium Tickets, Backstage Meet and Greet & Signed Memorabilia",
     description:
       "Two premium tickets to Andrea Bocelli in concert, with a backstage meet and greet and signed memorabilia.",

@@ -60,6 +60,8 @@ export interface ItemRowPatch {
   image_height: number | null;
   note: string | null;
   details: unknown;
+  affordable_tier: boolean;
+  document_slug: string | null;
   position: number;
 }
 
@@ -174,6 +176,14 @@ export function planCategoryWrite(
       image_height: item.image?.height ?? null,
       note: item.note ?? null,
       details: item.details ?? [],
+      // The column is NOT NULL, so an unmarked lot writes false rather than
+      // leaving the key out — same shape either way, which is what lets the
+      // catalog check compare a planned row against a stored one.
+      affordable_tier: item.affordableTier ?? false,
+      // Nullable, unlike the flag above: "no brochure" and "a brochure named
+      // nothing" have to be the same row, or an emptied field would store an
+      // empty string that matches no document and reads as a value.
+      document_slug: item.documentSlug ?? null,
       // Position is the order in the form. Archived rows keep whatever they
       // had; they are filtered out of every read, so a collision is invisible.
       position: index,

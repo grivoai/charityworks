@@ -25,6 +25,18 @@ export const faqsPage: FaqsPage = {
 
   faqs,
 
+  /**
+   * Deliberately down here rather than on the home page. It explains one
+   * programme — donation matching — to somebody already reading about how the
+   * auctions work, which is a different job from a hero.
+   */
+  video: {
+    heading: "How donation matching works",
+    lede: "A short walkthrough of matching gifts, and how they lift what a paddle raise brings in.",
+    embedUrl:
+      "https://drive.google.com/file/d/1nLCpPgzkKCQ6MxfT9-frUY28noxADT8K/preview",
+  },
+
   cta: {
     id: "cta-faqs",
     label: "Get Your Free Fundraising Plan",

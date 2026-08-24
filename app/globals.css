@@ -178,7 +178,7 @@ section { position: relative; }
    as well not have been there. These values put the text column near 0.77 and
    the open right side near 0.55, so the picture reads while the copy keeps a
    comfortable margin over AA. Measured against the brightest frame rather than
-   estimated; see the stat-card note for the other half of this. */
+   estimated; see the hero-tile note for the other half of this. */
 .hero-scrim {
   position: absolute; inset: 0; z-index: 1;
   background:
@@ -196,26 +196,59 @@ section { position: relative; }
 .hero p.sub { font-size: clamp(1.05rem, 1.8vw, 1.28rem); color: rgba(255,255,255,0.82); max-width: 540px; margin-bottom: 36px; }
 .hero-btns { display: flex; gap: 16px; flex-wrap: wrap; }
 
-/* floating stat cards */
-.hero-stats { position: relative; height: 440px; align-self: center; display: flex; flex-direction: column; justify-content: center; }
-/* Dark glass, not white glass. These cards float over the lightened right side
-   of the hero where the photograph is now genuinely visible, and their text is
+/* The experience credential, sitting with the copy rather than in a card.
+   Deliberately quieter than .hero-pill above it: same glass family, smaller
+   type, no pulsing dot, so the eye reads pill -> headline -> buttons -> this
+   rather than being met by two competing pills. */
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 26px;
+  padding: 7px 14px; border-radius: 100px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(224,168,46,0.34);
+  font-size: 0.8rem; color: rgba(255,255,255,0.82); line-height: 1;
+}
+.hero-badge strong { color: var(--gold-bright); font-weight: 700; }
+.hero-badge-ico { display: inline-flex; color: var(--gold-bright); }
+.hero-badge-ico svg { width: 15px; height: 15px; }
+
+/* ---- Floating hero tiles ----
+   Four stat counters became three links. The glass treatment and the float are
+   unchanged — the reason for them has not changed, only what they hold — but
+   these are anchors now, so they carry a hover state, a focus ring and a cue
+   arrow, none of which a static card needed.
+
+   Dark glass, not white glass. These cards float over the lightened right side
+   of the hero where the photograph is genuinely visible, and their text is
    white — a white tint lifts the backdrop toward the text and destroys the
    contrast it is supposed to protect. Tinting toward the hero navy instead
    darkens locally, under the text only, which is what lets the scrim above stay
    light everywhere else. The border and blur still read as glass. */
-.stat-card {
-  position: absolute; padding: 22px 26px; border-radius: var(--radius);
+.hero-tiles { position: relative; height: 440px; align-self: center; }
+.hero-tile {
+  position: absolute; width: min(290px, 100%); padding: 20px 24px;
+  border-radius: var(--radius); color: #fff;
   background: rgba(7,21,46,0.45); border: 1px solid rgba(255,255,255,0.22);
   backdrop-filter: blur(16px) saturate(140%); box-shadow: 0 20px 50px rgba(0,0,0,0.3);
   animation: float 6s ease-in-out infinite;
+  transition: border-color 0.3s var(--ease), background 0.3s var(--ease), box-shadow 0.3s var(--ease);
 }
-.stat-card .num { font-family: "Playfair Display", serif; font-size: 2rem; font-weight: 800; color: var(--gold-bright); line-height: 1; }
-.stat-card .lbl { font-size: 0.82rem; color: rgba(255,255,255,0.8); margin-top: 6px; white-space: nowrap; }
-.s1 { top: 10px; left: 0; animation-delay: 0s; }
-.s2 { top: 70px; right: 0; animation-delay: -1.5s; }
-.s3 { bottom: 90px; left: 20px; animation-delay: -3s; }
-.s4 { bottom: 0; right: 30px; animation-delay: -4.5s; }
+.hero-tile:hover {
+  background: rgba(7,21,46,0.62); border-color: rgba(224,168,46,0.6);
+  box-shadow: 0 26px 60px rgba(0,0,0,0.42);
+}
+/* Keyboard users get the same affordance the pointer gets. The ring sits
+   outside the card so the blur behind it cannot swallow it. */
+.hero-tile:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+.hero-tile-ico { display: block; color: var(--gold-bright); margin-bottom: 10px; }
+.hero-tile-ico svg { width: 24px; height: 24px; }
+.hero-tile-name { display: block; font-family: "Playfair Display", serif; font-size: 1.32rem; font-weight: 800; color: #fff; line-height: 1.15; }
+.hero-tile-sub { display: block; font-size: 0.82rem; color: rgba(255,255,255,0.76); margin-top: 5px; }
+.hero-tile-cue { display: block; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.04em; color: var(--gold-bright); margin-top: 12px; opacity: 0.85; transition: opacity 0.3s var(--ease); }
+.hero-tile:hover .hero-tile-cue { opacity: 1; }
+/* Three insets inside the 440px box, spaced so no two cards can meet even at
+   the extremes of the 18px float: 0-150, 152-300, 300-440. */
+.t1 { top: 0; left: 0; animation-delay: 0s; }
+.t2 { top: 152px; right: 0; animation-delay: -2s; }
+.t3 { bottom: 0; left: 26px; animation-delay: -4s; }
 @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-18px);} }
 
 /* ============ HOME FIRST-LOAD INTRO ============
@@ -246,16 +279,17 @@ section { position: relative; }
 [data-home-intro="play"] .hero p.sub { animation: intro-rise 0.85s var(--ease) 0.95s both; }
 [data-home-intro="play"] .hero-btns { animation: intro-rise 0.85s var(--ease) 1.25s both; }
 
-/* Stat cards keep their resting float — the intro only fades them in, staggered.
+[data-home-intro="play"] .hero-badge { animation: intro-rise 0.85s var(--ease) 1.45s both; }
+
+/* Hero tiles keep their resting float — the intro only fades them in, staggered.
    Two comma-separated animation-delays: the first staggers the fade, the second
    restores each card's original float desync. */
-[data-home-intro="play"] .hero-stats .stat-card {
+[data-home-intro="play"] .hero-tiles .hero-tile {
   animation: intro-fade 0.9s var(--ease) both, float 6s ease-in-out infinite;
 }
-[data-home-intro="play"] .stat-card.s1 { animation-delay: 1.5s, 0s; }
-[data-home-intro="play"] .stat-card.s2 { animation-delay: 1.72s, -1.5s; }
-[data-home-intro="play"] .stat-card.s3 { animation-delay: 1.94s, -3s; }
-[data-home-intro="play"] .stat-card.s4 { animation-delay: 2.16s, -4.5s; }
+[data-home-intro="play"] .hero-tile.t1 { animation-delay: 1.5s, 0s; }
+[data-home-intro="play"] .hero-tile.t2 { animation-delay: 1.72s, -2s; }
+[data-home-intro="play"] .hero-tile.t3 { animation-delay: 1.94s, -4s; }
 
 /* ============ REVEAL ============ */
 /* Paced to match the hero intro above — a 0.08s stagger read as everything
@@ -432,6 +466,24 @@ section { position: relative; }
 
 /* ============ FAQ ============ */
 .faq-list { max-width: 820px; margin: 56px auto 0; }
+
+/* ---- Donation-match video ----
+   Narrower than the questions above it, so it reads as a footnote to the page
+   rather than a second feature competing with them. */
+.faq-video { max-width: 620px; margin: 64px auto 0; text-align: center; }
+.faq-video h2 { font-family: "Playfair Display", serif; font-size: 1.4rem; font-weight: 700; }
+.faq-video-lede { margin-top: 8px; color: var(--muted); font-size: 0.96rem; }
+/* Aspect-ratio on the box rather than a padding-top hack: the frame has no
+   intrinsic size, and a fixed height would letterbox on one screen and crop on
+   another. */
+.faq-video-frame {
+  position: relative; aspect-ratio: 16 / 9; margin-top: 20px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; background: #05101f;
+  box-shadow: var(--shadow-lg);
+}
+.faq-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.faq-video-caption { margin-top: 12px; font-size: 0.86rem; color: var(--muted); }
 .faq-item { border-bottom: 1px solid var(--line); }
 .faq-q { width: 100%; background: none; border: none; cursor: pointer; text-align: left; padding: 24px 8px; display: flex; justify-content: space-between; align-items: center; gap: 20px; font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.18rem; color: var(--green); transition: color 0.3s; }
 .faq-q:hover { color: var(--gold); }
@@ -492,6 +544,37 @@ section { position: relative; }
 .field input::placeholder, .field textarea::placeholder { color: rgba(255,255,255,0.4); }
 .field input:focus, .field textarea:focus { outline: none; border-color: var(--gold-bright); background: rgba(255,255,255,0.12); box-shadow: 0 0 0 3px rgba(224,168,46,0.18); }
 .field textarea { resize: vertical; min-height: 110px; }
+
+/* ---- Tick-box question ----
+   A <fieldset>, so the three boxes are announced as one question rather than
+   three unrelated controls. The browser's default fieldset border and padding
+   are cleared: `.field` is already the row shell, and a second bordered box
+   inside the form panel reads as a nested panel. */
+.field-checks { border: 0; padding: 0; margin: 0; min-width: 0; }
+.field-checks legend { padding: 0; font-size: 0.82rem; font-weight: 500; color: rgba(255,255,255,0.75); }
+.check-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 9px; }
+/* Each box and its words are one target. `flex: 1 1 auto` lets three short
+   options sit on one line and wrap to their own lines when they cannot. */
+.check {
+  flex: 1 1 auto; display: inline-flex; align-items: center; gap: 9px;
+  padding: 11px 14px; border-radius: 12px; cursor: pointer;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18);
+  font-size: 0.92rem; color: rgba(255,255,255,0.86);
+  transition: border 0.3s, background 0.3s;
+}
+.check:hover { border-color: rgba(224,168,46,0.5); background: rgba(255,255,255,0.1); }
+/* The generic `.field input` rule above sizes text boxes — 13px of padding on
+   a checkbox turns it into a rectangle. Reset here rather than narrowing that
+   selector, which several other forms depend on. */
+.check input {
+  width: 17px; height: 17px; flex: none; padding: 0; margin: 0;
+  accent-color: var(--gold-bright); cursor: pointer;
+}
+.check:has(input:checked) { border-color: var(--gold-bright); background: rgba(224,168,46,0.14); }
+.check:has(input:focus-visible) { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+/* Spans the grid and sits directly on top of the button, with no gap of its
+   own beyond the grid's — it is a caption for that button, not a paragraph. */
+.form-note { grid-column: span 2; margin-bottom: -8px; font-size: 0.86rem; color: rgba(255,255,255,0.66); }
 .form-msg { grid-column: span 2; text-align: center; font-size: 0.92rem; color: var(--gold-soft); min-height: 20px; }
 
 /* ---- "You're asking about ..." context note ----
@@ -576,7 +659,6 @@ section { position: relative; }
 /* ============ RESPONSIVE ============ */
 @media (max-width: 980px) {
   .hero .wrap { grid-template-columns: 1fr; }
-  .hero-stats { height: 260px; max-width: 460px; }
   .contact .wrap { grid-template-columns: 1fr; }
   .steps { grid-template-columns: 1fr; gap: 44px; }
   .steps::before { display: none; }
@@ -595,7 +677,9 @@ section { position: relative; }
   .why-grid > .why-card, .donor-card { flex-basis: 100%; }
   .b-wide, .b-tall { grid-column: span 1; grid-row: span 1; }
   .form-grid { grid-template-columns: 1fr; }
-  .field.full, .form-msg, .lead-context { grid-column: span 1; }
+  .field.full, .form-msg, .form-note, .lead-context { grid-column: span 1; }
+  /* Three tick boxes across a phone would leave each too narrow to read. */
+  .check { flex-basis: 100%; }
   /* Claw back the form panel's 36px padding. The widget is the only thing on
      the success panel at this width and needs every pixel available; the
      calendar grid is what suffers first when it is squeezed. */
@@ -934,6 +1018,47 @@ main.is-transitioning {
 .page-hero .eyebrow a:hover { color: var(--gold-soft); }
 
 .cat-group { margin-top: 56px; }
+/* ---- Affordable-tier star ----
+   Lucide ships its icons as strokes with `fill="none"` set as a presentation
+   attribute, which CSS outranks — so filling it here is what turns the outline
+   into the solid gold star the legend describes. */
+.cat-star { display: inline-flex; vertical-align: -2px; color: var(--gold-bright); }
+.cat-star svg { width: 1em; height: 1em; fill: currentColor; }
+/* A gap after the star, but only when it precedes a lot name. In the legend the
+   star is followed by a sentence that starts with a space of its own. */
+.cat-card-body h3 > .cat-star, .cat-card-body h4 > .cat-star { margin-right: 7px; }
+/* One per group now rather than one per page, so it sits between a group's
+   heading and its grid. Narrower than the group head it follows and centred on
+   the same measure, so the two read as one block rather than as a heading and
+   an unrelated notice. */
+.cat-legend {
+  display: flex; align-items: baseline; justify-content: center; gap: 8px;
+  max-width: 620px; margin: 0 auto 30px; padding: 10px 18px;
+  border: 1px dashed var(--gold); border-radius: var(--radius);
+  background: rgba(184,134,11,0.07);
+  font-size: 0.9rem; color: var(--muted);
+}
+/* The head's own 30px plus the legend's would leave the lots a long way below
+   their heading. Closed up only when the two are actually adjacent. */
+.cat-group-head:has(+ .cat-legend) { margin-bottom: 16px; }
+/* ---- Lot actions ----
+   Two links where there was one. A column rather than a row: at card width the
+   two together run past the measure and would wrap mid-phrase, and the request
+   link is the primary of the two, so it keeps the top position and the
+   treatment it already had. */
+.cat-card-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: auto; padding-top: 16px; }
+/* The reserve link used to be the element pushed to the bottom of the card; the
+   wrapper does that now. Left on the link, `margin-top: auto` would push it down
+   inside the wrapper instead and open a gap above the download button. */
+.cat-card-actions .cat-card-request { margin-top: 0; padding-top: 0; }
+.cat-card-doc {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.85rem; font-weight: 500; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 100px; padding: 6px 13px;
+  transition: color 0.3s, border-color 0.3s, background 0.3s;
+}
+.cat-card-doc:hover { color: var(--ink); border-color: var(--gold); background: rgba(184,134,11,0.07); }
+.cat-card-doc svg { width: 14px; height: 14px; }
 .cat-group-head { max-width: 760px; margin: 0 auto 30px; text-align: center; }
 .cat-group-head h3 {
   font-size: clamp(1.4rem, 2.4vw, 1.9rem);
@@ -1838,52 +1963,55 @@ body.nav-open .nav {
 }
 
 /* ================================================================== */
-/* HERO STAT CARDS — the full width range of the bug                   */
+/* HERO TILES — the full width range of the bug                        */
 /* ================================================================== */
 @media (max-width: 980px) {
-  /* ---- Hero stat cards ----
-     THIS IS A BUG FIX, not a spacing change.
+  /* ---- Hero tiles ----
+     THIS IS A BUG FIX, not a spacing change, and it is inherited: the
+     stat cards these replaced were absolutely positioned at fixed insets
+     inside a box that this query shrank from 440px tall to 260px, so on a
+     phone they landed on top of each other — measured at 375px, two pairs
+     overlapped by 118x55px and 110x3px, worse at 390px and 414px, with
+     the 6s float drifting them another 18px into each other.
 
-     The four cards are absolutely positioned at fixed insets (s1 top
-     10/left 0, s3 bottom 90/left 20, and so on) inside a .hero-stats box
-     that the 980px query shrinks from 440px tall to 260px. Those insets
-     were measured against the taller box, so on a phone the cards land
-     on top of each other: measured at 375px, s1 and s3 overlap by
-     118x55px and s2 and s4 by 110x3px, and it is worse at 390px
-     (118x48 and 110x39) and at 414px (118x70 and 110x22). The 6s float
-     animation drifts them another 18px into each other. The "80+" card
-     was sitting half-hidden behind "$0 Upfront Cost" on every phone.
-
-     They stop floating and become a plain 2x2 grid, which cannot collide
-     at any width and shows all four stats at once. The float animation is
-     dropped with the positioning — it is a decoration that only makes
-     sense for free-floating cards, and animating four tiles in a fixed
-     grid would just wobble the layout.
+     The fix is the same and the reason it has to exist is the same: the
+     insets are measured against the desktop box, so the moment the box is
+     not that height they are wrong. Rather than re-measure three insets
+     against a second box, positioning stops entirely and a grid places
+     them, which cannot collide at any width. The float goes with it — it
+     is a decoration that only makes sense for free-floating cards.
 
      SCOPED TO 980px, NOT 760px. The first pass at this fixed it only up
      to 760px, which left the bug live across the whole 761-980 band —
      re-measured at 900px it was still producing two overlapping pairs.
-     980px is where `.hero-stats` is shrunk from 440px to 260px, so 980px
-     is where the mismatch between the box and the cards' fixed insets
-     begins, and that is the boundary the fix has to match. */
-  .hero-stats {
+     980px is where the hero drops to one column and the tile box stops
+     being 440px tall, so 980px is where the mismatch begins, and that is
+     the boundary the fix has to match. */
+  .hero-tiles {
     position: static;
     height: auto;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
     max-width: none;
   }
-  .stat-card {
+  .hero-tile {
     position: static;
+    width: auto;
     padding: 16px 18px;
     animation: none;
   }
   /* The desktop insets would still apply as static-position offsets on
      some engines; clear them so the grid is the only thing placing. */
-  .s1, .s2, .s3, .s4 { top: auto; right: auto; bottom: auto; left: auto; }
-  .stat-card .num { font-size: 1.7rem; }
-  .stat-card .lbl { font-size: 0.78rem; margin-top: 4px; }
+  .t1, .t2, .t3 { top: auto; right: auto; bottom: auto; left: auto; }
+  .hero-tile-name { font-size: 1.12rem; }
+  .hero-tile-sub { font-size: 0.78rem; margin-top: 4px; }
+  .hero-tile-cue { margin-top: 9px; }
+}
+/* One column on a phone: three tiles across at 375px leaves each about 105px
+   wide, which is narrower than the shortest sub-line. */
+@media (max-width: 620px) {
+  .hero-tiles { grid-template-columns: 1fr; }
 }
 
 /* ================================================================== */

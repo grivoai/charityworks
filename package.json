@@ -18,7 +18,12 @@
     "check:custom-pages": "tsx --conditions=react-server scripts/check-custom-pages.ts",
     "mfa": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/mfa-reset.ts",
     "check:uploads": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-uploads.ts",
-    "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
+    "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
+    "migrate:hero-tiles": "tsx --env-file-if-exists=.env.local scripts/migrate-hero-tiles.ts",
+    "migrate:merge-travel": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/migrate-merge-travel.ts",
+    "import:brochures": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/import-trip-brochures.ts",
+    "migrate:faq-video": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/add-faq-video.ts",
+    "create:newsletters": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-newsletters-page.ts"
   },
   "dependencies": {
     "@hcaptcha/react-hcaptcha": "^2.1.0",

@@ -2,7 +2,7 @@ import type { ContactPage } from "../types";
 
 export const contactPage: ContactPage = {
   slug: "contact",
-  heading: "Get Your Free Fundraising Plan",
+  heading: "Reserve this item for my event",
 
   seo: {
     title: "Get a Free Fundraising Plan for Your Nonprofit | CharityWorks",
@@ -17,7 +17,7 @@ export const contactPage: ContactPage = {
   },
 
   intro: {
-    eyebrow: "Get Your Free Fundraising Plan",
+    eyebrow: "Request an Item",
     title: "Ready to Supercharge Your Next Fundraiser?",
     lede: "Tell us about your event and we'll build a risk-free plan to help you raise more than ever.",
   },
@@ -82,8 +82,27 @@ export const contactPage: ContactPage = {
         required: false,
         width: "full",
       },
+      /**
+       * Not one of the six the pipeline reads, so it is filed under `custom`
+       * like any question the client adds in the admin — its key carries the
+       * `custom_` prefix for exactly that reason. The answers show up on the
+       * enquiry in the admin; n8n's fixed columns are untouched.
+       */
+      {
+        id: "field-auction-format",
+        name: "custom_auction_format",
+        label: "How will you use it?",
+        type: "checkboxes",
+        options: ["Raffle", "Silent Auction", "Live Auction"],
+        required: false,
+        width: "full",
+      },
     ],
-    submitLabel: "Get My Free Plan",
+    submitLabel: "Reserve This Item",
+    // Directly above the button, which is where the hesitation is. "Reserve"
+    // is a word that sounds like it costs something; this is the sentence that
+    // says it does not.
+    note: "No cost, no commitment — just lets us know you're interested.",
     // Points at the booking widget rendered directly beneath it rather than at
     // a wait. Promising a callback next to a live calendar invites people to
     // do nothing, which is the slower path for them and for us.

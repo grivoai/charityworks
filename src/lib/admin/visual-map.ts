@@ -127,6 +127,13 @@ export const PAGE_NOT_VISIBLE: Partial<Record<PageSlug, NotVisibleRule[]>> = {
   ],
   faqs: [
     {
+      pattern: "video.embedUrl",
+      reason:
+        "The video's player address. What is on the page is the player itself; " +
+        "which file it plays is a setting, in the same way a button's " +
+        "destination is.",
+    },
+    {
       pattern: "cta.href",
       reason: "Where the button goes. The button's words are clickable; its destination is not.",
     },
@@ -175,6 +182,13 @@ export const CATALOG_NOT_VISIBLE: NotVisibleRule[] = [
     reason:
       "A switch, not a piece of wording: it decides whether this category " +
       "describes what it contains or lists named lots.",
+  },
+  {
+    pattern: "groups.*.items.*.documentSlug",
+    reason:
+      "Which brochure the lot's download button opens. The button's words are " +
+      "the same on every lot; the file behind it is a setting, in the same way " +
+      "a button's destination is.",
   },
 ];
 
@@ -241,6 +255,15 @@ export const PAGE_DEFERRED: Partial<Record<PageSlug, NotVisibleRule[]>> = {
     {
       pattern: "form.errorMessage",
       reason: "Shown only if a submission fails to send.",
+    },
+  ],
+  faqs: [
+    {
+      pattern: "video.caption",
+      reason:
+        "A line under the video, for a credit or a note. The markup is there " +
+        "and it becomes clickable the moment one is written — no caption is " +
+        "set today, so there is nothing rendered to click.",
     },
   ],
   auctioneers: [

@@ -3,7 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAuctionCategories, getAuctionCategory } from "@/lib/content";
+import { getDocumentSlugs } from "@/lib/documents";
 import {
+  affordableTierNotice,
   availabilityNotice,
   generalCategoryNotice,
 } from "@/content/collections/auction-items";
@@ -14,6 +16,27 @@ import { Icon } from "@/components/Icon";
 import { at, editable } from "@/lib/editable";
 
 type Params = { slug: string };
+
+/**
+ * The affordable-tier mark.
+ *
+ * Carries its own visually-hidden label rather than relying on the legend
+ * above: the legend is one sentence at the top of a page of 27 lots, and a
+ * screen reader user arriving at a lot by heading navigation never passes it.
+ * The star is the only thing on a card that is not also said in words.
+ */
+function Star({ path, decorative }: { path?: string; decorative?: boolean }) {
+  return (
+    <span
+      className="cat-star"
+      aria-hidden={decorative || undefined}
+      {...(path ? editable(path) : {})}
+    >
+      <Icon name="star" />
+      {!decorative && <span className="sr-only">Affordable tier. </span>}
+    </span>
+  );
+}
 
 /** Every category is known at build time, so all of them prerender as static. */
 export async function generateStaticParams(): Promise<Params[]> {
@@ -53,7 +76,13 @@ export default async function AuctionCategoryRoute({
   const category = await getAuctionCategory(slug);
   if (!category) notFound();
 
-  const lotCount = category.groups.reduce((n, g) => n + g.items.length, 0);
+  /**
+   * Read once for the page rather than per lot, and used as a filter rather
+   * than trusted: a lot naming a document that has been deleted or renamed
+   * renders no button, instead of a button that opens a 404. Empty when there
+   * is no database, which is the fallback build.
+   */
+  const documents = await getDocumentSlugs();
 
   /**
    * Requests go to the one contact form, carrying only the lot's id. The label
@@ -89,10 +118,13 @@ export default async function AuctionCategoryRoute({
       <section className="pad" aria-labelledby="category-heading">
         <div className="wrap">
           <div className="center">
+            {/* No count. It used to read "14 lots in this category", which put a
+                number on the page that shrinks every time a lot sells out —
+                a smaller catalog is the last thing to advertise, and the
+                figure told a visitor nothing they could not see by scrolling.
+                Both kinds of category now use the same wording. */}
             <h2 className="section-title reveal" id="category-heading">
-              {category.generalOnly
-                ? "What's in this category"
-                : `${lotCount} lot${lotCount === 1 ? "" : "s"} in this category`}
+              What&rsquo;s in this category
             </h2>
             <p className="section-lede reveal" {...editable("intro")}>
               {category.intro}
@@ -102,6 +134,21 @@ export default async function AuctionCategoryRoute({
           {category.groups.map((group, groupIndex) => {
             const at_ = (...rest: Array<string | number>) =>
               at("groups", groupIndex, ...rest);
+            /**
+             * Per group, not per page: on a page of 27 lots under three
+             * headings, a key at the very top is off screen by the time anyone
+             * reaches the stars it explains.
+             *
+             * Still conditional on the group actually having one. A section of
+             * headline travel lots carries no stars and never will — the mark
+             * means the affordable tier — and a key above it would be pointing
+             * at a symbol that is not there. Written as a test of the lots
+             * rather than a list of which groups get one, so starring a lot in
+             * any group brings its key with it.
+             */
+            const groupHasAffordable = group.items.some(
+              (item) => item.affordableTier
+            );
             return (
             <div key={group.id} className="cat-group">
               {group.title && (
@@ -111,6 +158,20 @@ export default async function AuctionCategoryRoute({
                     <p {...editable(at_("blurb"))}>{group.blurb}</p>
                   )}
                 </div>
+              )}
+
+              {groupHasAffordable && (
+                <p className="cat-legend reveal">
+                  {/* Unmarked, unlike the stars on the cards. This one is the
+                      key to the symbol rather than any lot's setting, and the
+                      sentence beside it is a constant in the content module,
+                      not a field. Decorative for the same reason: the sentence
+                      it introduces already says what the star means, and a
+                      hidden "Affordable tier." in front of it would be read
+                      out twice over. */}
+                  <Star decorative />
+                  {affordableTierNotice}
+                </p>
               )}
 
               <ul className="cat-grid">
@@ -140,7 +201,12 @@ export default async function AuctionCategoryRoute({
                       </div>
                     )}
                     <div className="cat-card-body">
-                      <NameTag {...editable(at(lot, "name"))}>{item.name}</NameTag>
+                      <NameTag {...editable(at(lot, "name"))}>
+                        {item.affordableTier && (
+                          <Star path={at(lot, "affordableTier")} />
+                        )}
+                        {item.name}
+                      </NameTag>
                       <p {...editable(at(lot, "description"))}>
                         {item.description}
                       </p>
@@ -174,19 +240,49 @@ export default async function AuctionCategoryRoute({
 
                       {/* aria-label rather than the visible text alone: a page
                           of identical "Request this item" links is useless to
-                          anyone navigating by link list. */}
-                      <Link
-                        className="cat-card-request"
-                        href={requestHref(item.id)}
-                        aria-label={`${
-                          category.generalOnly ? "Ask about" : "Request"
-                        } ${item.name}`}
-                      >
-                        {category.generalOnly
-                          ? "Ask about these"
-                          : "Request this item"}
-                        <span aria-hidden="true"> →</span>
-                      </Link>
+                          anyone navigating by link list.
+
+                          "Reserve this item for my event" is the heading on the
+                          form these links lead to, and it stays there. Putting
+                          it on 27 cards as well would say it three times on one
+                          journey and make every card's action twice as long to
+                          read. */}
+                      <div className="cat-card-actions">
+                        <Link
+                          className="cat-card-request"
+                          href={requestHref(item.id)}
+                          aria-label={`${
+                            category.generalOnly ? "Ask about" : "Request"
+                          } ${item.name}`}
+                        >
+                          {category.generalOnly
+                            ? "Ask about these"
+                            : "Request this item"}
+                          <span aria-hidden="true"> →</span>
+                        </Link>
+
+                        {/* The brochure the client already hands out, on the
+                            permanent /d/ address rather than the storage URL —
+                            so replacing the file in the admin repoints this
+                            without touching the catalog. `target` because a
+                            PDF replacing the page loses the reader's place in
+                            a list of 27 lots. */}
+                        {item.documentSlug &&
+                          documents.has(item.documentSlug) && (
+                            <a
+                              className="cat-card-doc"
+                              href={`/d/${item.documentSlug}`}
+                              target="_blank"
+                              rel="noopener"
+                              aria-label={`Print or download the ${item.name} brochure (PDF, opens in a new tab)`}
+                            >
+                              <span className="inline-ico" aria-hidden="true">
+                                <Icon name="receipt" />
+                              </span>{" "}
+                              Print / Download this PDF
+                            </a>
+                          )}
+                      </div>
                     </div>
                   </li>
                   );

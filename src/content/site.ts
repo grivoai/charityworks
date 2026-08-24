@@ -18,7 +18,9 @@ import type { SiteContent } from "./types";
  */
 export const site: SiteContent = {
   name: "CharityWorks",
-  logo: { lead: "Charity", accent: "Works" },
+  // The domain, not the trading name: the header now reads "charityworks.net".
+  // `accent` is the half the header and footer print in gold.
+  logo: { lead: "charityworks", accent: ".net" },
   tagline: "The Complete Source For All Your Fundraising & Auction Needs",
   strapline: "Raise More. Risk Nothing.",
   description:
@@ -31,6 +33,9 @@ export const site: SiteContent = {
     { id: "nav-auctioneers", label: "Auctioneers", href: "/auctioneers" },
     { id: "nav-faqs", label: "FAQs", href: "/faqs" },
     { id: "nav-testimonials", label: "Testimonials", href: "/testimonials" },
+    // A custom page, not a built-in one — see scripts/create-newsletters-page.ts.
+    // It is in this list because the menu is site content either way.
+    { id: "nav-newsletters", label: "Newsletters", href: "/newsletters" },
     { id: "nav-contact", label: "Contact", href: "/contact" },
   ],
 

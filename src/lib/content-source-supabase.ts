@@ -85,6 +85,8 @@ interface ItemRow {
   image_height: number | null;
   note: string | null;
   details: unknown;
+  affordable_tier: boolean;
+  document_slug: string | null;
   position: number;
 }
 
@@ -307,6 +309,8 @@ export const supabaseContentSource: ContentSource = {
             ...(Array.isArray(item.details) && item.details.length > 0
               ? { details: item.details }
               : {}),
+            ...(item.affordable_tier ? { affordableTier: true } : {}),
+            ...(item.document_slug ? { documentSlug: item.document_slug } : {}),
           })),
         })),
         ...(category.general_only ? { generalOnly: true } : {}),

@@ -30,13 +30,43 @@ export const availabilityNotice =
 export const generalCategoryNotice =
   "Specific pieces vary by event. Contact us to confirm current availability and see what is in stock for your date.";
 
+/**
+ * The key for the gold star, shown at the top of any GROUP that has a starred
+ * lot in it and left off entirely where nothing is starred.
+ *
+ * Per group rather than once per page: the travel category runs to 27 lots
+ * under three headings, and a key at the top of that is off screen long before
+ * anyone reaches the stars further down.
+ *
+ * It says what the star means and nothing more. The site quotes no figure for
+ * any individual lot, so the star marks a tier and the opening bid stays a
+ * conversation — which is also what makes the mark durable as costs move.
+ */
+export const affordableTierNotice =
+  "marks our more affordable lots — ask us for the opening bid on any of them.";
+
 export const auctionItems: AuctionItem[] = [
+  /**
+   * One category, three groups. Affordable Vacations, Bucket List Trips and
+   * Meet & Greets were three categories and three pages; a visitor after a trip
+   * had to guess which of the three held it, and the two smaller ones held 11
+   * and 2 lots. They are groups of this one now.
+   *
+   * The three sets of copy are kept rather than replaced: each group carries
+   * the heading and the introduction its category had, so nothing the client
+   * wrote was thrown away to make room for a merged page. What is new is only
+   * the category-level title, blurb and heading, which had to cover all three.
+   *
+   * `vacations` stays the slug. It is the one of the three that was already
+   * linked from the legacy redirects in next.config.ts, and a slug is the last
+   * thing to change when the point of the exercise is fewer broken paths.
+   */
   {
     id: "item-vacations",
     slug: "vacations",
     icon: "palm-tree",
-    title: "Affordable Vacations",
-    blurb: "Crowd-pleasing getaways priced to sell and stack profit.",
+    title: "Travel & Experiences",
+    blurb: "Crowd-pleasing getaways, bucket-list escapes and celebrity access.",
     span: "wide",
     image: {
       // Chosen because it carries no burned-in "$1500 or Less" starburst.
@@ -45,47 +75,43 @@ export const auctionItems: AuctionItem[] = [
       src: "/images/catalog/trips/trip_24_4night-getaway.jpg",
       alt: "Beachfront luxury resort seen from the sea, representing the vacation packages available for charity auctions",
     },
-    heading: "Vacation Packages for Charity Auctions",
+    heading: "Travel & Experiences for Charity Auctions",
     intro:
       "Travel is the most reliable earner at almost every fundraiser: it appeals to a wide range of guests, photographs beautifully in a catalog, and can be sold more than once in the same night. These packages are priced so there is margin from the opening bid.",
     seo: {
-      title: "Vacation Packages for Charity Auctions & Galas | CharityWorks",
+      title: "Travel & Experience Packages for Charity Auctions | CharityWorks",
       description:
-        "Consignment vacation packages for nonprofit auctions — cruises, resort stays, Disney, Tahoe and Las Vegas. No upfront cost, and you only pay for what sells.",
+        "Consignment travel and experience lots for nonprofit auctions — cruises, resort stays, Disney, Tahoe, safaris, The Sphere and celebrity meet and greets. No upfront cost, and you only pay for what sells.",
       targetTerms: [
         "vacation packages for charity auctions",
         "travel auction items for nonprofits",
+        "live auction travel packages",
         "gala auction ideas",
       ],
       path: "/auction-items/vacations",
     },
-    groups: [{ id: "vacations-all", items: vacationItems }],
-  },
-  {
-    id: "item-bucket-list",
-    slug: "bucket-list-trips",
-    icon: "plane",
-    title: "Bucket List Trips",
-    blurb: "Once-in-a-lifetime escapes that ignite a bidding war.",
-    image: {
-      src: "/images/catalog/trips/trip_14_3-day-family-4pack-park-hopper-tickets.jpg",
-      alt: "Lions and elephants photographed on an African safari, representing bucket list travel packages for nonprofit fundraisers",
-    },
-    heading: "Bucket List Travel for Nonprofit Fundraisers",
-    intro:
-      "Headline travel lots exist to anchor your live auction. They set the tone early, give your auctioneer something to build the room around, and raise the ceiling for everything that follows.",
-    seo: {
-      title: "Bucket List Travel Auction Packages for Nonprofits | CharityWorks",
-      description:
-        "Headline auction lots for nonprofit live auctions — African safari, Atlantis Bahamas, The Sphere Las Vegas, Tuscany and more, on risk-free consignment.",
-      targetTerms: [
-        "live auction travel packages",
-        "bucket list auction items",
-        "charity auction items",
-      ],
-      path: "/auction-items/bucket-list-trips",
-    },
-    groups: [{ id: "bucket-all", items: bucketListItems }],
+    groups: [
+      {
+        id: "vacations-all",
+        title: "Affordable Vacations",
+        blurb: "Crowd-pleasing getaways priced to sell and stack profit.",
+        items: vacationItems,
+      },
+      {
+        id: "bucket-all",
+        title: "Bucket List Trips",
+        blurb:
+          "Headline travel lots exist to anchor your live auction. They set the tone early, give your auctioneer something to build the room around, and raise the ceiling for everything that follows.",
+        items: bucketListItems,
+      },
+      {
+        id: "meet-all",
+        title: "Meet & Greets",
+        blurb:
+          "Experiences have no retail price a bidder can look up, which is exactly why they perform. When two people in the room both want the same access, the bidding rarely stops where you expect.",
+        items: meetGreetItems,
+      },
+    ],
   },
   {
     id: "item-signed-guitars",
@@ -230,33 +256,6 @@ export const auctionItems: AuctionItem[] = [
         ],
       },
     ],
-  },
-  {
-    id: "item-meet-greets",
-    slug: "meet-and-greets",
-    icon: "mic",
-    title: "Meet & Greets",
-    blurb: "Priceless access bidders pay whatever it takes for.",
-    image: {
-      // Also chosen for having no burned-in price starburst.
-      src: "/images/catalog/trips/trip_20_food-and-beverages-included.jpg",
-      alt: "Andrea Bocelli in Concert promotional poster, representing the meet and greet experiences available for charity auctions",
-    },
-    heading: "Meet & Greet Experiences for Fundraisers",
-    intro:
-      "Experiences have no retail price a bidder can look up, which is exactly why they perform. When two people in the room both want the same access, the bidding rarely stops where you expect.",
-    seo: {
-      title: "Celebrity Meet & Greet Auction Experiences | CharityWorks",
-      description:
-        "Meet and greet auction lots for nonprofits, including Golden State Warriors tickets and Andrea Bocelli backstage access, on risk-free consignment.",
-      targetTerms: [
-        "meet and greet auction package",
-        "celebrity experiences for charity auctions",
-        "gala auction ideas",
-      ],
-      path: "/auction-items/meet-and-greets",
-    },
-    groups: [{ id: "meet-all", items: meetGreetItems }],
   },
   {
     id: "item-gold-albums",

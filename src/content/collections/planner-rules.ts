@@ -29,14 +29,25 @@ import type { PlannerQuestion } from "../types";
 /** Category ids the planner can recommend. */
 export const PLANNER_CATEGORIES = [
   "item-vacations",
-  "item-bucket-list",
   "item-signed-guitars",
   "item-memorabilia",
   "item-jewelry",
   "item-handbags",
-  "item-meet-greets",
   "item-gold-albums",
 ] as const;
+
+/**
+ * `item-bucket-list` and `item-meet-greets` are gone from every list and every
+ * weight below. They are not retired lots — all 13 of them are still on the
+ * site, inside `item-vacations`, which is now one page with three groups. A
+ * quiz that recommended a category the catalog no longer serves would send
+ * someone to a redirect.
+ *
+ * Their weights were folded in by MAX rather than by sum. A weight answers "how
+ * well does this category fit", and the merged category fits at least as well
+ * as its best part; adding them together would have inflated it against the
+ * categories it competes with, which answers a different question.
+ */
 
 /**
  * `item-taylor-swift-guitar` is deliberately absent. It is an SEO landing page
@@ -59,9 +70,7 @@ export const PLANNER_TIE_BREAK = [
   "item-gold-albums",
   "item-signed-guitars",
   "item-jewelry",
-  "item-bucket-list",
   "item-handbags",
-  "item-meet-greets",
 ] as const;
 
 /** How many categories the results screen shows. */
@@ -138,7 +147,6 @@ export const plannerQuestions: PlannerQuestion[] = [
         weights: {
           "item-vacations": 1,
           "item-signed-guitars": 1,
-          "item-bucket-list": 1,
         },
       },
       {
@@ -146,8 +154,7 @@ export const plannerQuestions: PlannerQuestion[] = [
         label: "500+",
         summaryLabel: "500+ guests",
         weights: {
-          "item-bucket-list": 2,
-          "item-meet-greets": 1,
+          "item-vacations": 2,
           "item-signed-guitars": 1,
         },
       },
@@ -165,8 +172,10 @@ export const plannerQuestions: PlannerQuestion[] = [
         label: "Live auction",
         summaryLabel: "Live auction",
         weights: {
-          "item-bucket-list": 3,
-          "item-meet-greets": 3,
+          // 3 because the headline travel lots and the celebrity access that
+          // earned this are inside this category now, not because getaways as
+          // a whole became live-auction lots.
+          "item-vacations": 3,
           "item-signed-guitars": 2,
           // Leans live, not silent. The reverse used to be true here, on the
           // strength of a description of memorabilia as breadth to fill a
@@ -199,14 +208,12 @@ export const plannerQuestions: PlannerQuestion[] = [
          * These keep both the headline lots and the breadth in play.
          */
         weights: {
-          "item-bucket-list": 2,
-          "item-meet-greets": 2,
+          "item-vacations": 2,
           "item-memorabilia": 2,
           "item-jewelry": 2,
           "item-handbags": 2,
           "item-signed-guitars": 1,
           "item-gold-albums": 1,
-          "item-vacations": 1,
         },
       },
       {
@@ -245,7 +252,6 @@ export const plannerQuestions: PlannerQuestion[] = [
           "item-signed-guitars": 2,
           "item-jewelry": 2,
           "item-handbags": 2,
-          "item-meet-greets": 1,
         },
       },
       {
@@ -255,9 +261,7 @@ export const plannerQuestions: PlannerQuestion[] = [
         weights: {
           "item-signed-guitars": 3,
           "item-vacations": 2,
-          "item-bucket-list": 2,
           "item-memorabilia": 2,
-          "item-meet-greets": 2,
           "item-gold-albums": 2,
           "item-jewelry": 1,
         },
@@ -267,8 +271,7 @@ export const plannerQuestions: PlannerQuestion[] = [
         label: "$5,000+",
         summaryLabel: "Top lots $5,000+",
         weights: {
-          "item-bucket-list": 3,
-          "item-meet-greets": 3,
+          "item-vacations": 3,
           "item-signed-guitars": 2,
           "item-memorabilia": 1,
           "item-gold-albums": 1,
@@ -282,12 +285,10 @@ export const plannerQuestions: PlannerQuestion[] = [
            neither helps nor hurts a category's chances. */
         weights: {
           "item-vacations": 1,
-          "item-bucket-list": 1,
           "item-signed-guitars": 1,
           "item-memorabilia": 1,
           "item-jewelry": 1,
           "item-handbags": 1,
-          "item-meet-greets": 1,
           "item-gold-albums": 1,
         },
       },
@@ -304,7 +305,7 @@ export const plannerQuestions: PlannerQuestion[] = [
         id: "travel",
         label: "Travel & experiences",
         summaryLabel: "Travel & experiences",
-        weights: { "item-vacations": 3, "item-bucket-list": 3 },
+        weights: { "item-vacations": 3 },
       },
       {
         id: "music",
@@ -328,7 +329,11 @@ export const plannerQuestions: PlannerQuestion[] = [
         id: "celebrity",
         label: "Celebrity access",
         summaryLabel: "Celebrity access",
-        weights: { "item-meet-greets": 3, "item-signed-guitars": 1 },
+        // Meet & Greets is a group inside the travel category now, so
+        // celebrity access scores it. The recommendation card will say
+        // "Travel & Experiences" for an answer about celebrities, which is
+        // accurate — that is where the Bocelli and Warriors lots live.
+        weights: { "item-vacations": 3, "item-signed-guitars": 1 },
       },
       {
         id: "unsure",

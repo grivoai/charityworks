@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { EMBED_HOSTS, embedProblem, isAllowedEmbed } from "@/lib/embeds";
+
 /**
  * Runtime schema for the CharityWorks content model.
  *
@@ -149,6 +151,24 @@ export const categoryItemSchema = z.object({
       "Verified specifics, shown as a list on the card. Leave empty until the " +
         "client supplies them — the card simply renders without the block."
     ),
+  /**
+   * Optional and omitted when false, exactly as `generalOnly` is on the
+   * category. The column is NOT NULL DEFAULT FALSE, so the row always has an
+   * answer; the document only carries the key when the answer is yes.
+   */
+  affordableTier: z
+    .boolean()
+    .optional()
+    .describe(
+      "Puts a gold star beside this lot, marking it as one of the more " +
+        "affordable ones. Still no figure on the page — the star says which " +
+        "tier it is in, and the opening bid stays a conversation."
+    ),
+  documentSlug: optionalText.describe(
+    "The address of this lot's brochure in Documents — the part after /d/, " +
+      "e.g. 'dream-vacation-getaway'. Adds a Print / Download button to the " +
+      "card. A name that matches no document simply shows no button."
+  ),
 });
 
 /**
@@ -275,6 +295,7 @@ export const formFieldTypeSchema = z.enum([
   "tel",
   "date",
   "textarea",
+  "checkboxes",
 ]);
 
 export const formFieldSchema = z.object({
@@ -290,6 +311,21 @@ export const formFieldSchema = z.object({
   width: z
     .enum(["half", "full"])
     .describe("Half sits two-per-row on desktop; full spans the form."),
+  /**
+   * Only meaningful for `checkboxes`. Optional rather than a separate schema
+   * per type: a discriminated union here would have to be discriminated in the
+   * field tree, the coercer and the renderer as well, for one question.
+   *
+   * A `checkboxes` field with no options renders nothing at all, which is the
+   * honest outcome — there is no box to tick.
+   */
+  options: z
+    .array(text)
+    .optional()
+    .describe(
+      "The tick boxes offered, one per line. Only used when the kind above is " +
+        "'checkboxes'. Whatever is ticked is what arrives with the enquiry."
+    ),
 });
 
 export const siteContentSchema = z.object({
@@ -356,7 +392,31 @@ export const homePageSchema = z.object({
     sub: text,
     primaryCta: ctaRefSchema,
     secondaryCta: ctaRefSchema,
-    stats: z.array(z.object({ id: text, value: text, label: text })),
+    /**
+     * The one figure left in the hero as a figure. The other three cards used
+     * to be numbers too; they are links to real pages now, because a visitor
+     * who wants guitars is better served by a way in than by a count of them.
+     */
+    badge: z.object({
+      value: text.describe('The figure itself, e.g. "30+".'),
+      label: text.describe('What it counts, e.g. "Years Experience".'),
+    }),
+    /**
+     * The floating cards on the right of the hero. Each is a way straight into
+     * a page rather than a statistic, so `href` is required here — a tile that
+     * goes nowhere is a card the visitor clicks and nothing happens.
+     */
+    tiles: z.array(
+      z.object({
+        id: text,
+        icon: text.describe(
+          "Icon name from the site's set, e.g. 'guitar', 'palm-tree', 'gavel'."
+        ),
+        label: text.describe("The card's own line, e.g. 'Hand-Signed Guitars'."),
+        sub: text.describe("The smaller line beneath it."),
+        href: text.describe("Where the card goes. A path like /auction-items/vacations."),
+      })
+    ),
   }),
   why: z.object({ header: sectionHeaderSchema, items: z.array(valuePropSchema) }),
   process: z.object({
@@ -449,6 +509,31 @@ export const faqsPageSchema = z.object({
   slug: z.literal("faqs"),
   intro: sectionHeaderSchema,
   faqs: z.array(faqItemSchema),
+  /**
+   * Optional, which is the whole reason this needed no migration for the other
+   * seven pages — and it stays optional so the block can be taken off the page
+   * by clearing it rather than by a deploy.
+   *
+   * `embedUrl` is checked against the host list in `lib/embeds.ts` on save AND
+   * again where it renders. It is the one editable field on this site that
+   * decides what runs in a frame on the domain, so it does not get to be
+   * free text with a hopeful description.
+   */
+  video: z
+    .object({
+      heading: text,
+      lede: optionalText,
+      embedUrl: text
+        .refine(isAllowedEmbed, { message: embedProblem("") ?? "" })
+        .describe(
+          "The player address, from " +
+            EMBED_HOSTS +
+            ". For Google Drive that is the file address ending in /preview, " +
+            "not /view — /view shows a sign-in wall inside a frame."
+        ),
+      caption: optionalText.describe("A line under the player. Optional."),
+    })
+    .optional(),
   cta: ctaRefSchema,
 });
 
@@ -467,6 +552,14 @@ export const contactPageSchema = z.object({
   form: z.object({
     fields: z.array(formFieldSchema),
     submitLabel: text,
+    /**
+     * Optional, so a stored document written before this field existed still
+     * parses — there is no migration to run for the pages that do not set it.
+     */
+    note: optionalText.describe(
+      "A short line above the send button, for whatever someone hesitating " +
+        "over it needs to hear. Leave empty for no line."
+    ),
     successMessage: text.describe(
       "Shown after a successful submission, above the booking widget."
     ),
