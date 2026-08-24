@@ -85,7 +85,7 @@ jobs:
   # ---- Checks that read the live database ----
   #
   # Split into its own job so its absence is visible rather than looking like
-  # the checks above simply passed. It is skipped until the two secrets exist.
+  # the checks above simply passed.
   #
   # WHY THIS IS WORTH TURNING ON. The failure it catches is the one that already
   # happened here: content migrations had run against production, so the live
@@ -97,8 +97,19 @@ jobs:
   # WHAT IT COSTS. `SUPABASE_SERVICE_ROLE_KEY` bypasses row-level security, and
   # this repository is public. Pull requests from forks are not given secrets,
   # so the exposure is to anyone who can push a branch or a workflow here — a
-  # smaller set, but not nobody. That is a judgement for a person to make, which
-  # is why this is written to wait rather than to assume.
+  # smaller set, but not nobody.
+  #
+  # IT FAILS WHEN THE CREDENTIALS ARE ABSENT, and that is deliberate. This job is
+  # a required status check, so the alternative — skipping quietly, which is what
+  # it used to do — means a rotated or deleted key turns it green while it tests
+  # nothing at all. That is the same shape as the two faults this pipeline was
+  # built after: an ignored build step that reported success without building,
+  # and a cache key that reported success while serving a stale database. A
+  # required check that cannot tell you it did nothing is worse than no check.
+  #
+  # The cost of this choice: a pull request from a fork gets no secrets, so it
+  # will fail here and cannot be merged as-is. Push the branch to this
+  # repository and open the pull request from there instead.
   database:
     name: database checks
     runs-on: ubuntu-latest
@@ -114,21 +125,24 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Look for the credentials
-        id: creds
+      # Nothing below can do its job without these, so the run stops here rather
+      # than continuing into steps that would skip and leave the job green.
+      # Only the emptiness of each value is ever tested or printed.
+      - name: Require the credentials
         env:
           URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          if [ -n "$URL" ] && [ -n "$KEY" ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Database checks skipped::Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY as repository secrets to run check:site, check:catalog, check:uploads and check:visual against the live content."
+          missing=""
+          [ -n "$URL" ] || missing="$missing NEXT_PUBLIC_SUPABASE_URL"
+          [ -n "$KEY" ] || missing="$missing SUPABASE_SERVICE_ROLE_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error title=Database credentials missing::Missing repository secret(s):$missing — so check:site, check:catalog, check:uploads and check:visual cannot run against the live content. This job fails rather than passing without them, because it is a required status check. Add them under Settings > Secrets and variables > Actions."
+            exit 1
           fi
+          echo "Both credentials are present; the checks below will read the live database."
 
       - name: Site details, catalog and uploads
-        if: steps.creds.outputs.present == 'true'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -141,7 +155,6 @@ jobs:
       # rendered page and confirms every editable field is marked up, so there
       # has to be a page to read.
       - name: Preview field map
-        if: steps.creds.outputs.present == 'true'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
