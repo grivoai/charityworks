@@ -16,6 +16,7 @@
     "check:mfa": "tsx --conditions=react-server scripts/check-mfa.ts",
     "check:admin-nav": "tsx --conditions=react-server scripts/check-admin-nav.ts",
     "check:custom-pages": "tsx --conditions=react-server scripts/check-custom-pages.ts",
+    "check:build-key": "tsx --conditions=react-server scripts/check-build-key.ts",
     "mfa": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/mfa-reset.ts",
     "check:uploads": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-uploads.ts",
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",

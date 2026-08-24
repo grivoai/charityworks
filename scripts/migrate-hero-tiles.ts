@@ -32,9 +32,9 @@
  * left alone, so running it twice is not a second migration.
  *
  * THIS DOES NOT REVALIDATE. The public pages are static and the cache is keyed
- * on the deployed commit (see `BUILD_KEY` in lib/content.ts). This runs
- * alongside a deploy of the code that reads the new shape; the deploy is what
- * puts it on the site.
+ * per deployment (see `BUILD_KEY` in lib/build-key.ts). This runs alongside a
+ * deploy of the code that reads the new shape; the deploy is what puts it on
+ * the site.
  */
 import { createClient } from "@supabase/supabase-js";
 

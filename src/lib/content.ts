@@ -11,6 +11,7 @@ import type {
   SiteContent,
 } from "@/content/types";
 import { getContentSource } from "@/lib/content-source";
+import { BUILD_KEY } from "@/lib/build-key";
 import { CATALOG_TAG, PAGES_TAG, SITE_TAG, pageTag } from "@/lib/content-tags";
 
 /**
@@ -40,18 +41,6 @@ import { CATALOG_TAG, PAGES_TAG, SITE_TAG, pageTag } from "@/lib/content-tags";
  * without anyone maintaining a list of which routes those are. See
  * `content-tags.ts` for why that list was the wrong thing to maintain.
  */
-
-/**
- * Part of every cache key, so a new deployment never reads another
- * deployment's cached content.
- *
- * Vercel restores `.next/cache` between builds, and a content edit changes no
- * source file — so without this, a build can be handed the database as it
- * looked at some earlier deploy. Keying on the commit means a deploy of new
- * code starts from a cold cache and reads Postgres for real.
- */
-const BUILD_KEY =
-  process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.NEXT_BUILD_ID ?? "local";
 
 /* ------------------------------------------------------------------ */
 /* Site globals                                                        */

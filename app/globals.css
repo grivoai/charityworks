@@ -334,9 +334,21 @@ section { position: relative; }
    contrast it is supposed to protect. Tinting toward the hero navy instead
    darkens locally, under the text only, which is what lets the scrim above stay
    light everywhere else. The border and blur still read as glass. */
-.hero-tiles { position: relative; height: 440px; align-self: center; }
+/* A column with a gap, not three cards placed by hand.
+   WHAT THIS REPLACES AND WHY. The cards used to be absolutely positioned at
+   three measured insets inside a fixed 440px box — 0-150, 152-300, 300-440 —
+   with a comment promising no two could meet "even at the extremes of the 18px
+   float". That arithmetic was true when a card was ~148px tall. Adding the
+   "Browse" cue took them to 161px, three of which are 483px and cannot fit in
+   440px at all, so the bottom two overlapped by up to 52px and the middle
+   card's cue was covered. Nothing failed; the numbers just quietly stopped
+   describing the cards.
+   A gap cannot go stale that way. The height follows the content, and the only
+   number left to keep true is the one below, which is stated against the float
+   rather than against a card. */
+.hero-tiles { display: flex; flex-direction: column; gap: 26px; align-self: center; }
 .hero-tile {
-  position: absolute; width: min(290px, 100%); padding: 20px 24px;
+  flex: none; width: min(290px, 100%); padding: 20px 24px;
   border-radius: var(--radius); color: #fff;
   background: rgba(7,21,46,0.45); border: 1px solid rgba(255,255,255,0.22);
   backdrop-filter: blur(16px) saturate(140%); box-shadow: 0 20px 50px rgba(0,0,0,0.3);
@@ -356,11 +368,12 @@ section { position: relative; }
 .hero-tile-sub { display: block; font-size: 0.82rem; color: rgba(255,255,255,0.76); margin-top: 5px; }
 .hero-tile-cue { display: block; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.04em; color: var(--gold-bright); margin-top: 12px; opacity: 0.85; transition: opacity 0.3s var(--ease); }
 .hero-tile:hover .hero-tile-cue { opacity: 1; }
-/* Three insets inside the 440px box, spaced so no two cards can meet even at
-   the extremes of the 18px float: 0-150, 152-300, 300-440. */
-.t1 { top: 0; left: 0; animation-delay: 0s; }
-.t2 { top: 152px; right: 0; animation-delay: -2s; }
-.t3 { bottom: 0; left: 26px; animation-delay: -4s; }
+/* Staggered across the column rather than down it. The float only ever travels
+   upward, so a card can close at most 18px of the 26px gap above it — 8px of
+   clearance at the worst point of the cycle, whatever the cards grow to hold. */
+.t1 { align-self: flex-start; animation-delay: 0s; }
+.t2 { align-self: flex-end; animation-delay: -2s; }
+.t3 { align-self: flex-start; margin-left: 26px; animation-delay: -4s; }
 @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-18px);} }
 
 /* ============ HOME FIRST-LOAD INTRO ============
@@ -2105,22 +2118,21 @@ body.nav-open .nav {
      being 440px tall, so 980px is where the mismatch begins, and that is
      the boundary the fix has to match. */
   .hero-tiles {
-    position: static;
-    height: auto;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     max-width: none;
   }
   .hero-tile {
-    position: static;
     width: auto;
     padding: 16px 18px;
     animation: none;
   }
-  /* The desktop insets would still apply as static-position offsets on
-     some engines; clear them so the grid is the only thing placing. */
-  .t1, .t2, .t3 { top: auto; right: auto; bottom: auto; left: auto; }
+  /* The desktop stagger is a flex-column idea and means nothing in a grid —
+     `align-self` would still pull each card to one edge of its own row, and the
+     indent would push the third out of its column. Clear both so the grid is
+     the only thing placing. */
+  .t1, .t2, .t3 { align-self: auto; margin-left: 0; }
   .hero-tile-name { font-size: 1.12rem; }
   .hero-tile-sub { font-size: 0.78rem; margin-top: 4px; }
   .hero-tile-cue { margin-top: 9px; }

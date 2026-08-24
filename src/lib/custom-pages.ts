@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { customPageSchema, type CustomPage } from "@/content/schema";
 import { getServiceClient } from "@/lib/supabase";
 import { isDatabaseConfigured } from "@/lib/content-source";
+import { BUILD_KEY } from "@/lib/build-key";
 import { CUSTOM_PAGES_TAG, customPageTag } from "@/lib/content-tags";
 
 /**
@@ -21,8 +22,6 @@ import { CUSTOM_PAGES_TAG, customPageTag } from "@/lib/content-tags";
  * So this goes straight to the database and answers "none" itself when there is
  * no database, which is the same outcome by a route that says what it means.
  */
-
-const BUILD_KEY = process.env.VERCEL_DEPLOYMENT_ID ?? "dev";
 
 /** What the nav, the sitemap and the admin list need — not the whole document. */
 export interface CustomPageSummary {
