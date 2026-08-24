@@ -1,0 +1,155 @@
+# The gate on main.
+#
+# This exists because production and git silently diverged once already: every
+# git-triggered build was being skipped, deploys were run by hand from a laptop
+# with uncommitted changes, and the branch that was supposed to be the source of
+# truth drifted far enough that it would no longer build against the live
+# database. Nothing reported a problem, because nothing was checking.
+#
+# `pull_request` and not `pull_request_target`. This repository is public, so
+# the difference matters: `pull_request_target` runs the BASE branch's workflow
+# with write permissions and secrets available to code from the fork, which is
+# how a pull request from a stranger becomes a credential leak.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A second push to the same branch makes the first run irrelevant. Cancelling it
+# keeps the queue honest about what is actually being tested.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only. Nothing here writes to the repository, and a token that cannot
+# write is one that cannot be turned against it.
+permissions:
+  contents: read
+
+jobs:
+  # The job name is the context branch protection matches on. Renaming it
+  # silently detaches the rule from the check, so the rule stays green while
+  # nothing runs — change one and you must change the other.
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `ci` rather than `install`: it installs exactly the lockfile and fails
+      # if package.json and the lock have drifted, which is a thing worth
+      # failing on rather than quietly resolving.
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # ---- Checks that need nothing but the repository ----
+      # Run as separate steps so a failure names itself in the log rather than
+      # arriving as "a script exited 1".
+      - name: Content parity
+        run: npm run check:content
+
+      - name: Admin forms
+        run: npm run check:admin
+
+      - name: Two-factor
+        run: npm run check:mfa
+
+      - name: Admin navigation
+        run: npm run check:admin-nav
+
+      - name: Custom pages
+        run: npm run check:custom-pages
+
+      - name: Content cache key
+        run: npm run check:build-key
+
+      # Without Supabase configured this builds from the seed modules in
+      # src/content, which still exercises every route, every component and the
+      # schemas the seed is parsed through. What it cannot see is the live
+      # database — that is what the gated job below is for.
+      - name: Build
+        run: npm run build
+
+  # ---- Checks that read the live database ----
+  #
+  # Split into its own job so its absence is visible rather than looking like
+  # the checks above simply passed. It is skipped until the two secrets exist.
+  #
+  # WHY THIS IS WORTH TURNING ON. The failure it catches is the one that already
+  # happened here: content migrations had run against production, so the live
+  # `home` record no longer had `hero.stats`, while the committed schema still
+  # required it. Deploying main would have failed the build, and nothing in the
+  # repository could have told you — the seed content and the schema agreed with
+  # each other perfectly. Only a check that reads the real database sees it.
+  #
+  # WHAT IT COSTS. `SUPABASE_SERVICE_ROLE_KEY` bypasses row-level security, and
+  # this repository is public. Pull requests from forks are not given secrets,
+  # so the exposure is to anyone who can push a branch or a workflow here — a
+  # smaller set, but not nobody. That is a judgement for a person to make, which
+  # is why this is written to wait rather than to assume.
+  database:
+    name: database checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Look for the credentials
+        id: creds
+        env:
+          URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -n "$URL" ] && [ -n "$KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Database checks skipped::Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY as repository secrets to run check:site, check:catalog, check:uploads and check:visual against the live content."
+          fi
+
+      - name: Site details, catalog and uploads
+        if: steps.creds.outputs.present == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm run check:site
+          npm run check:catalog
+          npm run check:uploads
+
+      # The only check that needs the site actually running: it reads each
+      # rendered page and confirms every editable field is marked up, so there
+      # has to be a page to read.
+      - name: Preview field map
+        if: steps.creds.outputs.present == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm run build
+          npm run start &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:3000/; then break; fi
+            sleep 1
+          done
+          npm run check:visual
