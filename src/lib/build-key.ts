@@ -35,7 +35,7 @@ type Env = Record<string, string | undefined>;
 export function resolveBuildKey(env: Env = process.env): string {
   /* `||` and not `??`: an unset Vercel system variable can arrive as an empty
      string, which is absent for our purposes but not nullish. */
-  const perDeployment = env.VERCEL_DEPLOYMENT_ID || env.VERCEL_URL;
+  const perDeployment = env.VERCEL_GIT_COMMIT_SHA || env.VERCEL_DEPLOYMENT_ID || env.VERCEL_URL;
   if (perDeployment) return perDeployment;
 
   if (env.VERCEL) {
