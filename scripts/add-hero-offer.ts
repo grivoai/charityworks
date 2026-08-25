@@ -9,7 +9,11 @@
  * editing `src/content/pages/home.ts` alone changes the seed fixture and not
  * the site.
  *
- * WHY THE VIDEO IS TOUCHED HERE TOO. `hero.video` was written into this
+ * SUPERSEDED IN PART. The video described below has since moved to
+ * /auction-info and `hero.video` no longer exists in the schema — see
+ * `move-video-to-auction-info.ts`. The carry-over here is now a no-op.
+ *
+ * WHY THE VIDEO WAS TOUCHED HERE. `hero.video` was written into this
  * document when the video moved off the FAQs page, but the hero schema had no
  * `video` field at the time — so every read parsed the document, silently
  * stripped the key it did not know, and handed the page a hero with no video.

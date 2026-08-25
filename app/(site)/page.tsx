@@ -9,7 +9,6 @@ import { TestimonialMarquee } from "@/components/TestimonialMarquee";
 import { ContactForm } from "@/components/ContactForm";
 import { ContactChannels } from "@/components/ContactChannels";
 import { HeroSlideshow } from "@/components/HeroSlideshow";
-import { HeroVideo } from "@/components/HeroVideo";
 import { ItemMarquee } from "@/components/ItemMarquee";
 import { Icon } from "@/components/Icon";
 import { editable } from "@/lib/editable";
@@ -116,19 +115,6 @@ export default async function HomePage() {
             <div className="hero-btns">
               <Cta cta={hero.primaryCta} path="hero.primaryCta" />
               <Cta cta={hero.secondaryCta} path="hero.secondaryCta" />
-              {/* Third control in the row, beside "How It Works", because it
-                  answers the same question that button does — this one in two
-                  minutes of video rather than a page. Renders nothing at all
-                  when the record has no video. */}
-              {hero.video && (
-                <HeroVideo
-                  heading={hero.video.heading}
-                  lede={hero.video.lede}
-                  embedUrl={hero.video.embedUrl}
-                  linkLabel={hero.video.linkLabel}
-                  path="hero.video"
-                />
-              )}
             </div>
 
             {/* ---- The free donor incentive, promoted out of the fold ----

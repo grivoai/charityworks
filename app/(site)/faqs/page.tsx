@@ -54,16 +54,16 @@ export default async function FaqsRoute() {
               and an iframe is not a field to be trusting about. A refused URL
               renders no player rather than a broken frame. */}
           {page.video && isAllowedEmbed(page.video.embedUrl) && (
-            <section className="faq-video reveal" aria-labelledby="video-heading">
+            <section className="page-video reveal" aria-labelledby="video-heading">
               <h2 id="video-heading" {...editable("video.heading")}>
                 {page.video.heading}
               </h2>
               {page.video.lede && (
-                <p className="faq-video-lede" {...editable("video.lede")}>
+                <p className="page-video-lede" {...editable("video.lede")}>
                   {page.video.lede}
                 </p>
               )}
-              <div className="faq-video-frame">
+              <div className="page-video-frame">
                 {/* `title` is the frame's accessible name — without it a screen
                     reader announces "frame" and nothing else. `loading="lazy"`
                     because the player sits below a page of questions and should
@@ -77,7 +77,7 @@ export default async function FaqsRoute() {
                 />
               </div>
               {page.video.caption && (
-                <p className="faq-video-caption" {...editable("video.caption")}>
+                <p className="page-video-caption" {...editable("video.caption")}>
                   {page.video.caption}
                 </p>
               )}

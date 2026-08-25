@@ -50,6 +50,14 @@ export const auctionInfoPage: AuctionInfoPage = {
     body: "Let guests bid right from their phones for higher engagement and bigger totals.",
   },
 
+  // Sits after the event formats and above the closing call to action.
+  video: {
+    heading: "How donation matching works",
+    lede: "A short walkthrough of matching gifts, and how they lift what a paddle raise brings in.",
+    embedUrl:
+      "https://drive.google.com/file/d/1nLCpPgzkKCQ6MxfT9-frUY28noxADT8K/preview",
+  },
+
   cta: {
     id: "cta-auction-info",
     label: "Get Your Free Fundraising Plan",

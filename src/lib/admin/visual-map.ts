@@ -88,8 +88,10 @@ export const PAGE_NOT_VISIBLE: Partial<Record<PageSlug, NotVisibleRule[]>> = {
       pattern: "closing.cta.label",
       reason: "The closing section ends with the enquiry form, not a button.",
     },
+  ],
+  "auction-info": [
     {
-      pattern: "hero.video.embedUrl",
+      pattern: "video.embedUrl",
       reason:
         "The player's address. It is what the frame loads, never text on the " +
         "page, so there is nothing to click — the form is the way in.",
@@ -261,6 +263,15 @@ export const PAGE_DEFERRED: Partial<Record<PageSlug, NotVisibleRule[]>> = {
     {
       pattern: "form.errorMessage",
       reason: "Shown only if a submission fails to send.",
+    },
+  ],
+  "auction-info": [
+    {
+      pattern: "video.caption",
+      reason:
+        "A line under the player, for a credit or a note. The markup is there " +
+        "and it becomes clickable the moment one is written — no caption is " +
+        "set today, so there is nothing rendered to click.",
     },
   ],
   faqs: [
