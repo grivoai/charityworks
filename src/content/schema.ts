@@ -377,6 +377,39 @@ export const siteContentSchema = z.object({
 /* Pages                                                               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * An embedded player on a page.
+ *
+ * Optional wherever it is used, which is what lets a page carry one without a
+ * migration and lose one without a deploy — clearing the record takes the block
+ * off the page.
+ *
+ * `embedUrl` is checked against the host list in `lib/embeds.ts` on save AND
+ * again where it renders. It is the one editable field on this site that
+ * decides what runs in a frame on the domain, so it does not get to be free
+ * text with a hopeful description.
+ *
+ * One definition rather than one per page. The hero briefly had a third variant
+ * of this shape with a `linkLabel` instead of a `caption`, because it opened a
+ * dialog rather than embedding — and a field that exists on one copy and not
+ * another is how `hero.video` came to be stored, valid, and silently unread.
+ */
+export const videoBlockSchema = z
+  .object({
+    heading: text,
+    lede: optionalText,
+    embedUrl: text
+      .refine(isAllowedEmbed, { message: embedProblem("") ?? "" })
+      .describe(
+        "The player address, from " +
+          EMBED_HOSTS +
+          ". For Google Drive that is the file address ending in /preview, " +
+          "not /view — /view shows a sign-in wall inside a frame."
+      ),
+    caption: optionalText.describe("A line under the player. Optional."),
+  })
+  .optional();
+
 const basePage = {
   seo: seoMetaSchema,
   heading: text.describe("The page's main heading. There is exactly one."),
@@ -453,37 +486,6 @@ export const homePageSchema = z.object({
         ),
       })
       .optional(),
-    /**
-     * The walkthrough video, offered as a control beside "How It Works" rather
-     * than as a player.
-     *
-     * An always-visible iframe in the hero would put a third-party frame in
-     * front of the first paint and push the tiles off the fold, so this stores
-     * the URL and a `linkLabel`, and the hero renders a button that opens the
-     * player in a dialog. That is why the field is `linkLabel` and not
-     * `caption` as on the FAQ page — the string is the control, not a note
-     * under a frame.
-     *
-     * `embedUrl` is checked against `lib/embeds.ts` on save and again where it
-     * renders, for the reason set out on the FAQ page's copy of this block.
-     */
-    video: z
-      .object({
-        heading: text.describe("The dialog's title, e.g. 'How donation matching works'."),
-        lede: optionalText.describe("A line under the title inside the dialog. Optional."),
-        embedUrl: text
-          .refine(isAllowedEmbed, { message: embedProblem("") ?? "" })
-          .describe(
-            "The player address, from " +
-              EMBED_HOSTS +
-              ". For Google Drive that is the file address ending in /preview, " +
-              "not /view — /view shows a sign-in wall inside a frame."
-          ),
-        linkLabel: text.describe(
-          'The button in the hero, e.g. "Watch: How Donation Matching Works".'
-        ),
-      })
-      .optional(),
   }),
   why: z.object({ header: sectionHeaderSchema, items: z.array(valuePropSchema) }),
   process: z.object({
@@ -528,6 +530,12 @@ export const auctionInfoPageSchema = z.object({
     items: z.array(valuePropSchema),
   }),
   mobileBidding: z.object({ heading: text, body: text }),
+  /**
+   * Sits after the event formats and before the closing call to action — last
+   * of the explanatory blocks, directly above the ask. Donation matching is an
+   * event-day tactic, so it follows the formats rather than the pricing.
+   */
+  video: videoBlockSchema,
   cta: ctaRefSchema,
 });
 
@@ -576,31 +584,7 @@ export const faqsPageSchema = z.object({
   slug: z.literal("faqs"),
   intro: sectionHeaderSchema,
   faqs: z.array(faqItemSchema),
-  /**
-   * Optional, which is the whole reason this needed no migration for the other
-   * seven pages — and it stays optional so the block can be taken off the page
-   * by clearing it rather than by a deploy.
-   *
-   * `embedUrl` is checked against the host list in `lib/embeds.ts` on save AND
-   * again where it renders. It is the one editable field on this site that
-   * decides what runs in a frame on the domain, so it does not get to be
-   * free text with a hopeful description.
-   */
-  video: z
-    .object({
-      heading: text,
-      lede: optionalText,
-      embedUrl: text
-        .refine(isAllowedEmbed, { message: embedProblem("") ?? "" })
-        .describe(
-          "The player address, from " +
-            EMBED_HOSTS +
-            ". For Google Drive that is the file address ending in /preview, " +
-            "not /view — /view shows a sign-in wall inside a frame."
-        ),
-      caption: optionalText.describe("A line under the player. Optional."),
-    })
-    .optional(),
+  video: videoBlockSchema,
   cta: ctaRefSchema,
 });
 

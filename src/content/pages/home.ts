@@ -86,16 +86,6 @@ export const homePage: HomePage = {
       href: "#donor",
       cue: "See how →",
     },
-    // Opens in a dialog rather than embedding — see HeroVideo for why the
-    // frame is mounted only while it is open.
-    video: {
-      heading: "How donation matching works",
-      lede:
-        "A short walkthrough of matching gifts, and how they lift what a paddle raise brings in.",
-      embedUrl:
-        "https://drive.google.com/file/d/1nLCpPgzkKCQ6MxfT9-frUY28noxADT8K/preview",
-      linkLabel: "Watch: How Donation Matching Works",
-    },
   },
 
   why: {

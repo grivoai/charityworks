@@ -210,30 +210,6 @@ section { position: relative; }
 .hero-badge-ico { display: inline-flex; color: var(--gold-bright); }
 .hero-badge-ico svg { width: 15px; height: 15px; }
 
-/* ---- Hero video control ----
-   Third item in .hero-btns, beside the quiet "How It Works" button and
-   deliberately quieter still than that: this is the third choice in the row,
-   and a hero with three competing buttons has no primary action. Type matches
-   .btn-quiet; the play glyph is what marks it as a different kind of thing. */
-.hero-video-btn {
-  display: inline-flex; align-items: center; gap: 9px;
-  padding: 7px 10px; border: none; background: transparent; cursor: pointer;
-  font-family: "DM Sans", sans-serif; font-size: 0.9rem; font-weight: 500;
-  color: rgba(255,255,255,0.7); white-space: nowrap;
-  transition: color 0.3s var(--ease);
-}
-.hero-video-btn:hover { color: #fff; }
-.hero-video-btn:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 6px; }
-.hero-video-play {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px; flex: none; border-radius: 50%;
-  background: rgba(224,168,46,0.16); border: 1px solid rgba(224,168,46,0.5);
-  color: var(--gold-bright);
-  transition: background 0.3s var(--ease), transform 0.3s var(--ease);
-}
-.hero-video-play svg { width: 11px; height: 11px; margin-left: 1px; }
-.hero-video-btn:hover .hero-video-play { background: rgba(224,168,46,0.3); transform: scale(1.08); }
-
 /* ---- The free donor incentive, in the hero ----
    Gold, where the tiles beside it are glass. That is the whole point of the
    element: it is the one thing in the hero that costs the visitor nothing, and
@@ -270,51 +246,7 @@ section { position: relative; }
 }
 .hero-offer:hover .hero-offer-cue { opacity: 1; }
 
-/* ---- Video dialog ----
-   Native <dialog>, so the backdrop, the focus trap, the inertness of the page
-   behind it and Escape-to-close are the platform's rather than ours. */
-.video-dialog {
-  border: none; padding: 0; background: transparent;
-  width: min(880px, 92vw); max-width: none; max-height: 90vh;
-  color: #fff; overflow: visible;
-  /* The reset at the top of this file sets `margin: 0` on every element,
-     which beats the UA's `dialog:modal { margin: auto }` — without this the
-     dialog pins to the top-left corner instead of centring. */
-  margin: auto;
-}
-.video-dialog::backdrop { background: rgba(4, 12, 26, 0.78); backdrop-filter: blur(6px); }
-.video-dialog-panel {
-  background: var(--green-deep); border: 1px solid rgba(255,255,255,0.16);
-  border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-lg);
-}
-.video-dialog-head { display: flex; align-items: flex-start; gap: 20px; margin-bottom: 18px; }
-.video-dialog-head h2 {
-  font-family: "Playfair Display", serif; font-size: 1.4rem;
-  font-weight: 800; color: #fff; line-height: 1.25;
-}
-.video-dialog-lede { font-size: 0.9rem; color: rgba(255,255,255,0.76); margin-top: 6px; max-width: 60ch; }
-.video-dialog-close {
-  margin-left: auto; flex: none; width: 38px; height: 38px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 1.6rem; line-height: 1; cursor: pointer;
-  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
-  color: rgba(255,255,255,0.8);
-  transition: background 0.3s var(--ease), color 0.3s var(--ease);
-}
-.video-dialog-close:hover { background: rgba(255,255,255,0.16); color: #fff; }
-.video-dialog-close:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
-/* 16:9 by ratio rather than by a fixed height, so the frame is right at every
-   width the dialog can take. */
-.video-dialog-frame {
-  aspect-ratio: 16 / 9; width: 100%;
-  border-radius: var(--radius-sm); overflow: hidden; background: #000;
-}
-.video-dialog-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
-
 @media (max-width: 620px) {
-  .video-dialog-panel { padding: 16px; }
-  .video-dialog-head { margin-bottom: 14px; }
-  .video-dialog-head h2 { font-size: 1.15rem; }
   .hero-offer { max-width: none; padding: 12px 14px; gap: 11px; }
   .hero-offer-name { font-size: 0.98rem; }
   /* The cue is the first thing to go: at 375px the label and sub need every
@@ -600,20 +532,20 @@ section { position: relative; }
 /* ---- Donation-match video ----
    Narrower than the questions above it, so it reads as a footnote to the page
    rather than a second feature competing with them. */
-.faq-video { max-width: 620px; margin: 64px auto 0; text-align: center; }
-.faq-video h2 { font-family: "Playfair Display", serif; font-size: 1.4rem; font-weight: 700; }
-.faq-video-lede { margin-top: 8px; color: var(--muted); font-size: 0.96rem; }
+.page-video { max-width: 620px; margin: 64px auto 0; text-align: center; }
+.page-video h2 { font-family: "Playfair Display", serif; font-size: 1.4rem; font-weight: 700; }
+.page-video-lede { margin-top: 8px; color: var(--muted); font-size: 0.96rem; }
 /* Aspect-ratio on the box rather than a padding-top hack: the frame has no
    intrinsic size, and a fixed height would letterbox on one screen and crop on
    another. */
-.faq-video-frame {
+.page-video-frame {
   position: relative; aspect-ratio: 16 / 9; margin-top: 20px;
   border: 1px solid var(--line); border-radius: var(--radius);
   overflow: hidden; background: #05101f;
   box-shadow: var(--shadow-lg);
 }
-.faq-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.faq-video-caption { margin-top: 12px; font-size: 0.86rem; color: var(--muted); }
+.page-video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.page-video-caption { margin-top: 12px; font-size: 0.86rem; color: var(--muted); }
 .faq-item { border-bottom: 1px solid var(--line); }
 .faq-q { width: 100%; background: none; border: none; cursor: pointer; text-align: left; padding: 24px 8px; display: flex; justify-content: space-between; align-items: center; gap: 20px; font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.18rem; color: var(--green); transition: color 0.3s; }
 .faq-q:hover { color: var(--gold); }
