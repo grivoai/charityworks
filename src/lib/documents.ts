@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 
 import { getServiceClient } from "@/lib/supabase";
 import { isDatabaseConfigured } from "@/lib/content-source";
+import { BUILD_KEY } from "@/lib/build-key";
 import { DOCUMENTS_TAG } from "@/lib/content-tags";
 import { publicUrlFor } from "@/lib/admin/uploads";
 import { isDocumentSlug } from "@/lib/admin/document-rules";
@@ -63,7 +64,7 @@ const readDocument = unstable_cache(
       url: publicUrlFor(data.uploads.path),
     };
   },
-  ["document"],
+  ["document", BUILD_KEY],
   { tags: [DOCUMENTS_TAG] }
 );
 
@@ -86,7 +87,7 @@ const readDocumentSlugs = unstable_cache(
     }
     return (data ?? []).map((row) => row.slug);
   },
-  ["document-slugs"],
+  ["document-slugs", BUILD_KEY],
   { tags: [DOCUMENTS_TAG] }
 );
 

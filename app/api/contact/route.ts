@@ -4,6 +4,9 @@ import { deliver } from "@/lib/lead-delivery";
 import { isCoreField } from "@/lib/admin/form-write";
 import { getPage } from "@/lib/content";
 import { getInterestRegistry } from "@/lib/interests";
+import { checkContactRate } from "@/lib/contact-throttle";
+import { verifyCaptcha } from "@/lib/hcaptcha";
+import { sanitizeFormAnswer } from "@/lib/lead-safety";
 import {
   buildContextSummary,
   isLeadSource,
@@ -34,8 +37,24 @@ import {
  * logs, which makes them recoverable by hand.
  */
 
-/** Ceiling for a single visible form value. The message box is the long one. */
-const MAX_FIELD_LENGTH = 5000;
+/**
+ * The hidden field a bot fills in and a person cannot see.
+ *
+ * Named for something a scraper would plausibly want to complete rather than
+ * anything that reads as a trap. A submission that carries a value here was not
+ * typed by someone looking at the page.
+ */
+const HONEYPOT_FIELD = "website";
+
+/**
+ * The shortest believable time between the form rendering and being sent.
+ *
+ * The browser stamps `renderedAt` when the form mounts. Under two seconds is
+ * not a person reading five labels and typing an enquiry; it is a script that
+ * fetched the page and posted immediately. Generous enough that a fast typist
+ * pasting from a draft is unaffected.
+ */
+const MIN_FILL_MS = 2000;
 
 /**
  * Form field name -> the key the pipeline reads, where the two differ.
@@ -77,6 +96,43 @@ const QUIZ_KEYS = [
 ] as const;
 
 export async function POST(request: Request) {
+  /**
+   * A JSON content type is required, and that is a security check rather than
+   * a tidiness one. `request.json()` will parse any body regardless of what it
+   * claims to be, and a `text/plain` POST is a CORS *simple request* — no
+   * preflight — so any page a visitor happens to be on could silently file a
+   * lead in their name. Requiring `application/json` forces a preflight, which
+   * fails for lack of an allow-origin header, which is what closes it.
+   */
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return NextResponse.json(
+      { ok: false, error: "Send application/json." },
+      { status: 415 }
+    );
+  }
+
+  /**
+   * Vercel overwrites `X-Forwarded-For` and does not forward external values,
+   * so the leftmost hop is the real client here and cannot be spoofed. On any
+   * other host that assumption needs re-checking before this is trusted.
+   */
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+
+  const gate = await checkContactRate(ip);
+  if (gate.blocked) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "Too many enquiries from this connection. Try again shortly, or " +
+          "call us on (925) 250-6968.",
+      },
+      { status: 429, headers: { "Retry-After": "900" } }
+    );
+  }
+
   let payload: Record<string, unknown>;
 
   try {
@@ -86,6 +142,46 @@ export async function POST(request: Request) {
       { ok: false, error: "Invalid JSON body." },
       { status: 400 }
     );
+  }
+
+  /**
+   * Bot checks before validation, so an automated submission never reaches the
+   * database, the webhook or the client's phone. Both answer with the same
+   * generic message a real error would produce: telling a script which check it
+   * failed is telling it what to change.
+   */
+  const honeypot = payload[HONEYPOT_FIELD];
+  const filledHoneypot = typeof honeypot === "string" && honeypot.trim() !== "";
+
+  const renderedAt = Number(payload.renderedAt);
+  const tooFast =
+    Number.isFinite(renderedAt) && Date.now() - renderedAt < MIN_FILL_MS;
+
+  if (filledHoneypot || tooFast) {
+    /* 200, not 4xx. A bot that learns it was caught retries differently; one
+       that believes it succeeded does not. Nothing is filed and nothing is
+       delivered. */
+    return NextResponse.json({ ok: true, leadId: null });
+  }
+
+  /**
+   * The CAPTCHA is only demanded once this address has already sent more than
+   * a couple of enquiries in the window — see `contact-throttle.ts`. A
+   * first-time enquirer is never asked, which is the point: this sits on the
+   * site's main conversion path and friction there has a cost.
+   */
+  if (gate.challenge) {
+    const token = String(payload.captchaToken ?? "");
+    if (!(await verifyCaptcha(token))) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Please complete the check below and send again.",
+          captchaRequired: true,
+        },
+        { status: 403 }
+      );
+    }
   }
 
   const { form } = await getPage("contact");
@@ -128,9 +224,14 @@ export async function POST(request: Request) {
   const custom: Record<string, string> = {};
 
   for (const field of form.fields) {
-    const value = payload[field.name];
-    const text = typeof value === "string" ? value.trim() : "";
-    const answer = text.slice(0, MAX_FIELD_LENGTH);
+    /**
+     * Sanitised, not merely trimmed. These are the values a sender chooses, and
+     * they terminate in a spreadsheet cell — where a leading `=` is a formula
+     * rather than text, and an embedded newline is a second row. `lead-context`
+     * has always done this for the metadata the site attaches; the answers a
+     * human types were the half that went through on a length cap alone.
+     */
+    const answer = sanitizeFormAnswer(field.name, payload[field.name]);
 
     if (isCoreField(field.name)) {
       fields[PAYLOAD_KEY[field.name] ?? field.name] = answer;
@@ -218,10 +319,25 @@ export async function POST(request: Request) {
   const delivery = await deliver(lead);
   if (filed) await recordDelivery(lead.leadId, delivery.result, delivery.detail);
 
-  // Always logged, whatever the webhook did. This is the fallback record, and
-  // it stays even now the enquiry is also a row: the log is what survives a
-  // database outage, which is precisely when the row does not exist.
-  console.info("[contact] lead", { delivery: delivery.result, filed, ...lead });
+  /**
+   * Logged without the enquirer's details.
+   *
+   * This used to spread the whole lead — name, email, phone, message — into
+   * every log line, defended as the fallback record from before `submissions`
+   * existed. The row is now written first and holds the same payload in `raw`,
+   * so the log was a second copy of the same personal data in a store with
+   * different retention, different access control and no deletion path, which
+   * is a liability rather than a backstop. What is left is what an operator
+   * actually needs to see: whether it was filed, whether it was delivered, and
+   * which lead to go and look at.
+   */
+  console.info("[contact] lead", {
+    leadId: lead.leadId,
+    source,
+    interestType: context.interestType ?? null,
+    filed,
+    delivery: delivery.result,
+  });
 
   // The submitter is told the enquiry succeeded even when the webhook failed:
   // from their side it did, we hold their details, and an error here would only

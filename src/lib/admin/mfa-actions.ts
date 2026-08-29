@@ -13,6 +13,7 @@ import {
   isRateLimited,
   recordFailure,
 } from "@/lib/auth-throttle";
+import { recordAudit } from "@/lib/admin/audit";
 
 /**
  * Enrolling, confirming and removing a TOTP factor, and answering the challenge.
@@ -172,6 +173,12 @@ export async function confirmEnrollment(
   }
 
   console.info(`[mfa] ${admin.email} enrolled an authenticator app`);
+  await recordAudit({
+    actorId: admin.id,
+    action: "mfa.enroll",
+    entity: "admin_users",
+    entityId: admin.id,
+  });
   revalidatePath("/admin/security");
   return { ok: true };
 }
@@ -228,6 +235,15 @@ export async function removeFactor(
   }
 
   console.info(`[mfa] ${admin.email} removed their authenticator app`);
+  /* The one MFA change worth a durable record: turning the second factor OFF
+     is what an attacker who has the password would do, and a console line is
+     not somewhere anyone looks afterwards. */
+  await recordAudit({
+    actorId: admin.id,
+    action: "mfa.remove",
+    entity: "admin_users",
+    entityId: admin.id,
+  });
   revalidatePath("/admin/security");
   return { ok: true };
 }

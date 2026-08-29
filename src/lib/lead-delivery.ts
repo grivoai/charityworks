@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHmac } from "node:crypto";
+
 /**
  * Posting a lead to the follow-up pipeline.
  *
@@ -47,13 +49,41 @@ export async function deliver(
   }
 
   try {
+    /**
+     * The body is serialised once and both signed and sent, because an HMAC
+     * over a different string than the one transmitted verifies nothing.
+     */
+    const body = JSON.stringify(lead);
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const signature = createHmac("sha256", secret)
+      .update(`${timestamp}.${body}`)
+      .digest("hex");
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        /**
+         * THE STATIC SECRET STAYS, FOR NOW. It is what the live n8n workflow
+         * checks today, and removing it here would stop every lead reaching
+         * the client the moment this deploys. The signature below is additive:
+         * n8n can start verifying it whenever the workflow is updated, and the
+         * header can come out once it does.
+         */
         "x-grivo-secret": secret,
+        /**
+         * What the secret alone cannot do. A static token proves the caller
+         * knew a value; it says nothing about whether this body is the body
+         * that was sent, or whether this request was captured and replayed an
+         * hour later. The signature covers the timestamp and the payload
+         * together, so altering either invalidates it, and the timestamp gives
+         * the receiver a window to reject outside of — five minutes is the
+         * usual choice.
+         */
+        "x-grivo-timestamp": timestamp,
+        "x-grivo-signature": `sha256=${signature}`,
       },
-      body: JSON.stringify(lead),
+      body,
       signal: AbortSignal.timeout(retry ? RETRY_TIMEOUT_MS : SUBMIT_TIMEOUT_MS),
     });
 

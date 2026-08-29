@@ -76,12 +76,22 @@ export async function recordSubmission(lead: LeadRecord): Promise<boolean> {
       interest_id: text(lead.interestId),
       interest_label: text(lead.interestLabel),
       interest_category: text(lead.interestCategory),
+      /**
+       * The six keys the planner actually produces — `QUIZ_KEYS` in the
+       * contact route, and the same six listed in `lead-context.ts`.
+       *
+       * This used to write `quizAudience`, `quizBudget`, `quizGoal` and
+       * `quizSize`, which no lead has ever carried. Four of the six names were
+       * wrong, so the column held six empty strings on every row while the real
+       * answers sat in `raw` — invisible because nothing reads `quiz` yet, and
+       * it would have surfaced as blank reporting the first time somebody did.
+       */
       quiz: {
+        quizEventType: lead.quizEventType ?? "",
+        quizAttendance: lead.quizAttendance ?? "",
         quizFormat: lead.quizFormat ?? "",
-        quizAudience: lead.quizAudience ?? "",
-        quizBudget: lead.quizBudget ?? "",
-        quizGoal: lead.quizGoal ?? "",
-        quizSize: lead.quizSize ?? "",
+        quizPriceBand: lead.quizPriceBand ?? "",
+        quizInterests: lead.quizInterests ?? "",
         quizRecommended: lead.quizRecommended ?? "",
       },
       context_summary: text(lead.contextSummary),

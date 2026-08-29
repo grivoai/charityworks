@@ -637,6 +637,23 @@ section { position: relative; }
 /* Spans the grid and sits directly on top of the button, with no gap of its
    own beyond the grid's — it is a caption for that button, not a paragraph. */
 .form-note { grid-column: span 2; margin-bottom: -8px; font-size: 0.86rem; color: rgba(255,255,255,0.66); }
+/* ---- Honeypot ----
+   Removed from the layout without `display: none`, which some bots skip. It is
+   off-screen and zero-height instead, so an automated client that reads the DOM
+   still finds a fillable input. Paired with aria-hidden and tabIndex={-1} in
+   the component, so no human — sighted, keyboard or screen reader — can reach
+   it and have their enquiry silently dropped. */
+.form-hp {
+  position: absolute; left: -9999px; width: 1px; height: 1px;
+  overflow: hidden; opacity: 0; pointer-events: none;
+}
+
+/* ---- Step-up CAPTCHA ----
+   Only rendered once the endpoint asks for one, so this is never seen by a
+   first-time enquirer. */
+.form-captcha { grid-column: span 2; margin-top: 4px; }
+.form-captcha-note { font-size: 0.88rem; color: rgba(255,255,255,0.72); margin-bottom: 10px; }
+
 .form-msg { grid-column: span 2; text-align: center; font-size: 0.92rem; color: var(--gold-soft); min-height: 20px; }
 
 /* ---- "You're asking about ..." context note ----

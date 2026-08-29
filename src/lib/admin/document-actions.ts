@@ -16,6 +16,7 @@ import {
   ingestDocument,
   signDocumentUpload,
 } from "@/lib/admin/uploads";
+import { recordAudit } from "@/lib/admin/audit";
 
 /**
  * Everything the documents page can do.
@@ -208,6 +209,16 @@ export async function replaceDocumentFile(input: {
     return { ok: false, message: `The link could not be updated: ${error.message}` };
   }
 
+  /* A replacement changes what a public address serves without changing the
+     address, so nothing else on the site records that it happened. */
+  await recordAudit({
+    actorId: admin.id,
+    action: "document.replace",
+    entity: "document_links",
+    entityId: slug,
+    detail: { from: link.data.upload_id, to: ingested.uploadId },
+  });
+
   updateTag(DOCUMENTS_TAG);
 
   return {
@@ -297,7 +308,7 @@ export async function renameDocument(input: {
  * circulation is reversible in a way that deleting the PDF is not.
  */
 export async function deleteDocumentLink(slug: string): Promise<DocumentResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const clean = slug.trim().toLowerCase();
   if (slugProblem(clean)) return { ok: false, message: "That link does not exist." };
@@ -309,6 +320,15 @@ export async function deleteDocumentLink(slug: string): Promise<DocumentResult> 
 
   if (error) return { ok: false, message: `That could not be removed: ${error.message}` };
 
+  /* The link row is gone, so this entry is the only remaining record that the
+     address ever existed or who withdrew it. */
+  await recordAudit({
+    actorId: admin.id,
+    action: "document.delete",
+    entity: "document_links",
+    entityId: clean,
+  });
+
   updateTag(DOCUMENTS_TAG);
   return {
     ok: true,
@@ -319,7 +339,7 @@ export async function deleteDocumentLink(slug: string): Promise<DocumentResult> 
 
 /** Deletes a file outright. Refused while any link still points at it. */
 export async function deleteUpload(uploadId: string): Promise<DocumentResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const supabase = getServiceClient();
 
@@ -364,6 +384,16 @@ export async function deleteUpload(uploadId: string): Promise<DocumentResult> {
   if (removed.error) {
     console.error("[documents] row deleted but object remains", upload.data.path, removed.error);
   }
+
+  /* The filename is kept in the entry because the row that held it is gone —
+     "who deleted that file" is unanswerable otherwise. */
+  await recordAudit({
+    actorId: admin.id,
+    action: "upload.delete",
+    entity: "uploads",
+    entityId: uploadId,
+    detail: { filename: upload.data.filename, path: upload.data.path },
+  });
 
   updateTag(DOCUMENTS_TAG);
   return { ok: true, slug: "", note: `${cleanFilename(upload.data.filename)} was deleted.` };

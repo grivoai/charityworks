@@ -16,6 +16,7 @@ import { checkSlug } from "@/lib/reserved-paths";
 import { slugify, uniqueSlug } from "@/lib/admin/slug";
 import { templateById, withTemplateIds } from "@/lib/admin/page-templates";
 import type { SaveState } from "@/lib/admin/page-actions";
+import { recordAudit } from "@/lib/admin/audit";
 
 /**
  * Creating, editing, publishing and deleting the pages a client builds.
@@ -288,6 +289,16 @@ export async function setPublished(
 
   if (error) return { message: `Could not change that: ${error.message}` };
 
+  /* Publishing changes what the public site serves without changing any
+     content, so it leaves no revision behind — which is exactly why it needs
+     a record of its own. */
+  await recordAudit({
+    actorId: admin.id,
+    action: next ? "custom-page.publish" : "custom-page.unpublish",
+    entity: "custom_pages",
+    entityId: slug,
+  });
+
   publish(slug);
   return { ok: true };
 }
@@ -304,7 +315,7 @@ export async function deleteCustomPage(
   _previous: LifecycleState,
   formData: FormData
 ): Promise<LifecycleState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const slug = String(formData.get("slug") ?? "");
   const confirmation = String(formData.get("confirm") ?? "").trim();
@@ -322,6 +333,14 @@ export async function deleteCustomPage(
     .eq("slug", slug);
 
   if (error) return { message: `Could not delete: ${error.message}` };
+
+  /* Before the redirect, because `redirect()` throws to unwind. */
+  await recordAudit({
+    actorId: admin.id,
+    action: "custom-page.delete",
+    entity: "custom_pages",
+    entityId: slug,
+  });
 
   publish(slug);
   redirect("/admin/custom-pages");

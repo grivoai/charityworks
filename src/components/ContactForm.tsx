@@ -1,6 +1,8 @@
 "use client";
 
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { hcaptchaSiteKey } from "@/lib/site-config";
 import { at, editable } from "@/lib/editable";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -73,6 +75,28 @@ export function ContactForm({
   const successRef = useRef<HTMLDivElement>(null);
   const fieldId = (id: string) => (idPrefix ? `${idPrefix}-${id}` : id);
 
+  /**
+   * The CAPTCHA appears only when the server asks for it.
+   *
+   * This form sits on the site's main conversion path, so a first-time
+   * enquirer sees nothing: the endpoint tracks volume per address and only
+   * returns `captchaRequired` once someone has already sent several. The
+   * widget then renders, the visitor solves it, and their filled-in form is
+   * still there to send — which is why the error state keeps the fields rather
+   * than resetting.
+   */
+  const [captchaNeeded, setCaptchaNeeded] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [blocked, setBlocked] = useState(false);
+  const captcha = useRef<HCaptcha>(null);
+
+  /**
+   * When this form became fillable. Sent with the payload so the endpoint can
+   * refuse a submission that arrived faster than a person could type one.
+   * A ref, not state: it must not change on re-render.
+   */
+  const renderedAt = useRef(Date.now());
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formEl = event.currentTarget;
@@ -85,8 +109,37 @@ export function ContactForm({
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        /* The anti-abuse values ride alongside the answers rather than inside
+           `payload`, which is read below for the booking prefill and should
+           stay exactly what the visitor typed. */
+        body: JSON.stringify({
+          ...payload,
+          renderedAt: renderedAt.current,
+          ...(captchaToken ? { captchaToken } : {}),
+        }),
       });
+
+      if (response.status === 429) {
+        setBlocked(true);
+        setStatus("error");
+        return;
+      }
+
+      if (response.status === 403) {
+        /* The endpoint wants a CAPTCHA. Show it and let them send again — the
+           form still holds what they typed. A spent token is cleared, since
+           hCaptcha tokens are single use and resubmitting one fails on the
+           CAPTCHA rather than on anything the visitor did. */
+        const body = await response.json().catch(() => null);
+        if (body?.captchaRequired) {
+          setCaptchaNeeded(true);
+          setCaptchaToken("");
+          captcha.current?.resetCaptcha();
+          setStatus("error");
+          return;
+        }
+      }
+
       if (!response.ok) throw new Error(`Request failed: ${response.status}`);
 
       // Read from the payload rather than the form: reset() is about to clear
@@ -246,6 +299,40 @@ export function ContactForm({
           </p>
         )}
 
+        {/* The honeypot.
+            Hidden from sight and from assistive technology, and taken out of
+            the tab order, so nobody filling the form in can reach it — while an
+            automated client that fills every input it finds will. `aria-hidden`
+            plus `tabIndex={-1}` matter as much as the CSS: a screen reader user
+            who landed in this field and typed would have their enquiry silently
+            discarded, which is the one way a honeypot can do real harm.
+            Not `type="hidden"` — bots skip those. */}
+        <div className="form-hp" aria-hidden="true">
+          <label htmlFor={fieldId("website")}>Website</label>
+          <input
+            id={fieldId("website")}
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </div>
+
+        {captchaNeeded && (
+          <div className="form-captcha">
+            <p className="form-captcha-note">
+              One quick check before we send this — we have had a few
+              submissions from this connection.
+            </p>
+            <HCaptcha
+              ref={captcha}
+              sitekey={hcaptchaSiteKey}
+              onVerify={setCaptchaToken}
+              onExpire={() => setCaptchaToken("")}
+            />
+          </div>
+        )}
+
         <button
           type="submit"
           className="btn btn-gold form-submit"
@@ -260,7 +347,22 @@ export function ContactForm({
 
         <div className="form-msg" role="status" aria-live="polite">
           {status === "error" ? (
-            <span {...editable(at(path, "errorMessage"))}>{form.errorMessage}</span>
+            blocked ? (
+              /* Not the editable error message: that one says the send failed,
+                 and this is a refusal with a way around it. Deliberately gives
+                 the phone number, because someone who has genuinely hit the
+                 limit still needs to reach the client. */
+              <span>
+                We have had several enquiries from this connection recently.
+                Please try again shortly, or call us on (925) 250-6968.
+              </span>
+            ) : captchaNeeded && !captchaToken ? (
+              <span>Complete the check above, then send again.</span>
+            ) : (
+              <span {...editable(at(path, "errorMessage"))}>
+                {form.errorMessage}
+              </span>
+            )
           ) : (
             ""
           )}
