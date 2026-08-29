@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
@@ -80,6 +81,56 @@ export default async function FaqsRoute() {
                 <p className="page-video-caption" {...editable("video.caption")}>
                   {page.video.caption}
                 </p>
+              )}
+            </section>
+          )}
+
+          {/* ---------- THE FREE DONOR INCENTIVE ----------
+              The destination of the hero's gold card, so it carries an id and
+              is always visible. A collapsed accordion row would have been the
+              obvious home for it and is the wrong one: nothing in the accordion
+              reads the URL, so a link would land on a closed panel and read as
+              broken. `scroll-margin-top` in the stylesheet keeps the heading
+              clear of the fixed nav when the hash lands. */}
+          {page.incentive && (
+            <section
+              id="free-vacation-program"
+              className="faq-incentive reveal"
+              aria-labelledby="incentive-heading"
+            >
+              {page.incentive.eyebrow && (
+                <span className="eyebrow" {...editable("incentive.eyebrow")}>
+                  {page.incentive.eyebrow}
+                </span>
+              )}
+              <h2 id="incentive-heading" {...editable("incentive.heading")}>
+                {page.incentive.heading}
+              </h2>
+
+              <div className="faq-incentive-media" {...editable("incentive.image")}>
+                <Image
+                  src={page.incentive.image.src}
+                  alt={page.incentive.image.alt}
+                  width={page.incentive.image.width ?? 624}
+                  height={page.incentive.image.height ?? 314}
+                  sizes="(max-width: 760px) 100vw, 620px"
+                />
+              </div>
+
+              <div className="faq-incentive-body" {...editable("incentive.body")}>
+                {page.incentive.body
+                  .split(/\n\s*\n/)
+                  .map((part) => part.trim())
+                  .filter(Boolean)
+                  .map((paragraph, index) => (
+                    <p key={index}>{paragraph}</p>
+                  ))}
+              </div>
+
+              {page.incentive.cta && (
+                <div className="faq-incentive-cta">
+                  <Cta cta={page.incentive.cta} onDark={false} path="incentive.cta" />
+                </div>
               )}
             </section>
           )}

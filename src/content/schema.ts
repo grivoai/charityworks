@@ -585,6 +585,36 @@ export const faqsPageSchema = z.object({
   intro: sectionHeaderSchema,
   faqs: z.array(faqItemSchema),
   video: videoBlockSchema,
+  /**
+   * The free donor incentive, explained.
+   *
+   * Its own section rather than a tenth accordion row, for two reasons. It is
+   * the destination of the hero's most prominent link, and a link that lands on
+   * a collapsed row reads as broken — the accordion opens from a click and
+   * nothing in it reads the URL. And a row is text only, while this is the one
+   * answer on the page that is better with a photograph of the thing being
+   * described.
+   *
+   * Optional, so it can be taken off the page by clearing the record rather
+   * than by a deploy — the same reason the video block above is optional.
+   */
+  incentive: z
+    .object({
+      eyebrow: optionalText.describe("Small label above the heading."),
+      heading: text,
+      body: text.describe(
+        "The explanation. Blank lines start a new paragraph."
+      ),
+      image: imageRefSchema,
+      /**
+       * Optional, and pointed at the home page's donor section by default. The
+       * two halves answer different questions — this one is "what is it", that
+       * one is "what does it do at my event" — so each is worth a way to the
+       * other rather than one being a copy of the other.
+       */
+      cta: ctaRefSchema.optional(),
+    })
+    .optional(),
   cta: ctaRefSchema,
 });
 

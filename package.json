@@ -25,6 +25,7 @@
     "import:brochures": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/import-trip-brochures.ts",
     "migrate:faq-video": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/add-faq-video.ts",
     "migrate:hero-offer": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/add-hero-offer.ts",
+    "migrate:free-vacation-faq": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/add-free-vacation-faq.ts",
     "create:client-list": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-client-list.ts",
     "migrate:contact-purpose": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/fix-contact-purpose.ts",
     "import:newsletters": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/import-newsletters.ts",
