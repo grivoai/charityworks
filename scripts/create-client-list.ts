@@ -1,15 +1,16 @@
 /**
- * Builds the client list page — STAGED, NOT PUBLISHED.
+ * Builds the client list page.
  *
  *     npm run create:client-list
  *
- * The page is written with `published: false`, so it exists in the admin and
- * can be previewed there, and returns 404 to the public. That is deliberate and
- * it is the point of this script: these are twenty-six named third parties, and
- * the legacy page they come from has been up long enough that some of the
- * relationships may be decades old. Naming an organisation as a client is a
- * claim about them, not only about CharityWorks, so it waits for Ira to confirm
- * the list can still be published before anyone outside the admin can read it.
+ * Created with `published: false` so the twenty-six named third parties could
+ * not be read by anyone outside the admin until Ira confirmed the list was
+ * still accurate — naming an organisation as a client is a claim about them,
+ * not only about CharityWorks. That confirmation came on 29 August 2026 and the
+ * page is live.
+ *
+ * Re-running this NEVER changes `published`. The flag is a human decision and
+ * a script re-run is not a fresh one, so an unpublish stays unpublished.
  *
  * SOURCE. Transcribed from the legacy site's /client-list, which is a
  * client-rendered page — the names are not in its served HTML, so they were
@@ -116,11 +117,20 @@ function columnsBlock() {
 const DOCUMENT = {
   slug: SLUG,
   title: "Client list",
-  /* Unlisted rather than public even once it is published: the nav has eight
-     items already, and this is a page to link to from a proposal or a
-     testimonial, not a ninth top-level destination. Easy to change in the
-     admin if the client wants it in the menu. */
-  visibility: "unlisted" as const,
+  /* Public, not unlisted — and the distinction matters more than it looks.
+     `unlisted` keeps a page out of the nav AND the sitemap AND marks it
+     `noindex, nofollow`. The first of those was what I wanted (eight nav items
+     is enough, and this is a page to link to from a proposal rather than a
+     ninth top-level destination); the last two defeat the entire reason the
+     page exists. It is credibility content — the thing both audits said the
+     site had none of — and a client list nobody can find proves nothing to
+     anybody.
+
+     Public does not put it in the menu. The nav is curated from
+     `site_settings`; `getListedCustomPages` only feeds the admin's picker, so
+     this becomes an option someone can add rather than a link that appears on
+     its own. */
+  visibility: "public" as const,
   seo: {
     title: "Nonprofits We Have Worked With | CharityWorks",
     description:
@@ -209,8 +219,9 @@ async function main() {
 
   console.log(`\n  ${CLIENTS.length} organisations, legacy order preserved`);
   console.log("  corrected: Athenian School, Concord Pavilion, Summit Bank");
-  console.log("  published: false  — returns 404 publicly, previewable in the admin");
-  console.log("\n  Publish from Admin > Custom pages once the client confirms.\n");
+  console.log("  visibility: public — indexable and in the sitemap, but NOT in");
+  console.log("              the nav; that list is curated in Admin > Site details.");
+  console.log("\n  `published` is left exactly as it was — this script never flips it.\n");
 }
 
 main().catch((error) => {
