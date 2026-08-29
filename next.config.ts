@@ -81,7 +81,12 @@ const nextConfig: NextConfig = {
       // Was sent home while there was nowhere for it to go; there is now.
       { source: "/newsletter-pdfs", destination: "/newsletters", permanent: true },
       { source: "/inquire-page", destination: "/contact", permanent: true },
-      { source: "/client-list", destination: "/testimonials", permanent: true },
+      /* No /client-list entry. It used to redirect to /testimonials as the
+         nearest available substitute; there is now a real client list at that
+         address, so the legacy URL resolves to its actual successor. A redirect
+         here would win over the page and make it unreachable — and the slug
+         guard in `reserved-paths.ts` checks static routes, not redirect
+         sources, so nothing would have reported it. */
       { source: "/virtual-auction", destination: "/auction-info", permanent: true },
       // No equivalent on the new site — sent home rather than to a soft 404.
       { source: "/cbid", destination: "/", permanent: true },

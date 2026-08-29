@@ -57,6 +57,59 @@ export default async function AuctionInfoRoute() {
         </div>
       </section>
 
+      {/* ---------- DONATION MATCHING VIDEO ----------
+          Second block on the page, straight after the three steps and before
+          the money. Someone who has just read what the three steps are is at
+          the point of asking "what does that look like in the room?", and two
+          minutes of video answers that better than the next screen of text.
+
+          Its own cream section rather than a block inside a neighbour: the
+          sections either side are white and the tonal alternation is what
+          separates them. */}
+      {page.video && isAllowedEmbed(page.video.embedUrl) && (
+        <section
+          className="pad"
+          style={{ background: "var(--cream)" }}
+          aria-labelledby="video-heading"
+        >
+          <div className="wrap">
+            {/* The URL is checked again here. The schema refuses a bad one on
+                save, but the schema is what runs when somebody uses the admin —
+                this is what runs when the document arrives by any other route,
+                and an iframe is not a field to be trusting about. A refused URL
+                renders no player rather than a broken frame. */}
+            <div className="page-video reveal">
+              <h2 id="video-heading" {...editable("video.heading")}>
+                {page.video.heading}
+              </h2>
+              {page.video.lede && (
+                <p className="page-video-lede" {...editable("video.lede")}>
+                  {page.video.lede}
+                </p>
+              )}
+              <div className="page-video-frame">
+                {/* `title` is the frame's accessible name — without it a screen
+                    reader announces "frame" and nothing else. `loading="lazy"`
+                    because the player sits below a full page of explanation and
+                    should not compete with it for the first paint. */}
+                <iframe
+                  src={page.video.embedUrl}
+                  title={page.video.heading}
+                  loading="lazy"
+                  allow="autoplay; fullscreen"
+                  allowFullScreen
+                />
+              </div>
+              {page.video.caption && (
+                <p className="page-video-caption" {...editable("video.caption")}>
+                  {page.video.caption}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ---------- PRICING MODEL ---------- */}
       <section
         className="pad"
@@ -141,59 +194,6 @@ export default async function AuctionInfoRoute() {
           </p>
         </div>
       </section>
-
-      {/* ---------- DONATION MATCHING VIDEO ----------
-          Last of the explanatory blocks and directly above the ask. It follows
-          the event formats rather than the pricing because donation matching is
-          something you do on the night, not part of what the consignment model
-          costs.
-
-          Its own cream section rather than a block inside the one above: the
-          closing CTA is a dark band, and a player butting straight onto it read
-          as part of the CTA rather than as the end of the explanation. */}
-      {page.video && isAllowedEmbed(page.video.embedUrl) && (
-        <section
-          className="pad"
-          style={{ background: "var(--cream)" }}
-          aria-labelledby="video-heading"
-        >
-          <div className="wrap">
-            {/* The URL is checked again here. The schema refuses a bad one on
-                save, but the schema is what runs when somebody uses the admin —
-                this is what runs when the document arrives by any other route,
-                and an iframe is not a field to be trusting about. A refused URL
-                renders no player rather than a broken frame. */}
-            <div className="page-video reveal">
-              <h2 id="video-heading" {...editable("video.heading")}>
-                {page.video.heading}
-              </h2>
-              {page.video.lede && (
-                <p className="page-video-lede" {...editable("video.lede")}>
-                  {page.video.lede}
-                </p>
-              )}
-              <div className="page-video-frame">
-                {/* `title` is the frame's accessible name — without it a screen
-                    reader announces "frame" and nothing else. `loading="lazy"`
-                    because the player sits below a full page of explanation and
-                    should not compete with it for the first paint. */}
-                <iframe
-                  src={page.video.embedUrl}
-                  title={page.video.heading}
-                  loading="lazy"
-                  allow="autoplay; fullscreen"
-                  allowFullScreen
-                />
-              </div>
-              {page.video.caption && (
-                <p className="page-video-caption" {...editable("video.caption")}>
-                  {page.video.caption}
-                </p>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ---------- CLOSING CTA ---------- */}
       <section className="pad cta-band" aria-labelledby="auction-info-cta">

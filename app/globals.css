@@ -69,9 +69,9 @@ section { position: relative; }
   color: var(--gold); margin-bottom: 18px;
 }
 .eyebrow::before { content: ""; width: 28px; height: 2px; background: var(--gold); border-radius: 2px; }
-.section-title { font-size: clamp(2rem, 4.2vw, 3.3rem); color: var(--green); margin-bottom: 16px; }
-.section-lede { font-size: clamp(1rem, 1.6vw, 1.15rem); color: var(--muted); max-width: 620px; }
-.pad { padding: clamp(70px, 9vw, 130px) 0; }
+.section-title { font-size: clamp(2rem, 20.37px + 1.645vw, 3rem); color: var(--green); margin-bottom: 16px; }
+.section-lede { font-size: clamp(1rem, 14.4px + 0.208vw, 1.12rem); color: var(--muted); max-width: 620px; }
+.pad { padding: clamp(60px, 29.6px + 5.263vw, 118px) 0; }
 .center { text-align: center; }
 .center .section-lede { margin-left: auto; margin-right: auto; }
 
@@ -191,7 +191,7 @@ section { position: relative; }
 .hero-pill { display: inline-flex; align-items: center; gap: 9px; padding: 8px 16px; border-radius: 100px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); font-size: 0.82rem; font-weight: 500; margin-bottom: 26px; backdrop-filter: blur(6px); }
 .hero-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold-bright); box-shadow: 0 0 0 0 rgba(224,168,46,0.7); animation: pulse 2s infinite; }
 @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(224,168,46,0.6);} 70%{box-shadow:0 0 0 10px rgba(224,168,46,0);} 100%{box-shadow:0 0 0 0 rgba(224,168,46,0);} }
-.hero h1 { font-size: clamp(2.8rem, 6.6vw, 5rem); font-weight: 900; margin-bottom: 22px; }
+.hero h1 { font-size: clamp(2.8rem, 31.47px + 2.412vw, 4.5rem); font-weight: 900; margin-bottom: 22px; }
 .hero h1 .accent { background: linear-gradient(120deg, var(--gold-bright), var(--gold-soft)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero p.sub { font-size: clamp(1.05rem, 1.8vw, 1.28rem); color: rgba(255,255,255,0.82); max-width: 540px; margin-bottom: 36px; }
 .hero-btns { display: flex; gap: 16px; row-gap: 10px; flex-wrap: wrap; }
@@ -719,6 +719,28 @@ section { position: relative; }
 .footer-bottom { padding-top: 26px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 0.84rem; color: rgba(255,255,255,0.5); }
 
 /* ============ RESPONSIVE ============ */
+/* ---- Laptop navigation band ----
+   The desktop nav runs from 761px up, but its three parts — wordmark, eight
+   links, CTA — need about 1340px to sit apart. Below that they close up, and
+   by 1280px the wordmark and "Home" are touching: measured 5px at 1280, 0px at
+   1240. Every MacBook lands in that band, which is why the fault reads as
+   "the laptop is broken" rather than "the window is narrow".
+
+   There was no breakpoint between 980px and the top of the range, so the whole
+   761-1340px span was rendering a layout measured for a monitor. This trims the
+   three parts rather than reflowing them: the drawer at 760px is still the
+   right answer for genuinely narrow screens, and swapping to it a phone-width
+   early would take the nav away from people who have room for it. */
+@media (min-width: 761px) and (max-width: 1340px) {
+  .nav { padding-left: 20px; padding-right: 20px; }
+  .nav.scrolled { padding-left: 20px; padding-right: 20px; }
+  .nav-logo { font-size: 1.3rem; }
+  .nav.scrolled .nav-logo { font-size: 1.22rem; }
+  .nav-links { gap: 17px; }
+  .nav-links a { font-size: 0.87rem; }
+  .nav-cta { padding: 10px 17px; font-size: 0.84rem; }
+}
+
 @media (max-width: 980px) {
   .hero .wrap { grid-template-columns: 1fr; }
   .contact .wrap { grid-template-columns: 1fr; }
@@ -824,7 +846,7 @@ section { position: relative; }
   overflow: hidden;
   background: linear-gradient(135deg, #07152e 0%, #0a1f3d 45%, #081933 100%);
   color: #fff;
-  padding: clamp(136px, 15vw, 186px) 0 clamp(56px, 7vw, 88px);
+  padding: clamp(110px, 96.3px + 4.386vw, 170px) 0 clamp(50px, 44.6px + 2.96vw, 88px);
 }
 .page-hero::before {
   content: ""; position: absolute; width: 480px; height: 480px; border-radius: 50%;
@@ -842,13 +864,13 @@ section { position: relative; }
 .page-hero .wrap { position: relative; z-index: 1; }
 .page-hero .eyebrow { color: var(--gold-bright); }
 .page-hero h1 {
-  font-size: clamp(2.3rem, 5vw, 3.6rem);
+  font-size: clamp(2.3rem, 26.21px + 1.535vw, 3.25rem);
   font-weight: 900;
   color: #fff;
   margin-bottom: 16px;
 }
 .page-hero p.lede {
-  font-size: clamp(1rem, 1.6vw, 1.18rem);
+  font-size: clamp(1rem, 13.98px + 0.263vw, 1.15rem);
   color: rgba(255, 255, 255, 0.8);
   max-width: 640px;
 }
@@ -2143,7 +2165,7 @@ body.nav-open .nav {
 .wrap.wrap-full { max-width: none; }
 
 .pad.pad-tight { padding: clamp(40px, 5vw, 70px) 0; }
-.pad.pad-loose { padding: clamp(100px, 13vw, 190px) 0; }
+.pad.pad-loose { padding: clamp(88px, 49.5px + 6.579vw, 160px) 0; }
 
 @media (max-width: 760px) {
   /* The same correction the base .pad gets on a phone: the clamp floors
