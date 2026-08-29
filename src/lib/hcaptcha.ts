@@ -69,8 +69,37 @@ export async function verifyCaptcha(token: string): Promise<boolean> {
       return false;
     }
 
-    const result = (await response.json()) as { success?: boolean };
-    return result.success === true;
+    const result = (await response.json()) as {
+      success?: boolean;
+      "error-codes"?: string[];
+    };
+
+    if (result.success === true) return true;
+
+    /**
+     * The error codes are the difference between "that token was bad" and
+     * "this site's secret is wrong", and those two need completely different
+     * responses from an operator. Without them a misconfigured secret is
+     * silent: every challenged visitor is refused, the endpoint looks like it
+     * is working, and nothing says why.
+     *
+     * `invalid-input-secret`   -> the key is wrong or belongs to another site
+     * `invalid-input-response` -> the secret is fine; the token was bad or spent
+     *
+     * Safe to log: these are hCaptcha's own vocabulary, not the secret and not
+     * the visitor's token.
+     */
+    const codes = result["error-codes"] ?? [];
+    if (codes.includes("invalid-input-secret")) {
+      console.error(
+        "[hcaptcha] HCAPTCHA_SECRET_KEY is not accepted by hCaptcha " +
+          "(invalid-input-secret). Every challenged visitor is being refused. " +
+          "Check the key matches the site key in NEXT_PUBLIC_HCAPTCHA_SITE_KEY."
+      );
+    } else {
+      console.info(`[hcaptcha] token rejected: ${codes.join(", ") || "no code"}`);
+    }
+    return false;
   } catch (error) {
     /* A timeout or a network failure is not a solved CAPTCHA. This path is
        only reached once the sender has already tripped the rate limit's
