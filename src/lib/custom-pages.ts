@@ -85,13 +85,32 @@ async function readCustomPage(slug: string): Promise<CustomPage | null> {
  * only carry one tag for every page at once.
  *
  * Unlike the built-in pages there is no fixed set of slugs here, so this map
- * grows with whatever is requested. That is bounded by the slug guardrails —
- * an address that does not resolve never reaches a reader — but it is the
- * reason the guardrails have to run before this and not after.
+ * grows with whatever is requested.
+ *
+ * THAT USED TO BE JUSTIFIED BY THE SLUG GUARDRAILS, AND THEY ARE NOT ENOUGH.
+ * `couldBeCustomPage()` checks the shape of an address, a reserved list and a
+ * length cap — every well-formed lowercase-hyphen slug up to 60 characters
+ * passes it, which is an unbounded keyspace, not a bounded one. Measured
+ * against the built app, twelve invented addresses produced twelve database
+ * reads, twelve permanent entries in this map, and twelve Data Cache entries
+ * holding `null` for a year. A crawler walking a wordlist drives all three.
+ *
+ * So membership is checked against the published set first. That list is one
+ * cached read the site already makes — the nav, the sitemap and
+ * `generateStaticParams` all use it — so the check is free in the common case,
+ * and a reader is only ever built for a slug that resolves to a real page.
+ * The map is now bounded by the number of published pages.
  */
 const readers = new Map<string, () => Promise<CustomPage | null>>();
 
 export async function getCustomPage(slug: string): Promise<CustomPage | null> {
+  /* Before the map, not after: the point is to never build a wrapper for an
+     address nobody published. Returning null here is the same answer the
+     reader would have given, one round trip and one permanent map entry
+     cheaper. */
+  const published = await getPublishedCustomPages();
+  if (!published.some((page) => page.slug === slug)) return null;
+
   let reader = readers.get(slug);
   if (!reader) {
     reader = unstable_cache(

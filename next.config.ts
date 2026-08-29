@@ -97,22 +97,55 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
-    if (!noindex) return [];
-
     /**
-     * Belt and braces alongside the `robots` meta tag in app/layout.tsx.
-     * A meta tag only exists in HTML, so it cannot cover sitemap.xml, the
-     * optimized images, or any other non-HTML response. X-Robots-Tag applies
-     * to every response regardless of content type.
+     * SECURITY HEADERS ARE UNCONDITIONAL. They used to sit behind
+     * `if (!noindex) return []`, which meant the only header this site sent
+     * existed *because* the pre-launch flag was on — and would have vanished at
+     * the moment the site became public, which is the moment it starts
+     * mattering. Turning off `noindex` is the last step of the launch
+     * checklist, so the failure would have arrived with nobody looking.
+     *
+     * `frame-ancestors 'none'` is the one that is not merely hygiene: without
+     * it /admin/login can be framed on an attacker's page and clickjacked.
      */
-    return [
+    const security = [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=(), payment=()",
+      },
+      /**
+       * frame-ancestors only, not a full CSP. A complete policy has to name
+       * every embed host, the Calendly widget, the hCaptcha frames and Next's
+       * own inline bootstrap, and getting one of those wrong breaks the page
+       * silently for visitors rather than loudly in a build. This directive is
+       * the half that closes a real attack and cannot break a first-party
+       * page; the rest is worth doing deliberately rather than as a rider on
+       * a security fix.
+       */
+      { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+    ];
+
+    const headers = [{ source: "/:path*", headers: security }];
+
+    if (noindex) {
+      /**
+       * Belt and braces alongside the `robots` meta tag in app/layout.tsx.
+       * A meta tag only exists in HTML, so it cannot cover sitemap.xml, the
+       * optimized images, or any other non-HTML response. X-Robots-Tag applies
+       * to every response regardless of content type.
+       */
+      headers.push({
         source: "/:path*",
         headers: [
           { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
         ],
-      },
-    ];
+      });
+    }
+
+    return headers;
   },
 };
 
