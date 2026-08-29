@@ -637,6 +637,40 @@ section { position: relative; }
 /* Spans the grid and sits directly on top of the button, with no gap of its
    own beyond the grid's — it is a caption for that button, not a paragraph. */
 .form-note { grid-column: span 2; margin-bottom: -8px; font-size: 0.86rem; color: rgba(255,255,255,0.66); }
+/* ---- The free donor incentive, on the FAQ page ----
+   Same measure and centring as the video block above it, because they are the
+   same kind of thing: a short piece that answers one question, sitting below a
+   page of them. */
+.faq-incentive {
+  max-width: 620px; margin: 72px auto 0; text-align: center;
+  /* The hero's gold card links straight at this heading, and the nav is fixed.
+     Without this the anchor puts the heading underneath it. */
+  scroll-margin-top: 110px;
+}
+.faq-incentive .eyebrow { justify-content: center; }
+.faq-incentive h2 {
+  font-family: "Playfair Display", serif;
+  font-size: clamp(1.5rem, 21.2px + 0.83vw, 1.85rem);
+  font-weight: 700; margin-top: 10px;
+}
+/* Sized to the photograph rather than the column. The asset is 352px wide —
+   what was left of the catalog original once the price badge was cropped off —
+   and stretching that to a 620px column would upscale it by nearly 2x and look
+   soft. Centred at its own size it reads as a deliberate inset instead. */
+.faq-incentive-media {
+  margin: 22px auto 24px; width: fit-content; max-width: 100%;
+  border-radius: var(--radius-sm); overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.faq-incentive-media img { display: block; max-width: 100%; height: auto; }
+.faq-incentive-body { color: var(--muted); font-size: 0.96rem; line-height: 1.72; text-align: left; }
+.faq-incentive-body p + p { margin-top: 14px; }
+.faq-incentive-cta { margin-top: 26px; }
+
+@media (max-width: 620px) {
+  .faq-incentive { margin-top: 52px; }
+}
+
 /* ---- Honeypot ----
    Removed from the layout without `display: none`, which some bots skip. It is
    off-screen and zero-height instead, so an automated client that reads the DOM

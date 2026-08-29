@@ -83,8 +83,13 @@ export const homePage: HomePage = {
       icon: "sparkles",
       label: "Free Vegas Giveaway",
       sub: "Hotels & shows for every donor — free to your nonprofit",
-      href: "#donor",
-      cue: "See how →",
+      /* The FAQ answer, not the donor section further down this page. The
+         card makes a claim — a free Vegas package for every donor — and the
+         thing a reader wants next is what that actually means, which is an
+         explanation rather than four reward tiles. The tiles are still one
+         click on from there. */
+      href: "/faqs#free-vacation-program",
+      cue: "What is this? →",
     },
   },
 
