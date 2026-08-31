@@ -54,11 +54,21 @@ const nextConfig: NextConfig = {
    */
   async redirects() {
     return [
-      // Canonical host: apex → www (the new site's canonical everywhere).
+      /**
+       * Canonical host: www → apex.
+       *
+       * This ran the other way round until the legacy site was actually
+       * checked. www.charityworks.net has 301'd to the apex for years and the
+       * legacy sitemap lists every URL there, so the apex is what search
+       * engines have indexed. Redirecting apex → www would have put a hop in
+       * front of every indexed URL, and two hops in front of the legacy paths
+       * below that also change. This direction leaves the indexed URLs
+       * untouched and only redirects the hostname nobody links to.
+       */
       {
         source: "/:path*",
-        has: [{ type: "host", value: "charityworks.net" }],
-        destination: "https://www.charityworks.net/:path*",
+        has: [{ type: "host", value: "www.charityworks.net" }],
+        destination: "https://charityworks.net/:path*",
         permanent: true,
       },
       // Catalog category pages that moved under /auction-items.

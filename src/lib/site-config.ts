@@ -11,16 +11,27 @@
  * Content lives in `@/content` and is edited in the admin. This is not.
  */
 
-/** Canonical origin. Set NEXT_PUBLIC_SITE_URL in Vercel to the production domain. */
+/**
+ * Canonical origin. Set NEXT_PUBLIC_SITE_URL in Vercel to the production domain.
+ *
+ * THE BARE DOMAIN, NOT www — and that is a decision rather than a preference.
+ * The legacy site canonicalises to the apex: www.charityworks.net has 301'd to
+ * charityworks.net for years and its sitemap lists every URL on the apex, so
+ * every ranking, backlink and bookmark that exists today points there. Setting
+ * www as canonical would put a permanent redirect in front of the entire
+ * indexed site on day one, and a two-hop chain in front of the eighteen legacy
+ * paths that also move. The site is already on the host search engines prefer;
+ * this follows it rather than fighting it.
+ */
 export const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.charityworks.net"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://charityworks.net"
 ).replace(/\/$/, "");
 
 /**
  * Whether to tell search engines not to index this deployment.
  *
  * On while the site is served from a *.vercel.app URL: canonical tags point at
- * https://www.charityworks.net, which currently serves the client's legacy
+ * https://charityworks.net, which currently serves the client's legacy
  * site. Letting that get indexed would have every page declaring a canonical
  * on a domain that does not contain it — worse than not being indexed at all.
  *
