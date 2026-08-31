@@ -71,17 +71,22 @@ export const homePage: HomePage = {
         href: "/auctioneers",
       },
     ],
-    // The donor incentive, promoted into the hero. Points at #donor further
-    // down this page, which is where the offer is actually explained.
+    // The donor incentive, promoted into the hero.
     //
-    // "Free Vegas Giveaway", not "Free Vacations": the package is hotels and
-    // shows donated by partners, and a hero line reading "free vacations" on a
-    // page whose main business is selling vacation packages claims something
-    // the client cannot honour. The sub-line carries the qualifier rather than
-    // leaving the headline to be read alone.
+    // "Free Vacations" is the client's own name for the programme — the legacy
+    // site calls it the "FREE Vacation Voucher Program" — so this is their
+    // wording rather than a description invented here.
+    //
+    // IT LEANS ON THE TWO LINES BELOW IT, which is why they are not decoration.
+    // Read alone on a site whose main business is selling vacation packages,
+    // "Free Vacations" could be taken to mean the catalog is free. `sub` says
+    // whose cost it is not, and `href` goes to the FAQ section that explains
+    // what the package actually contains and that conditions apply. Changing
+    // either of those without re-reading this label is the way this becomes a
+    // claim the client cannot stand behind.
     offer: {
       icon: "sparkles",
-      label: "Free Vegas Giveaway",
+      label: "Free Vacations",
       sub: "Hotels & shows for every donor — free to your nonprofit",
       /* The FAQ answer, not the donor section further down this page. The
          card makes a claim — a free Vegas package for every donor — and the
