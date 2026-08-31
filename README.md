@@ -64,7 +64,14 @@ page appears in both automatically.
 
 Set `NEXT_PUBLIC_SITE_URL` in the Vercel project to the production domain. It
 drives canonical tags, OpenGraph URLs and the sitemap, and defaults to
-`https://www.charityworks.net`.
+`https://charityworks.net`.
+
+**The bare domain, not `www`.** The legacy site canonicalises to the apex —
+`www.charityworks.net` has redirected there for years and the legacy sitemap
+lists every URL on the apex — so that is what search engines have indexed.
+Making `www` canonical would put a permanent redirect in front of every indexed
+URL on day one, and two hops in front of the legacy paths that also move.
+`next.config.ts` redirects `www` → apex to match.
 
 ## Leads
 
@@ -243,14 +250,26 @@ silently de-index a live site — it has to be switched on deliberately.
 
 ### Cutover order
 
-1. Point `charityworks.net` DNS at Vercel and add the domain to the project.
+1. Point the DNS at Vercel. Two records change, and nothing else:
+   - **A** record for `charityworks.net` (shown as `@` at some registrars) →
+     `76.76.21.21`
+   - **CNAME** record for `www` → `cname.vercel-dns.com`
+
+   Both hostnames are already on the Vercel project, with the apex set primary
+   so `www` redirects rather than serving the site twice. Leave the nameservers
+   and the MX/email records alone.
 2. Confirm the domain serves this app (`/auctioneers` should return 200, not 404).
    A 404 here is far more likely to be the framework preset than DNS — see
    "The framework preset must stay Next.js" above.
-3. Set `SITE_NOINDEX=false` and redeploy.
-4. Verify `curl -s https://www.charityworks.net/ | grep 'name="robots"'` shows
+3. Set `SITE_NOINDEX=false` and redeploy. This is the ONLY step that should be
+   left until cutover day — everything else above is already in place.
+4. Verify `curl -s https://charityworks.net/ | grep 'name="robots"'` shows
    `index, follow`, and that `/robots.txt` lists the sitemap.
-5. Submit the sitemap in Google Search Console.
+5. Check the hostname redirect runs the right way:
+   `curl -sI https://www.charityworks.net/ | grep -i location` should point at
+   `https://charityworks.net/`. If it points the other way, something has been
+   set back to `www` — see the note under "Set NEXT_PUBLIC_SITE_URL" above.
+6. Submit the sitemap in Google Search Console, using the **apex** property.
 
 ## Where the content lives
 
