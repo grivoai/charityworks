@@ -1,7 +1,9 @@
 import "server-only";
 
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase-auth";
 import { getServiceClient } from "@/lib/supabase";
+import { retryOnce } from "@/lib/retry-once";
 
 /**
  * Two-factor authentication state, read safely.
@@ -121,10 +123,18 @@ export async function getMfaState(): Promise<MfaState> {
 
   // The verification step. Everything below this line is derived from the
   // response, or from the token this call just proved genuine.
+  //
+  // Tried twice on a transient failure, and this is the one place it is a
+  // matter of correctness rather than convenience: SIGNED_OUT reads as "no
+  // code owed", so a gateway timeout here would wave a half-signed-in session
+  // through the second factor for that request.
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser(accessToken);
+  } = await retryOnce(
+    () => supabase.auth.getUser(accessToken),
+    (result) => isAuthRetryableFetchError(result.error)
+  );
   if (error || !user) return SIGNED_OUT;
 
   const all = user.factors ?? [];

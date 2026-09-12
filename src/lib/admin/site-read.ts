@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getServiceClient } from "@/lib/supabase";
+import { getServiceClient, readWithRetry } from "@/lib/supabase";
 
 /**
  * The site settings document, read straight from the table.
@@ -10,13 +10,21 @@ import { getServiceClient } from "@/lib/supabase";
  * editor rendering the cached copy would be showing a version of the navigation
  * and contact block that may already be behind the row it is about to
  * overwrite. An editor must show the document it is about to replace.
+ *
+ * Retried, because this one read is the whole page: the editor and the
+ * preview beside it both throw if it fails, and the gateway in front of the
+ * database has been seen to answer it with a 504 once and a row a second
+ * later. The public reads have absorbed that for a while; an admin sitting in
+ * front of a stack trace deserves the same few seconds of patience.
  */
 export async function readSiteDocument(): Promise<unknown | null> {
-  const { data, error } = await getServiceClient()
-    .from("site_settings")
-    .select("data")
-    .eq("id", 1)
-    .maybeSingle<{ data: unknown }>();
+  const { data, error } = await readWithRetry("site settings", () =>
+    getServiceClient()
+      .from("site_settings")
+      .select("data")
+      .eq("id", SITE_ROW_ID)
+      .maybeSingle<{ data: unknown }>()
+  );
 
   if (error) throw new Error(`could not read the site settings: ${error.message}`);
   return data ? data.data : null;

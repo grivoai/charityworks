@@ -1,8 +1,10 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase-auth";
 import { getServiceClient } from "@/lib/supabase";
+import { retryOnce } from "@/lib/retry-once";
 
 /**
  * Authorization for the admin panel.
@@ -43,11 +45,19 @@ export async function getAdmin(): Promise<AdminUser | null> {
    * Supabase to be verified. On a server, where the cookie arrives from the
    * network and is attacker-controlled until proven otherwise, only the second
    * is an authentication check — the first is reading a claim back to yourself.
+   *
+   * Tried twice when the failure is Supabase's rather than the session's.
+   * auth-js already sorts its errors: a 5xx or a dropped connection is an
+   * `AuthRetryableFetchError`, a bad or expired token is not, and only the
+   * first kind gets the second attempt. See retryOnce for the cost.
    */
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser();
+  } = await retryOnce(
+    () => supabase.auth.getUser(),
+    (result) => isAuthRetryableFetchError(result.error)
+  );
 
   if (error || !user) return null;
 
@@ -57,12 +67,20 @@ export async function getAdmin(): Promise<AdminUser | null> {
    * up. That is the intended shape: the row is a grant, and a grant you can
    * read with your own credentials is one you are closer to being able to
    * write.
+   *
+   * A gateway timeout here comes back as a bare `{ message }` with the HTTP
+   * status on the response, so the status is the signal. A missing row is a
+   * 200 with no data and is not retried — that answer is final.
    */
-  const { data, error: lookupError } = await getServiceClient()
-    .from("admin_users")
-    .select("id, email, name, role")
-    .eq("id", user.id)
-    .maybeSingle<AdminUser>();
+  const { data, error: lookupError } = await retryOnce(
+    () =>
+      getServiceClient()
+        .from("admin_users")
+        .select("id, email, name, role")
+        .eq("id", user.id)
+        .maybeSingle<AdminUser>(),
+    (result) => result.status >= 500
+  );
 
   if (lookupError) {
     // Deny on error rather than fall through. A database blip must not read as
