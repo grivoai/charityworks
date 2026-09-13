@@ -2229,6 +2229,11 @@ body.nav-open .nav {
   background: var(--cream);
   box-shadow: var(--shadow-sm);
 }
+/* Biased toward the upper third rather than dead centre. A gallery on this
+   site is mostly photographs of people, and a centred crop of a three-quarter
+   shot takes the top of the head; anchoring to the very top, as the portrait
+   rule does, would strand a landscape's subject at the bottom of the tile. */
+.block-gallery-media img { object-position: center 30%; }
 .block-gallery-tile figcaption {
   margin-top: 10px;
   font-size: 0.9rem;
