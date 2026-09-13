@@ -11,6 +11,8 @@ import { Cta } from "@/components/Section";
 import { BentoGrid } from "@/components/BentoGrid";
 import { ContactForm } from "@/components/ContactForm";
 import { FaqAccordion } from "@/components/FaqAccordion";
+import { TestimonialCard } from "@/components/TestimonialCard";
+import { isAllowedEmbed } from "@/lib/embeds";
 
 /**
  * Renders a client-built page's blocks.
@@ -52,6 +54,43 @@ function Prose({ body }: { body: string }) {
         <p key={index}>{text}</p>
       ))}
     </>
+  );
+}
+
+/**
+ * Two letters for a person with no photograph. The auctioneers page stores
+ * its initials as content; a team card derives them, because a form asking
+ * for initials beside a name is a form asking the same question twice.
+ */
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+/**
+ * A block's heading and lede, centred or not as the block's `align` says.
+ * Three of the grid blocks open the same way and the questions block did it
+ * inline; one definition keeps them from drifting apart by a class name.
+ */
+function BlockHead({
+  heading,
+  lede,
+  centred,
+}: {
+  heading?: string;
+  lede?: string;
+  centred: boolean;
+}) {
+  if (!heading && !lede) return null;
+  return (
+    <div className={centred ? "center block-head" : "block-head"}>
+      {heading && <h2 className="section-title">{heading}</h2>}
+      {lede && <p className="section-lede">{lede}</p>}
+    </div>
   );
 }
 
@@ -336,6 +375,129 @@ export function PageBlocks({
               </section>
             );
           }
+
+          case "testimonials":
+            return (
+              <section key={block.id} {...sectionProps(block, shade.get(block.id))}>
+                <div className={wrapClass(block)}>
+                  <BlockHead
+                    heading={block.heading}
+                    lede={block.lede}
+                    centred={block.align === "centre"}
+                  />
+                  {/* The testimonials page's grid, not its marquee: the marquee
+                      duplicates every card to loop and animates them past, which
+                      is a feature of a page that exists to show them off and a
+                      distraction on a page about something else. No `path`, as
+                      for the questions block — this list is the page's own. */}
+                  <div className="t-grid">
+                    {block.items.map((item) => (
+                      <TestimonialCard key={item.id} testimonial={item} />
+                    ))}
+                  </div>
+                </div>
+              </section>
+            );
+
+          case "gallery":
+            return (
+              <section key={block.id} {...sectionProps(block, shade.get(block.id))}>
+                <div className={wrapClass(block)}>
+                  <BlockHead heading={block.heading} centred={block.align === "centre"} />
+                  <div className={`block-gallery is-${block.columns}`}>
+                    {block.images.map(({ id, image, caption }) => (
+                      <figure key={id} className="block-gallery-tile">
+                        {/* `fill` inside a fixed-ratio frame: the tile decides
+                            the shape and the photograph is cropped to it, so a
+                            portrait among landscapes stays in its row. */}
+                        <div className="block-gallery-media">
+                          <Image
+                            src={image.src}
+                            alt={image.alt}
+                            fill
+                            sizes={
+                              block.columns === "two"
+                                ? "(max-width: 760px) 100vw, 50vw"
+                                : block.columns === "four"
+                                  ? "(max-width: 760px) 50vw, 25vw"
+                                  : "(max-width: 760px) 100vw, 33vw"
+                            }
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+                        {caption && <figcaption>{caption}</figcaption>}
+                      </figure>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            );
+
+          case "video":
+            /* Checked again here, as /auction-info checks its own. The schema
+               refused a bad address on save; this is what runs when the
+               document arrives by any other route, and a refused address
+               renders no player rather than a frame pointed somewhere else. */
+            if (!isAllowedEmbed(block.embedUrl)) return null;
+            return (
+              <section key={block.id} {...sectionProps(block, shade.get(block.id))}>
+                <div className={wrapClass(block, "block-video")}>
+                  <h2 className="section-title">{block.heading}</h2>
+                  {block.lede && <p className="page-video-lede">{block.lede}</p>}
+                  <div className="page-video-frame">
+                    <iframe
+                      src={block.embedUrl}
+                      title={block.heading}
+                      loading="lazy"
+                      allow="autoplay; fullscreen"
+                      allowFullScreen
+                    />
+                  </div>
+                  {block.caption && <p className="page-video-caption">{block.caption}</p>}
+                </div>
+              </section>
+            );
+
+          case "team":
+            return (
+              <section key={block.id} {...sectionProps(block, shade.get(block.id))}>
+                <div className={wrapClass(block)}>
+                  <BlockHead
+                    heading={block.heading}
+                    lede={block.lede}
+                    centred={block.align === "centre"}
+                  />
+                  <div className="block-team">
+                    {block.people.map((person) => (
+                      <article key={person.id} className="block-person">
+                        <div className="block-person-portrait">
+                          {person.photo ? (
+                            <Image
+                              src={person.photo.src}
+                              alt={person.photo.alt}
+                              fill
+                              sizes="(max-width: 760px) 100vw, 360px"
+                              style={{ objectFit: "cover", objectPosition: "center top" }}
+                            />
+                          ) : (
+                            <span className="auc-avatar" aria-hidden="true">
+                              {initialsOf(person.name)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="block-person-body">
+                          <h3 className="block-person-name">{person.name}</h3>
+                          {person.role && <p className="block-person-role">{person.role}</p>}
+                          <div className="block-prose">
+                            <Prose body={person.bio} />
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            );
         }
       })}
     </>

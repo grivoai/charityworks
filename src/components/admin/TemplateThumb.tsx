@@ -200,6 +200,60 @@ function Glyph({ block }: { block: PageBlock }): React.ReactElement {
           </span>
         </>
       );
+
+    case "testimonials":
+      return (
+        <>
+          {block.heading && <Bar w={44} tone="title" />}
+          {block.lede && <Bar w={64} tone="sub" />}
+          <span className="tt-cards">
+            {block.items.slice(0, 3).map((item) => (
+              <span key={item.id} className="tt-card is-tall" />
+            ))}
+          </span>
+        </>
+      );
+
+    case "gallery":
+      return (
+        <>
+          {block.heading && <Bar w={44} tone="title" />}
+          {/* One row of tiles at the block's column count. A second row would
+              be more tiles of the same shape, which is more noise for no more
+              information about the page's shape. */}
+          <span className={`tt-tiles is-${block.columns}`}>
+            {block.images
+              .slice(0, block.columns === "two" ? 2 : block.columns === "four" ? 4 : 3)
+              .map((entry) => (
+                <span key={entry.id} className="tt-img is-tile" />
+              ))}
+          </span>
+        </>
+      );
+
+    case "video":
+      return (
+        <>
+          <Bar w={44} tone="title" />
+          {block.lede && <Bar w={64} tone="sub" />}
+          <span className="tt-img is-player">
+            <span className="tt-play" />
+          </span>
+        </>
+      );
+
+    case "team":
+      return (
+        <>
+          {block.heading && <Bar w={44} tone="title" />}
+          {block.lede && <Bar w={64} tone="sub" />}
+          <span className="tt-cards">
+            {block.people.slice(0, 3).map((person) => (
+              <span key={person.id} className="tt-card is-person" />
+            ))}
+          </span>
+        </>
+      );
   }
 }
 

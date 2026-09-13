@@ -2198,6 +2198,112 @@ body.nav-open .nav {
 }
 
 /* ================================================================== */
+/* GRID BLOCKS                                                         */
+/*                                                                     */
+/* Testimonials, gallery, video and team. Testimonials reuse .t-grid  */
+/* and .t-card from the testimonials page unchanged; the video reuses  */
+/* the .page-video-* pieces from /auction-info. What is new here is    */
+/* the two grids that had no home — photographs and people — and the   */
+/* heading pattern the four share.                                     */
+/* ================================================================== */
+
+/* A heading and lede over a grid. The gap below is the grid's, not the
+   heading's, so a block with no heading has no stray space at the top. */
+.block-head { margin-bottom: 36px; }
+.block-head .section-title { margin-bottom: 10px; }
+
+/* Every tile is 4:3 and the photograph is cropped to it. Natural sizes were
+   tried and rejected: one portrait among landscapes turns a row ragged, and a
+   gallery is built from whatever photographs exist. */
+.block-gallery { display: grid; gap: clamp(14px, 2vw, 24px); }
+.block-gallery.is-two { grid-template-columns: repeat(2, 1fr); }
+.block-gallery.is-three { grid-template-columns: repeat(3, 1fr); }
+.block-gallery.is-four { grid-template-columns: repeat(4, 1fr); }
+
+.block-gallery-tile { margin: 0; min-width: 0; }
+.block-gallery-media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--cream);
+  box-shadow: var(--shadow-sm);
+}
+/* Biased toward the upper third rather than dead centre. A gallery on this
+   site is mostly photographs of people, and a centred crop of a three-quarter
+   shot takes the top of the head; anchoring to the very top, as the portrait
+   rule does, would strand a landscape's subject at the bottom of the tile. */
+.block-gallery-media img { object-position: center 30%; }
+.block-gallery-tile figcaption {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* The player fills its wrap, centred with its heading above it. The
+   .page-video rule caps its own width at 620px because on /auction-info it is
+   a footnote; here the block's width control decides, so that cap is not
+   inherited — this is its own class that borrows only the inner pieces. */
+.block-video { text-align: center; }
+.block-video .page-video-frame { margin-top: 24px; }
+.block-video .page-video-lede { max-width: 620px; margin-left: auto; margin-right: auto; }
+
+/* People as cards, three across and centred, the same flex arithmetic as
+   .t-grid so one card sits in the middle rather than at the left edge of an
+   empty grid. */
+.block-team {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 26px;
+}
+.block-person {
+  flex: 0 1 calc((100% - 2 * 26px) / 3);
+  min-width: 260px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+/* Square, and anchored to the top for the same reason .auc-portrait is: a
+   centred crop of a head-and-shoulders photograph takes the forehead. */
+.block-person-portrait {
+  position: relative;
+  aspect-ratio: 1;
+  background: linear-gradient(160deg, var(--green), var(--green-soft));
+  display: grid;
+  place-items: center;
+}
+.block-person-portrait .auc-avatar {
+  width: 92px; height: 92px; font-size: 2rem;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+.block-person-body { padding: 22px 24px 26px; }
+.block-person-name {
+  font-family: "Playfair Display", serif;
+  font-size: 1.25rem;
+  color: var(--green);
+  margin-bottom: 4px;
+}
+.block-person-role { font-size: 0.9rem; color: var(--gold); font-weight: 600; }
+.block-person-body .block-prose { margin-top: 12px; max-width: none; }
+.block-person-body .block-prose p { font-size: 0.95rem; line-height: 1.6; }
+
+@media (max-width: 760px) {
+  .block-head { margin-bottom: 26px; }
+  /* Four across on a phone is four thumbnails 80px wide; two across is the
+     narrowest that still shows a photograph. Three and four both drop to
+     two, and two drops to one. */
+  .block-gallery.is-two { grid-template-columns: 1fr; }
+  .block-gallery.is-three,
+  .block-gallery.is-four { grid-template-columns: repeat(2, 1fr); }
+  .block-person { flex-basis: 100%; min-width: 0; }
+}
+
+/* ================================================================== */
 /* BLOCK LAYOUT OPTIONS                                                */
 /*                                                                     */
 /* The width and spacing a client can choose on a content block. Each  */
