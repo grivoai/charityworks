@@ -16,7 +16,9 @@ import {
   pageSchemas,
   siteContentSchema,
 } from "@/content/schema";
-import { getServiceClient } from "@/lib/supabase";
+// `read` is the shared retrying reader: see readWithRetry for why every
+// content read goes through it rather than straight to the client.
+import { getServiceClient, readWithRetry as read } from "@/lib/supabase";
 
 /**
  * Content read from the database the admin panel writes to.
@@ -100,35 +102,6 @@ function fail(what: string, error: PostgrestError | null): never {
       `${error?.message ?? "no rows returned"}` +
       (error?.hint ? ` (${error.hint})` : "")
   );
-}
-
-/**
- * Retries a read a few times before giving up.
- *
- * These reads run at build time, where a transient database hiccup — a brief
- * clock skew that reads back as "JWT issued at future", a dropped connection —
- * otherwise fails the entire static build for something that would have
- * succeeded a second later. A short backoff turns those into a pause rather than
- * a failed deploy. A genuine fault (a real outage, a schema mismatch) still
- * surfaces once the attempts are spent, and `fail()` still throws loudly — this
- * only buys a few seconds for the transient case.
- */
-async function read<R extends { error: PostgrestError | null }>(
-  label: string,
-  run: () => PromiseLike<R>
-): Promise<R> {
-  const backoffMs = [500, 1500, 3500];
-  let result = await run();
-  for (const delay of backoffMs) {
-    if (!result.error) return result;
-    console.warn(
-      `[content] transient read error for ${label} (${result.error.message}); ` +
-        `retrying in ${delay}ms`
-    );
-    await new Promise((resolve) => setTimeout(resolve, delay));
-    result = await run();
-  }
-  return result;
 }
 
 /** Drops nulls so an absent column becomes an absent key, which is what the schemas expect. */

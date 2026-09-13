@@ -1,6 +1,10 @@
 import "server-only";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  createClient,
+  type PostgrestError,
+  type SupabaseClient,
+} from "@supabase/supabase-js";
 
 /**
  * The service-role Supabase client.
@@ -42,4 +46,35 @@ export function getServiceClient(): SupabaseClient {
   });
 
   return client;
+}
+
+/**
+ * Retries a read a few times before giving up.
+ *
+ * Supabase's gateway sometimes answers a perfectly ordinary query with a
+ * transient failure — a 504 after five seconds, a brief clock skew that reads
+ * back as "JWT issued at future", a dropped connection — that would have
+ * succeeded a second later. At build time that fails the entire static build;
+ * in the admin it throws a stack trace into the editor and a blank preview
+ * beside it. A short backoff turns both into a pause instead. A genuine fault
+ * (a real outage, a schema mismatch) still surfaces once the attempts are
+ * spent, and the caller still decides what to throw — this only buys a few
+ * seconds for the transient case.
+ */
+export async function readWithRetry<R extends { error: PostgrestError | null }>(
+  label: string,
+  run: () => PromiseLike<R>
+): Promise<R> {
+  const backoffMs = [500, 1500, 3500];
+  let result = await run();
+  for (const delay of backoffMs) {
+    if (!result.error) return result;
+    console.warn(
+      `[supabase] transient read error for ${label} (${result.error.message}); ` +
+        `retrying in ${delay}ms`
+    );
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    result = await run();
+  }
+  return result;
 }

@@ -1,5 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+
+import { retryOnce } from "@/lib/retry-once";
 
 /**
  * Session refresh and the first gate on /admin.
@@ -49,10 +52,15 @@ export async function middleware(request: NextRequest) {
 
   // getUser(), not getSession() — see the note in lib/auth.ts. This call is
   // also what performs the refresh, so it is not optional even when the result
-  // is unused.
+  // is unused. Tried twice when Supabase itself failed to answer, because the
+  // redirect below cannot tell a gateway timeout from a signed-out visitor,
+  // and one of those is the admin losing their place mid-edit.
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await retryOnce(
+    () => supabase.auth.getUser(),
+    (result) => isAuthRetryableFetchError(result.error)
+  );
 
   const { pathname } = request.nextUrl;
   const isLoginPage = pathname === "/admin/login";
