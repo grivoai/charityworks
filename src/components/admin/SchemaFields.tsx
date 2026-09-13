@@ -12,6 +12,7 @@ import type {
 import { FIELD_PATH_ATTR, domId } from "@/lib/admin/dom";
 import { withFreshId } from "@/lib/admin/entry-id";
 import { putFile } from "@/components/admin/upload-transfer";
+import { useStrayDropGuard } from "@/components/admin/drop-guard";
 import { ImagePicker } from "@/components/admin/ImagePicker";
 import { Icon, ICON_SLUGS } from "@/components/Icon";
 import { addImage, signImage } from "@/lib/admin/image-actions";
@@ -300,6 +301,14 @@ function EnumField({ node, value, onChange, path, errors }: FieldProps) {
  * the form is saved, which keeps every guarantee the save path makes — and an
  * upload the client then abandons is an unused row rather than a live change
  * they did not ask for.
+ *
+ * The whole control is a drop zone as well as a button, and a dropped file
+ * takes exactly the path a chosen one does — same checks, same signed PUT,
+ * same dedupe — so there is one way in with two doors rather than two ways
+ * in. What a drop can carry that a file dialog cannot is a picture dragged
+ * off a web page, which arrives as a URL and no file; that gets its own
+ * message rather than the generic refusal, because "JPG, PNG or WebP" is a
+ * baffling answer to someone who just dragged a JPG.
  */
 function ImageUpload({
   onChosen,
@@ -309,11 +318,13 @@ function ImageUpload({
   const [percent, setPercent] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [over, setOver] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  useStrayDropGuard();
 
   const busy = percent !== null;
 
-  const upload = async (file: File) => {
+  const upload = async (file: File, extra?: string) => {
     setNote(null);
     const bad = imageProblem(file.name, file.size);
     if (bad) return setProblem(bad);
@@ -349,15 +360,57 @@ function ImageUpload({
 
     onChosen({ src: added.src, width: added.width, height: added.height });
     setNote(
-      added.warning ??
+      (added.warning ??
         (added.deduped
           ? "That photograph was already in the library, so the copy already there is used."
-          : `Added${added.width ? ` — ${added.width}\u00d7${added.height}` : ""}. It goes live when you save.`)
+          : `Added${added.width ? ` — ${added.width}\u00d7${added.height}` : ""}. It goes live when you save.`)) +
+        (extra ? ` ${extra}` : "")
+    );
+  };
+
+  /* `dragover` must be cancelled for a drop to land here at all, and it and
+     `drop` are stopped from bubbling so the window guard — which refuses
+     drops everywhere else — never sees the one drop that was meant. */
+  const allow = (event: React.DragEvent) => {
+    if (busy) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = "copy";
+    if (!over) setOver(true);
+  };
+
+  const drop = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setOver(false);
+    if (busy) return;
+
+    const files = Array.from(event.dataTransfer.files);
+    if (files.length === 0) {
+      setNote(null);
+      return setProblem(
+        "That was a picture from a web page, not a file. Save it to your computer first, then drop it here."
+      );
+    }
+    void upload(
+      files[0],
+      files.length > 1
+        ? `This field holds one photograph, so the first of the ${files.length} was used.`
+        : undefined
     );
   };
 
   return (
-    <div className="admin-image-upload">
+    <div
+      className={`admin-image-upload admin-drop${over ? " is-over" : ""}${busy ? " is-busy" : ""}`}
+      onDragEnter={allow}
+      onDragOver={allow}
+      onDragLeave={(event) => {
+        // Leaving for a child element fires this too; only a real exit counts.
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOver(false);
+      }}
+      onDrop={drop}
+    >
       <input
         ref={input}
         type="file"
@@ -376,6 +429,11 @@ function ImageUpload({
       >
         {busy ? `Uploading — ${percent}%` : "Upload a photograph"}
       </button>
+      {!busy && (
+        <span className="admin-drop-hint" aria-hidden="true">
+          or drop one here
+        </span>
+      )}
 
       {busy && (
         <div className="admin-doc-bar" role="status">

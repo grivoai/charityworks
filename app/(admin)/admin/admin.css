@@ -1182,6 +1182,33 @@ a.admin-card:hover {
 /* Uploading a photograph, from inside the image field. */
 .admin-image-upload { margin-top: 10px; }
 .admin-image-upload .admin-btn { margin-top: 0; }
+
+/* The upload control is also a drop zone. Dashed because that is the one
+   border meaning "put something here" that needs no explaining; the hint text
+   is there for anyone who has never seen one. It is `aria-hidden` — the
+   button already says what the control does, and a drop is a mouse gesture
+   with no keyboard equivalent to announce. */
+.admin-drop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.16s var(--ease), background 0.16s var(--ease);
+}
+.admin-drop .admin-doc-bar,
+.admin-drop .admin-help,
+.admin-drop .admin-f-error { flex-basis: 100%; }
+.admin-drop-hint { font-size: 13px; color: var(--muted); }
+.admin-drop.is-over {
+  border-color: var(--green-soft);
+  border-style: solid;
+  background: var(--paper);
+}
+.admin-drop.is-over .admin-drop-hint { color: var(--ink); }
+.admin-drop.is-busy { border-style: solid; }
 .admin-image-upload .admin-doc-bar { margin-top: 8px; }
 .admin-image-upload .admin-help,
 .admin-image-upload .admin-f-error { margin-top: 6px; }
