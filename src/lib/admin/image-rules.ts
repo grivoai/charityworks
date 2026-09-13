@@ -45,6 +45,15 @@ export function imageExtension(filename: string): ImageExtension | null {
  */
 export function imageProblem(filename: string, bytes: number): string | null {
   if (!imageExtension(filename)) {
+    // The one refusal worth being specific about: a photo dragged straight
+    // off a recent iPhone is HEIC, and "JPG, PNG or WebP" does not tell the
+    // person holding it what to do next.
+    if (/\.heic$|\.heif$/i.test(filename)) {
+      return (
+        "That is an iPhone HEIC photo. Export or save it as a JPG first — " +
+        "on a Mac, open it in Preview and choose File › Export."
+      );
+    }
     return "Photographs can be JPG, PNG or WebP files.";
   }
   if (bytes === 0) return "That file is empty.";

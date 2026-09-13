@@ -16,6 +16,8 @@
  * (the react-server condition lets `server-only` modules load outside Next.)
  */
 
+import { readFileSync } from "node:fs";
+
 import { pageSchemas } from "@/content/schema";
 import type { PageSlug } from "@/content/types";
 import type { FieldNode } from "@/lib/admin/field-node";
@@ -291,6 +293,62 @@ if (failures === 0) {
   console.log(
     "  ok    a question can be added, and the six core ones cannot be lost"
   );
+}
+
+/* ------------------------------------------------------------------ */
+/* Dropping a photograph                                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The image field is a drop zone, and a drop zone has one failure mode that
+ * costs real work: a file let go an inch outside it makes the browser navigate
+ * to the file, and the unsaved form is gone. The guard against that is a pair
+ * of window listeners, and the zone's own handlers have to stop the event
+ * before it reaches them or the guard refuses the one drop that was meant.
+ * Neither half is visible in a type check, so both are asserted from source,
+ * the way check-site reads the preview channel.
+ */
+{
+  const field = readFileSync("src/components/admin/SchemaFields.tsx", "utf8");
+  const guard = readFileSync("src/components/admin/drop-guard.ts", "utf8");
+
+  const wired = [
+    [field.includes("useStrayDropGuard()"), "the image field mounts the stray-drop guard"],
+    [
+      /onDragOver=\{allow\}/.test(field) && /onDrop=\{drop\}/.test(field),
+      "the upload control handles dragover and drop itself",
+    ],
+    [
+      (field.match(/event\.stopPropagation\(\)/g) ?? []).length >= 2,
+      "the zone stops dragover and drop before they reach the window guard",
+    ],
+    [
+      guard.includes('addEventListener("dragover", refuse)') &&
+        guard.includes('addEventListener("drop", refuse)'),
+      "the guard cancels both dragover and drop on the window",
+    ],
+    [
+      guard.includes("event.preventDefault()") && guard.includes('dropEffect = "none"'),
+      "the guard refuses the drop and says so with the cursor",
+    ],
+    [
+      guard.includes("removeEventListener") && /zones\s*-=\s*1/.test(guard),
+      "the guard is ref-counted and removed when the last zone unmounts",
+    ],
+    [
+      field.includes("dataTransfer.files") && field.includes("not a file"),
+      "a picture dragged off a web page gets its own message",
+    ],
+    [
+      field.includes("void upload(") && field.includes('type="file"'),
+      "a dropped file takes the same upload path as a chosen one",
+    ],
+  ] as const;
+
+  for (const [okay, what] of wired) {
+    if (okay) console.log(`  ok    ${what}`);
+    else fail(what);
+  }
 }
 
 if (failures > 0) {
