@@ -394,21 +394,24 @@ export const siteContentSchema = z.object({
  * dialog rather than embedding — and a field that exists on one copy and not
  * another is how `hero.video` came to be stored, valid, and silently unread.
  */
-export const videoBlockSchema = z
-  .object({
-    heading: text,
-    lede: optionalText,
-    embedUrl: text
-      .refine(isAllowedEmbed, { message: embedProblem("") ?? "" })
-      .describe(
-        "The player address, from " +
-          EMBED_HOSTS +
-          ". For Google Drive that is the file address ending in /preview, " +
-          "not /view — /view shows a sign-in wall inside a frame."
-      ),
-    caption: optionalText.describe("A line under the player. Optional."),
-  })
-  .optional();
+const videoFields = {
+  heading: text.describe(
+    "Also the player's accessible name, so it cannot be blank."
+  ),
+  lede: optionalText,
+  embedUrl: text
+    .refine(isAllowedEmbed, { message: embedProblem("") ?? "" })
+    .describe(
+      "The player address, from " +
+        EMBED_HOSTS +
+        ". For Google Drive that is the file address ending in /preview, " +
+        "not /view — /view shows a sign-in wall inside a frame. Share the " +
+        "file with anyone who has the link, or visitors see the same wall."
+    ),
+  caption: optionalText.describe("A line under the player. Optional."),
+};
+
+export const videoBlockSchema = z.object(videoFields).optional();
 
 const basePage = {
   seo: seoMetaSchema,
@@ -765,11 +768,14 @@ export const anyPageSchema = z.discriminatedUnion("slug", [
  * position, so reordering a page is an ordinary edit instead of a way to hand
  * one block's protected values to another.
  *
- * Kept deliberately small. Six shapes that reuse components already on the
+ * Kept deliberately small. Eleven shapes that reuse components already on the
  * site beats twenty that need new ones, and every extra shape is another thing
- * the client has to choose between before they can write a sentence. The names
- * avoid acronyms because the picker's labels are generated from them —
- * `faqList` would read "Faq list".
+ * the client has to choose between before they can write a sentence. The four
+ * added on 2026-09-12 — testimonials, gallery, video, team — each reuse a
+ * component or a stylesheet the site already had, and a pricing table was
+ * left out of that batch for want of anything on this site it would price.
+ * The names avoid acronyms because the picker's labels are generated from
+ * them — `faqList` would read "Faq list".
  */
 const blockBase = { id: text };
 
@@ -900,6 +906,125 @@ export const catalogTeaserBlockSchema = z.object({
   background: blockBackground(),
 });
 
+/**
+ * Several testimonials, as a grid of the cards the testimonials page uses.
+ *
+ * The cards are written into the block rather than pulled from the
+ * testimonials page. A page about one event wants the two quotes from that
+ * event, not the site's whole roster, and a block that showed "the latest
+ * three" would change under a page nobody edited.
+ *
+ * One to six. The section heading over zero cards is a heading over nothing,
+ * and seven cards is a testimonials page, which already exists.
+ */
+export const testimonialsBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("testimonials"),
+  heading: optionalText,
+  lede: optionalText,
+  items: z
+    .array(testimonialSchema)
+    .min(1, "A testimonials block needs at least one testimonial.")
+    .max(6, "Six is the most that reads as a selection; use the testimonials page for more."),
+  width: blockWidth("contained"),
+  spacing: blockSpacing(),
+  align: blockAlign("centre"),
+  background: blockBackground(),
+});
+
+/**
+ * A grid of photographs.
+ *
+ * Every tile is the same shape — cropped to 4:3 rather than shown at its own
+ * proportions — because the first phone-portrait photo among landscapes is
+ * otherwise a ragged row, and a gallery is built from whatever photographs
+ * exist rather than ones chosen for their shape.
+ *
+ * `columns` is the one layout control of its own. It exists because a grid
+ * of three with two photographs in it has a hole, and the alternative — a
+ * grid that changes its column count by how many items it holds — is a
+ * layout that reflows when a photograph is added, which reads as a mistake.
+ *
+ * Two to twelve. One photograph is an image-and-text block without the text;
+ * thirteen is a page, and at three across it is already four rows.
+ */
+export const galleryBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("gallery"),
+  heading: optionalText,
+  images: z
+    .array(
+      z.object({
+        id: text,
+        image: imageRefSchema,
+        caption: optionalText.describe("A line under this photograph. Optional."),
+      })
+    )
+    .min(2, "A gallery needs at least two photographs.")
+    .max(12, "Twelve photographs is the most a gallery holds; start another for more."),
+  columns: z
+    .enum(["two", "three", "four"])
+    .describe("Photographs per row. Two shows them large; four shows them as thumbnails.")
+    .default("three"),
+  width: blockWidth("contained"),
+  spacing: blockSpacing(),
+  align: blockAlign("centre"),
+  background: blockBackground(),
+});
+
+/**
+ * An embedded player, as /auction-info shows one.
+ *
+ * The fields are the page-level video record's, so the host allowlist and its
+ * explanation are written once. No `align`: the player is centred with its
+ * heading above it, and a left-aligned heading over a centred frame is not an
+ * arrangement anybody would choose on purpose.
+ */
+export const videoPageBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("video"),
+  ...videoFields,
+  width: blockWidth("narrow"),
+  spacing: blockSpacing(),
+  background: blockBackground(),
+});
+
+/**
+ * The people behind something, as cards.
+ *
+ * Not the auctioneers page's list layout, which gives each person a full row
+ * and three paragraphs. A custom page introduces a committee or a pair of
+ * consultants, and three cards across is that at a glance. The photograph is
+ * optional because a committee rarely has one of everybody, and the card
+ * falls back to initials the way the auctioneers page does rather than to a
+ * broken image.
+ *
+ * One to six: two rows of three. The name and a short bio are required
+ * because a card with a photograph and nothing else is a stock-photo grid.
+ */
+export const teamBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal("team"),
+  heading: optionalText,
+  lede: optionalText,
+  people: z
+    .array(
+      z.object({
+        id: text,
+        photo: imageRefSchema.optional(),
+        name: text,
+        role: optionalText.describe("Their title or what they do. Optional."),
+        bio: text.describe("A few sentences. Blank lines start a new paragraph."),
+      })
+    )
+    .min(1, "A team block needs at least one person.")
+    .max(6, "Six is the most that fits as cards; use two blocks for a larger group."),
+  width: blockWidth("contained"),
+  spacing: blockSpacing(),
+  align: blockAlign("centre"),
+  background: blockBackground(),
+});
+
 /* ------------------------------------------------------------------ */
 /* Columns                                                             */
 /* ------------------------------------------------------------------ */
@@ -1002,6 +1127,10 @@ export const pageBlockSchema = z.discriminatedUnion("type", [
   enquiryFormBlockSchema,
   catalogTeaserBlockSchema,
   columnsBlockSchema,
+  testimonialsBlockSchema,
+  galleryBlockSchema,
+  videoPageBlockSchema,
+  teamBlockSchema,
 ]);
 
 /**

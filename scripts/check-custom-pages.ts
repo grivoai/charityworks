@@ -165,7 +165,7 @@ check(opaque === 0, "no field of a custom page is uneditable");
  * here as recursion the editor cannot draw, which is the failure this is
  * really watching for.
  */
-const PAGE_BLOCK_TYPES = 7;
+const PAGE_BLOCK_TYPES = 11;
 const COLUMN_ITEM_TYPES = 3;
 
 check(
@@ -323,6 +323,59 @@ for (const [type, block] of Object.entries(legacyBlocks)) {
   );
 }
 
+/**
+ * The blocks added on 2026-09-12, each at its smallest valid content. Not in
+ * `legacyBlocks`, because nothing was stored before they existed and "keeps
+ * the layout it already had" is not a property they can have. They do share
+ * the layout controls, so the matrix below covers them too.
+ */
+const gridBlocks: Record<string, Record<string, unknown>> = {
+  testimonials: {
+    id: "g1",
+    type: "testimonials",
+    items: [{ id: "t1", quote: "Quote.", author: "A. Person", role: "Chair", rating: 5 }],
+  },
+  gallery: {
+    id: "g2",
+    type: "gallery",
+    images: [
+      { id: "i1", image: { src: "/a.jpg", alt: "A." } },
+      { id: "i2", image: { src: "/b.jpg", alt: "B." } },
+    ],
+  },
+  video: {
+    id: "g3",
+    type: "video",
+    heading: "Watch",
+    embedUrl: "https://www.youtube-nocookie.com/embed/abc123",
+  },
+  team: {
+    id: "g4",
+    type: "team",
+    people: [{ id: "p1", name: "A. Person", bio: "Bio." }],
+  },
+};
+const gridHasAlign: Record<string, boolean> = {
+  testimonials: true,
+  gallery: true,
+  video: false,
+  team: true,
+};
+
+for (const [type, block] of Object.entries(gridBlocks)) {
+  const parsed = pageBlockSchema.safeParse(block);
+  check(
+    parsed.success,
+    parsed.success
+      ? `a ${type} block at its minimum content is valid`
+      : `a ${type} block at its minimum content is refused: ` +
+          parsed.error.issues
+            .slice(0, 2)
+            .map((i) => `${i.path.map(String).join(".")} ${i.message}`)
+            .join("; ")
+  );
+}
+
 /* Every combination a client can reach is one the schema accepts. */
 {
   const widths = ["narrow", "contained", "full"];
@@ -332,8 +385,10 @@ for (const [type, block] of Object.entries(legacyBlocks)) {
   let tried = 0;
   let rejected = 0;
 
-  for (const [type, block] of Object.entries(legacyBlocks)) {
-    const hasAlign = "align" in legacyLayout[type];
+  const laid = { ...legacyBlocks, ...gridBlocks };
+  for (const [type, block] of Object.entries(laid)) {
+    const hasAlign =
+      type in legacyLayout ? "align" in legacyLayout[type] : gridHasAlign[type];
     for (const width of widths) {
       for (const spacing of spacings) {
         for (const background of backgrounds) {
@@ -355,8 +410,72 @@ for (const [type, block] of Object.entries(legacyBlocks)) {
 
   check(
     rejected === 0,
-    `all ${tried} layout combinations across the four content blocks are valid` +
+    `all ${tried} layout combinations across the eight content blocks are valid` +
       (rejected === 0 ? "" : ` (${rejected} rejected)`)
+  );
+}
+
+/**
+ * The bounds that keep a grid block from looking broken. An empty grid under
+ * a heading and a grid of twenty are the two failures these blocks were
+ * designed against, and both are refusals the schema makes rather than the
+ * renderer — so they are asserted here, on the schema, by trying each.
+ */
+{
+  const refused = (block: Record<string, unknown>) =>
+    !pageBlockSchema.safeParse(block).success;
+
+  const testimonial = (n: number) => ({
+    id: `t${n}`, quote: "Q.", author: "A", role: "R", rating: 4,
+  });
+  const photo = (n: number) => ({ id: `i${n}`, image: { src: `/${n}.jpg`, alt: "A." } });
+  const person = (n: number) => ({ id: `p${n}`, name: `P${n}`, bio: "B." });
+  const many = <T,>(n: number, make: (i: number) => T) =>
+    Array.from({ length: n }, (_, i) => make(i + 1));
+
+  const bounds: Array<[boolean, string]> = [
+    [refused({ ...gridBlocks.testimonials, items: [] }), "a testimonials block with no testimonials is refused"],
+    [refused({ ...gridBlocks.testimonials, items: many(7, testimonial) }), "seven testimonials are refused"],
+    [!refused({ ...gridBlocks.testimonials, items: many(6, testimonial) }), "six testimonials are allowed"],
+    [refused({ ...gridBlocks.gallery, images: [photo(1)] }), "a gallery of one photograph is refused"],
+    [refused({ ...gridBlocks.gallery, images: many(13, photo) }), "thirteen photographs are refused"],
+    [!refused({ ...gridBlocks.gallery, images: many(12, photo) }), "twelve photographs are allowed"],
+    [refused({ ...gridBlocks.team, people: [] }), "a team block with nobody in it is refused"],
+    [refused({ ...gridBlocks.team, people: many(7, person) }), "seven people are refused"],
+    [!refused({ ...gridBlocks.team, people: many(6, person) }), "six people are allowed"],
+    [
+      refused({ ...gridBlocks.video, embedUrl: "https://www.youtube.com/watch?v=abc123" }),
+      "a YouTube watch address is refused on save — only the embed form plays in a frame",
+    ],
+    [
+      refused({ ...gridBlocks.video, embedUrl: "https://example.com/embed/abc" }),
+      "an address off the allowlist is refused on save",
+    ],
+    [
+      refused({ ...gridBlocks.video, heading: "" }),
+      "a video block needs a heading — it is the player's accessible name",
+    ],
+    [
+      !refused({ ...gridBlocks.team, people: [{ ...person(1), photo: undefined }] }),
+      "a person without a photograph is allowed — the card shows initials",
+    ],
+  ];
+  for (const [okay, what] of bounds) check(okay, what);
+}
+
+/* The video block re-checks its address where it renders, as /auction-info
+   does. The schema is what runs when somebody uses the admin; the renderer is
+   what runs when a document arrives by any other route. */
+{
+  const renderer = readFileSync("src/components/PageBlocks.tsx", "utf8");
+  const videoCase = renderer.slice(renderer.indexOf('case "video":'));
+  check(
+    /isAllowedEmbed\(block\.embedUrl\)/.test(videoCase.slice(0, 600)),
+    "the video block refuses an address off the allowlist at render time, not only on save"
+  );
+  check(
+    /title=\{block\.heading\}/.test(videoCase) && /loading="lazy"/.test(videoCase),
+    "the video frame has an accessible name and loads lazily"
   );
 }
 
@@ -386,6 +505,22 @@ for (const [type, block] of Object.entries(legacyBlocks)) {
     "is-thirds",
     "column-title",
     "block-column-media",
+    // The grid blocks.
+    "block-head",
+    "block-gallery",
+    "is-two",
+    "is-three",
+    "is-four",
+    "block-gallery-media",
+    "block-video",
+    "block-team",
+    "block-person",
+    "block-person-portrait",
+    // Reused from the testimonials page and /auction-info, and asserted here
+    // because a rename over there would now break a block over here.
+    "t-grid",
+    "page-video-frame",
+    "auc-avatar",
   ];
 
   // Whole class tokens, not substrings. `css.includes(".wrap-full")` is also

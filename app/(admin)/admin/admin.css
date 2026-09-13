@@ -1742,6 +1742,37 @@ a.admin-card:hover {
   border: 1px solid rgba(10, 31, 61, 0.08);
 }
 
+/* The four grid blocks. A testimonial card is taller than a catalog card
+   because it holds a quote; a person card taller still, with its portrait
+   drawn as a darker top. Gallery tiles are the image glyph at the block's
+   column count; the player is the image glyph with a mark in the middle. */
+.tt-card.is-tall { height: 30px; }
+.tt-card.is-person {
+  height: 36px;
+  background:
+    linear-gradient(rgba(10, 31, 61, 0.16), rgba(10, 31, 61, 0.16)) top / 100% 55% no-repeat,
+    rgba(10, 31, 61, 0.08);
+}
+.tt-tiles { display: flex; gap: 4px; width: 100%; margin-top: 2px; }
+.tt-tiles .tt-img.is-tile { flex: 1 1 0; height: 20px; }
+.tt-tiles.is-two .tt-img.is-tile { height: 28px; }
+.tt-tiles.is-four .tt-img.is-tile { height: 15px; }
+.tt-img.is-player {
+  position: relative;
+  height: 34px;
+  background: rgba(10, 31, 61, 0.22);
+  margin-top: 2px;
+}
+.tt-play {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 8px;
+  border-color: transparent transparent transparent rgba(255, 255, 255, 0.85);
+  transform: translate(-40%, -50%);
+}
+
 .tt-cols { display: flex; gap: 6px; width: 100%; margin-top: 2px; }
 .tt-col { display: flex; flex-direction: column; gap: 3px; flex: 1 1 0; min-width: 0; }
 .tt-cols.is-wide-left > .tt-col:first-child { flex-grow: 1.7; }
