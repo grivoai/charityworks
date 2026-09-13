@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AdminBack } from "@/components/admin/AdminBack";
+import { HelpPanel } from "@/components/admin/HelpPanel";
 import { signOut } from "@/lib/auth-actions";
 import type { AdminUser } from "@/lib/auth";
 
@@ -56,6 +57,13 @@ export function AdminShell({
           {admin.name ?? admin.email}
           {admin.role === "owner" ? " · owner" : ""}
         </span>
+
+        {/* In the bar for the same reason the back link is: help is asked for
+            from the middle of a long form, and a panel that has to be scrolled
+            to is one that is not opened. Only signed-in screens carry it —
+            the sign-in pages render no shell, and a help panel on the
+            two-factor challenge would be a place to put a link around it. */}
+        <HelpPanel />
 
         <Link href="/admin/security" className="admin-signout">
           Security

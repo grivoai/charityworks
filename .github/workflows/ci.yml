@@ -75,6 +75,9 @@ jobs:
       - name: Content cache key
         run: npm run check:build-key
 
+      - name: Help panel
+        run: npm run check:help
+
       # Without Supabase configured this builds from the seed modules in
       # src/content, which still exercises every route, every component and the
       # schemas the seed is parsed through. What it cannot see is the live
