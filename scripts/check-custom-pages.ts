@@ -239,6 +239,51 @@ for (const template of PAGE_TEMPLATES) {
   );
 }
 
+/* …and the minting reaches every depth. A testimonials card or a team member
+   with an id shared across two pages is the same fault as a block with one,
+   one level down, and `withTemplateIds` has to know about each list that
+   carries ids — a block type added without teaching it would pass the schema
+   (the schema only asks that an id be present) and fail here. */
+{
+  const idsIn = (value: unknown, out: string[] = []): string[] => {
+    if (Array.isArray(value)) value.forEach((v) => idsIn(v, out));
+    else if (value && typeof value === "object") {
+      for (const [k, v] of Object.entries(value)) {
+        if (k === "id" && typeof v === "string") out.push(v);
+        else idsIn(v, out);
+      }
+    }
+    return out;
+  };
+  for (const template of PAGE_TEMPLATES) {
+    if (template.blocks.length === 0) continue;
+    const first = idsIn(withTemplateIds(template.blocks));
+    const second = new Set(idsIn(withTemplateIds(template.blocks)));
+    const shared = first.filter((id) => second.has(id));
+    check(
+      shared.length === 0 && new Set(first).size === first.length,
+      shared.length === 0
+        ? `two pages from "${template.id}" share none of their ${first.length} ids, at any depth`
+        : `two pages from "${template.id}" would share ids: ${shared.slice(0, 3).join(", ")}`
+    );
+  }
+}
+
+/* A template cannot invent a photograph or a video, and says so at the top of
+   page-templates.ts. Written down here as well, because the type union that
+   enforces it is one `| Strip<…gallery…>` away from not enforcing it. */
+for (const template of PAGE_TEMPLATES) {
+  const needsMedia = template.blocks.filter((b) =>
+    ["imageAndText", "gallery", "video"].includes(b.type)
+  );
+  check(
+    needsMedia.length === 0,
+    needsMedia.length === 0
+      ? `template "${template.id}" ships no block that needs a photograph or a video`
+      : `template "${template.id}" ships a ${needsMedia[0].type} block, which needs media a template cannot choose`
+  );
+}
+
 check(
   templateById(undefined).id === DEFAULT_TEMPLATE_ID &&
     templateById("no-such-template").id === DEFAULT_TEMPLATE_ID,

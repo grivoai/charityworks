@@ -14,10 +14,13 @@ import type { PageBlockInput } from "@/content/schema";
  * reads as plausible finished text ("Welcome to our organisation") is the kind
  * that survives to production; copy that names what belongs there does not.
  *
- * No template uses `imageAndText`. That block requires a real `image.src` and
- * alt text, and a template cannot invent a photograph — it would either ship a
- * broken image reference or silently adopt some unrelated file already on the
- * site. Adding a picture is a deliberate step, so it is left to one.
+ * No template uses `imageAndText`, a gallery or a video. Those blocks require
+ * a real `image.src` or a real player address, and a template cannot invent
+ * either — it would ship a broken reference, or silently adopt some unrelated
+ * file or video already on the site. Adding a picture is a deliberate step, so
+ * it is left to one; the templates that want one say so in their copy. A team
+ * block CAN appear, because its photograph is optional and a person without
+ * one is drawn as initials rather than as a broken image.
  *
  * Ids are assigned by `createCustomPage` rather than written here, because a
  * template is a value that may be used many times and two pages created from
@@ -46,7 +49,19 @@ export type TemplateBlock =
       >[];
     })
   | Strip<Extract<PageBlockInput, { type: "enquiryForm" }>>
-  | Strip<Extract<PageBlockInput, { type: "catalogTeaser" }>>;
+  | Strip<Extract<PageBlockInput, { type: "catalogTeaser" }>>
+  | (Omit<Extract<PageBlockInput, { type: "testimonials" }>, "id" | "items"> & {
+      items: Omit<
+        Extract<PageBlockInput, { type: "testimonials" }>["items"][number],
+        "id"
+      >[];
+    })
+  | (Omit<Extract<PageBlockInput, { type: "team" }>, "id" | "people"> & {
+      people: Omit<
+        Extract<PageBlockInput, { type: "team" }>["people"][number],
+        "id"
+      >[];
+    });
 
 export interface PageTemplate {
   id: string;
@@ -172,6 +187,188 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
       },
     ],
   },
+  {
+    id: "team",
+    label: "Meet the team",
+    description:
+      "The people behind something: a short introduction, one card each, and a way to reach them.",
+    intro: "REPLACE — one line on who these people are to the reader.",
+    blocks: [
+      {
+        type: "richText",
+        heading: "REPLACE — who you will be working with",
+        body:
+          "REPLACE — a paragraph on the group as a whole: what they do together " +
+          "and what the reader can expect from them.",
+      },
+      {
+        type: "team",
+        heading: "The team",
+        people: [
+          {
+            name: "REPLACE — a name",
+            role: "REPLACE — their title, or delete this line",
+            bio:
+              "REPLACE — two or three sentences. Add a photograph above, or " +
+              "leave it and the card shows their initials.",
+          },
+          {
+            name: "REPLACE — a second name",
+            role: "REPLACE — their title",
+            bio: "REPLACE — two or three sentences.",
+          },
+          {
+            name: "REPLACE — a third name",
+            role: "REPLACE — their title",
+            bio: "REPLACE — two or three sentences, or remove this person.",
+          },
+        ],
+      },
+      {
+        type: "callToAction",
+        heading: "REPLACE — an invitation to get in touch",
+        lede: "REPLACE — one line on what happens when they do, or delete this line.",
+        cta: {
+          label: "Get in touch",
+          href: "/contact",
+          variant: "primary",
+        },
+      },
+    ],
+  },
+  {
+    id: "recap",
+    label: "Event recap",
+    description:
+      "After an event: how it went, what people said, and the next one. Add a gallery block for the photographs.",
+    intro: "REPLACE — the event and the date, e.g. “The Spring Gala, 14 April”.",
+    blocks: [
+      {
+        type: "richText",
+        eyebrow: "REPLACE — the headline number, e.g. “$84,000 raised”",
+        heading: "REPLACE — how the night went, in one line",
+        body:
+          "REPLACE — the story of the evening in two or three paragraphs: the " +
+          "room, the moment it turned, what the money does now.\n\n" +
+          "REPLACE — then add a Gallery block below this one for the " +
+          "photographs. Templates cannot choose photographs for you, so it is " +
+          "not here yet.",
+      },
+      {
+        type: "testimonials",
+        heading: "What people said",
+        items: [
+          {
+            quote: "REPLACE — something a guest or an organiser actually said.",
+            author: "REPLACE — their name",
+            role: "REPLACE — who they are, e.g. “Gala chair”",
+            rating: 5,
+          },
+          {
+            quote: "REPLACE — a second quote, or remove this one.",
+            author: "REPLACE — their name",
+            role: "REPLACE — who they are",
+            rating: 5,
+          },
+        ],
+      },
+      {
+        type: "callToAction",
+        heading: "REPLACE — the next event, or a thank-you",
+        lede: "REPLACE — one line, or delete this line.",
+        cta: {
+          label: "Plan your next auction",
+          href: "/contact",
+          variant: "primary",
+        },
+      },
+    ],
+  },
+  {
+    id: "thanks",
+    label: "Thank-you page",
+    description:
+      "For donors and guests after the fact: the thanks, what it made possible, and what people said.",
+    intro: "REPLACE — one line: thank you, and for what.",
+    blocks: [
+      {
+        type: "richText",
+        heading: "REPLACE — thank you, in your own words",
+        body:
+          "REPLACE — who gave, what it adds up to, and what it makes possible. " +
+          "Be specific: a number and a thing beats a paragraph of gratitude.",
+        align: "centre",
+      },
+      {
+        type: "testimonials",
+        heading: "REPLACE — a heading for the quotes, e.g. “In their words”",
+        items: [
+          {
+            quote: "REPLACE — a line from someone the money helped, or from a donor.",
+            author: "REPLACE — their name",
+            role: "REPLACE — who they are",
+            rating: 5,
+          },
+        ],
+      },
+      {
+        type: "callToAction",
+        heading: "REPLACE — one way to stay involved",
+        lede: "REPLACE — one line, or delete this line.",
+        cta: {
+          label: "See the items",
+          href: "/auction-items",
+          variant: "primary",
+        },
+      },
+    ],
+  },
+  {
+    id: "stories",
+    label: "Success stories",
+    description:
+      "A page of results: what organisers said, what they raised, and a way to ask for the same.",
+    intro: "REPLACE — one line on who these organisations are.",
+    blocks: [
+      {
+        type: "richText",
+        heading: "REPLACE — the result, in one line",
+        body:
+          "REPLACE — a short paragraph on the kind of organisation and the " +
+          "kind of night, so the quotes below have a setting.",
+        align: "centre",
+      },
+      {
+        type: "testimonials",
+        heading: "REPLACE — a heading, e.g. “From the organisers”",
+        items: [
+          {
+            quote: "REPLACE — what an organiser said about the night.",
+            author: "REPLACE — their name",
+            role: "REPLACE — their role and organisation",
+            rating: 5,
+          },
+          {
+            quote: "REPLACE — a second organiser.",
+            author: "REPLACE — their name",
+            role: "REPLACE — their role and organisation",
+            rating: 5,
+          },
+          {
+            quote: "REPLACE — a third, or remove this one.",
+            author: "REPLACE — their name",
+            role: "REPLACE — their role and organisation",
+            rating: 5,
+          },
+        ],
+      },
+      {
+        type: "enquiryForm",
+        heading: "Ask for the same",
+        lede: "REPLACE — one line telling people what happens after they send this.",
+      },
+    ],
+  },
 ];
 
 export const DEFAULT_TEMPLATE_ID = "blank";
@@ -193,8 +390,9 @@ export function templateById(id: string | undefined): PageTemplate {
  * blocks sharing an id is precisely the case that lets one block's protected
  * values land on another.
  *
- * The same applies one level down, to a questions block's entries and a call
- * to action's button, both of which carry ids of their own.
+ * The same applies one level down, to a questions block's entries, a call to
+ * action's button, a testimonials block's cards and a team block's people —
+ * every entry that carries an id of its own.
  *
  * IT LIVES HERE BECAUSE THREE CALLERS NEED IT. The create action performs it,
  * the template picker's thumbnails need real blocks to draw (a template block
@@ -216,6 +414,12 @@ export function withTemplateIds(blocks: TemplateBlock[]): unknown[] {
     }
     if (block.type === "callToAction") {
       built.cta = { ...block.cta, id: mint("cta") };
+    }
+    if (block.type === "testimonials") {
+      built.items = block.items.map((item) => ({ ...item, id: mint("t") }));
+    }
+    if (block.type === "team") {
+      built.people = block.people.map((person) => ({ ...person, id: mint("p") }));
     }
     return built;
   });
