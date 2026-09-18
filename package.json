@@ -32,7 +32,11 @@
     "migrate:contact-purpose": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/fix-contact-purpose.ts",
     "import:newsletters": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/import-newsletters.ts",
     "migrate:video-to-auction-info": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/move-video-to-auction-info.ts",
-    "create:newsletters": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-newsletters-page.ts"
+    "create:newsletters": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-newsletters-page.ts",
+    "order:newsletters": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/order-newsletters.ts",
+    "migrate:booking-channel": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/add-booking-channel.ts",
+    "migrate:years": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/update-years-in-business.ts",
+    "create:terms": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-terms-page.ts"
   },
   "dependencies": {
     "@hcaptcha/react-hcaptcha": "^2.1.0",
