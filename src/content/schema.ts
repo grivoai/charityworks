@@ -370,6 +370,22 @@ export const siteContentSchema = z.object({
     exploreHeading: text,
     contactHeading: text,
     legal: text,
+    /**
+     * The small links along the bottom of every page — Terms & Conditions and
+     * whatever joins it. Separate from `nav` because the header is the wrong
+     * place for a legal page: it would sit between "Testimonials" and
+     * "Contact" as though it were somewhere a visitor wants to go.
+     *
+     * Optional rather than required-but-empty, so the site records written
+     * before the field existed still parse.
+     */
+    links: z
+      .array(navLinkSchema)
+      .optional()
+      .describe(
+        "Small links along the bottom of every page, beside the copyright " +
+          "line — Terms & Conditions, for instance. Not the main menu."
+      ),
   }),
 });
 
@@ -434,8 +450,10 @@ export const homePageSchema = z.object({
      * who wants guitars is better served by a way in than by a count of them.
      */
     badge: z.object({
-      value: text.describe('The figure itself, e.g. "30+".'),
-      label: text.describe('What it counts, e.g. "Years Experience".'),
+      value: text.describe(
+        'The figure itself, e.g. "36". CharityWorks has been in business since 1990, so this goes up by one each January.'
+      ),
+      label: text.describe('What it counts, e.g. "Years in Business".'),
     }),
     /**
      * The floating cards on the right of the hero. Each is a way straight into

@@ -44,7 +44,7 @@ export const homePage: HomePage = {
     // The one figure still treated as a figure. The other three cards became
     // ways into the catalog; a count of items is worth less to a visitor than
     // a door marked "guitars".
-    badge: { value: "30+", label: "Years Experience" },
+    badge: { value: "36", label: "Years in Business" },
     // Straight into the two categories the client sells most of, plus the
     // auctioneer roster. Sub-lines are the categories' own blurbs rather than
     // new copy, so the tile and the page it opens say the same thing.
@@ -102,7 +102,7 @@ export const homePage: HomePage = {
     header: {
       eyebrow: "Why CharityWorks",
       title: "Everything Stacked in Your Favor",
-      lede: "Three decades of expertise, an unbeatable model, and white-glove service from start to finish.",
+      lede: "Thirty-six years of expertise, an unbeatable model, and white-glove service from start to finish.",
     },
     items: valueProps,
   },
