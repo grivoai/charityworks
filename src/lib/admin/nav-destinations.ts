@@ -67,36 +67,69 @@ export function withNavDestinations(
   return {
     ...tree,
     fields: tree.fields.map((field) => {
-      if (field.key !== "nav") return field;
+      if (field.key === "nav") {
+        return { key: field.key, node: withHrefPicker(field.node, destinations) };
+      }
 
-      const nav = field.node;
-      if (nav.kind !== "array" || nav.element.kind !== "object") return field;
+      // The footer's legal links are the same shape one level down, and point
+      // at the same set of pages, so they get the same picker.
+      if (field.key === "footer" && field.node.kind === "object") {
+        return {
+          key: field.key,
+          node: {
+            ...field.node,
+            fields: field.node.fields.map((inner) =>
+              inner.key === "links"
+                ? { key: inner.key, node: withHrefPicker(inner.node, destinations) }
+                : inner
+            ),
+          },
+        };
+      }
 
-      const element: FieldNode = {
-        ...nav.element,
-        fields: nav.element.fields.map((inner) => {
-          if (inner.key !== "href") return inner;
-          return {
-            key: inner.key,
-            node: {
-              ...inner.node,
-              kind: "enum" as const,
-              values: destinations.map((d) => d.href),
-              // The reason lives on the field rather than in a help block so it
-              // travels with the input wherever the form puts it.
-              description:
-                "Which page this link opens. Only pages that exist can be " +
-                "chosen — a link typed by hand would point at a page the site " +
-                "does not have.",
-            },
-          };
-        }),
-      };
+      return field;
+    }),
+  };
+}
 
+/** A list of `{ href }` objects, with `href` swapped for the picker. Anything else is returned as is. */
+function withHrefPicker(node: FieldNode, destinations: NavDestination[]): FieldNode {
+  if (node.kind !== "array" || node.element.kind !== "object") return node;
+
+  const element: FieldNode = {
+    ...node.element,
+    fields: node.element.fields.map((inner) => {
+      if (inner.key !== "href") return inner;
       return {
-        key: field.key,
-        node: { ...nav, element, template: nav.template },
+        key: inner.key,
+        node: {
+          ...inner.node,
+          kind: "enum" as const,
+          values: destinations.map((d) => d.href),
+          // The reason lives on the field rather than in a help block so it
+          // travels with the input wherever the form puts it.
+          description:
+            "Which page this link opens. Only pages that exist can be " +
+            "chosen — a link typed by hand would point at a page the site " +
+            "does not have.",
+        },
       };
     }),
   };
+
+  return { ...node, element, template: node.template };
+}
+
+/**
+ * Every link the site record carries that must point at a real page: the
+ * menu, and the footer's legal links. The save action checks each against
+ * the destinations, and this is what keeps that check and the picker above
+ * looking at the same lists.
+ */
+export function linksToCheck(document: Record<string, unknown>): unknown[] {
+  const footer = document.footer as Record<string, unknown> | undefined;
+  return [
+    ...(Array.isArray(document.nav) ? document.nav : []),
+    ...(footer && Array.isArray(footer.links) ? footer.links : []),
+  ];
 }

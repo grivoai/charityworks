@@ -1000,6 +1000,14 @@ section { position: relative; }
 /* ---- Footer nav columns ---- */
 .footer-col nav a { display: block; }
 
+/* ---- Footer legal links, on the copyright line ----
+   Inline after the copyright text, separated by a middle dot, in the same
+   muted tone so they read as part of the line rather than a fourth column. */
+.footer-legal { display: inline; }
+.footer-legal a { color: rgba(255,255,255,0.5); text-decoration: underline; text-underline-offset: 3px; transition: color 0.3s; }
+.footer-legal a::before { content: "\00b7"; margin: 0 8px; text-decoration: none; display: inline-block; }
+.footer-legal a:hover { color: var(--gold-bright); }
+
 /* ---- Responsive for additions ---- */
 @media (max-width: 980px) {
   .t-grid .t-card { flex-basis: calc((100% - 26px) / 2); }

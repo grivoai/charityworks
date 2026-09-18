@@ -9,7 +9,7 @@ import { SITE_TAG } from "@/lib/content-tags";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { locksForSite } from "@/lib/admin/locks";
 import { applySiteRules } from "@/lib/admin/site-rules";
-import { getNavDestinations } from "@/lib/admin/nav-destinations";
+import { getNavDestinations, linksToCheck } from "@/lib/admin/nav-destinations";
 import { coerceToTree, deepEqual } from "@/lib/admin/coerce";
 import { toFieldErrors } from "@/lib/admin/field-errors";
 import { ensureBaseline, getRevision, recordRevision } from "@/lib/admin/revisions";
@@ -96,18 +96,15 @@ export async function saveSite(
    * to prevent.
    */
   const allowed = new Set((await getNavDestinations()).map((d) => d.href));
-  const nav = (coerced as Record<string, unknown>).nav;
-  if (Array.isArray(nav)) {
-    for (const link of nav) {
-      if (!link || typeof link !== "object") continue;
-      const href = String((link as Record<string, unknown>).href ?? "");
-      if (!allowed.has(href)) {
-        return {
-          message:
-            `“${href || "(empty)"}” is not a page on this site, so a menu link ` +
-            "there would go nowhere. Pick a page from the list.",
-        };
-      }
+  for (const link of linksToCheck(coerced as Record<string, unknown>)) {
+    if (!link || typeof link !== "object") continue;
+    const href = String((link as Record<string, unknown>).href ?? "");
+    if (!allowed.has(href)) {
+      return {
+        message:
+          `“${href || "(empty)"}” is not a page on this site, so a link ` +
+          "there would go nowhere. Pick a page from the list.",
+      };
     }
   }
 
