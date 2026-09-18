@@ -45,11 +45,16 @@ one module per source folder, assembled into categories by `auction-items.ts`.
   slightly based on availability at time of event."*
 - Gold albums state in every description that the signature is a laser
   reproduction, for the same reason.
-- Jewelry and Swarovski Handbags are `generalOnly: true` — the client lists
-  them as categories with no named lots, so those pages describe the category
-  rather than claiming stock, and get a different availability notice. They are
-  also the only two categories still on stock photography. The handbag image is
-  deliberately unbranded; do not swap in a competitor-branded bag.
+- Jewelry and Swarovski Handbags each open with two real lots transcribed from
+  the client's sister site, jewelsforyourcause.com (September 2026), with the
+  client adding the rest through the admin. Until then both were
+  `generalOnly: true` — described as a category with no named lots — and on
+  stock photography; the flag stays in the schema for any category that needs
+  it. These are the only lots that show a figure: an **appraised retail
+  value**, by the client's decision, because it is what a bidder is shown at
+  the auction and what the client already publishes for these pieces.
+  `scripts/seed-jewelry-handbags.ts` is how the first lots reached the live
+  records.
 - Structured data stays `ItemList`, **not** `Product`/`Offer`. Product markup
   asserts a price and availability, and consignment stock has neither a fixed
   price nor guaranteed availability on a given date.
