@@ -81,15 +81,16 @@ function assignChannelIds(contact: Record<string, unknown>): void {
 }
 
 /**
- * Gives a newly added navigation link an id.
+ * Gives a newly added link — in the menu, or along the footer — an id.
  *
  * Same rule and same reason as `assignChannelIds`: the id is locked so the
  * client never has to invent one and cannot change one, which leaves a brand
- * new row with nothing in it and no way to fill it. Derived from the label,
- * deduped, and only ever minted for a row that has none.
+ * new row with nothing in it and no way to fill it. Derived from the label
+ * under the list's own prefix, deduped, and only ever minted for a row that
+ * has none.
  */
-function assignNavIds(document: Record<string, unknown>): void {
-  const nav = document.nav;
+function assignLinkIds(list: unknown, prefix: string): void {
+  const nav = list;
   if (!Array.isArray(nav)) return;
 
   const taken = new Set(
@@ -108,8 +109,8 @@ function assignNavIds(document: Record<string, unknown>): void {
     if (typeof row.id === "string" && row.id !== "") continue;
 
     const label = typeof row.label === "string" ? row.label : "";
-    const id = uniqueSlug(`nav-${slugify(label, "link")}`, taken);
-    row.id = id ?? `nav-${Date.now().toString(36)}`;
+    const id = uniqueSlug(`${prefix}-${slugify(label, "link")}`, taken);
+    row.id = id ?? `${prefix}-${Date.now().toString(36)}`;
     taken.add(String(row.id));
   }
 }
@@ -137,7 +138,12 @@ export function applySiteRules(coerced: unknown): unknown {
     assignChannelIds(contact);
   }
 
-  assignNavIds(document);
+  assignLinkIds(document.nav, "nav");
+
+  // The footer's legal links are the same shape under the same rule, with a
+  // different prefix so the two lists can never mint the same id.
+  const footer = document.footer as Record<string, unknown> | undefined;
+  if (footer) assignLinkIds(footer.links, "footer");
 
   return document;
 }

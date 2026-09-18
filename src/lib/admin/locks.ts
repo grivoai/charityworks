@@ -224,6 +224,11 @@ export const SITE_LOCKS: LockRule[] = [
     reason: "Internal name for this link. Fixed once the link exists.",
   },
   {
+    pattern: "footer.links.*.id",
+    mode: "readonly",
+    reason: "Internal name for this link. Fixed once the link exists.",
+  },
+  {
     pattern: "contact.channels.*.id",
     mode: "readonly",
     reason: "Internal name for this row. Fixed once the row exists.",

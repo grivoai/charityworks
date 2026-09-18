@@ -56,6 +56,18 @@ export function Footer({ site }: { site: SiteContent }) {
         <div className="footer-bottom">
           <div>
             © {year} {site.name}. {site.footer.legal}
+            {/* The legal links sit on the copyright line, where a reader
+                expects to find them. Optional: a site record from before the
+                field existed carries none, and renders as it always did. */}
+            {site.footer.links && site.footer.links.length > 0 && (
+              <nav className="footer-legal" aria-label="Legal">
+                {site.footer.links.map((link) => (
+                  <Link key={link.id} href={link.href}>
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
           </div>
           <div>{site.strapline}</div>
         </div>

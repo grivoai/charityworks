@@ -98,11 +98,17 @@ const nextConfig: NextConfig = {
          guard in `reserved-paths.ts` checks static routes, not redirect
          sources, so nothing would have reported it. */
       { source: "/virtual-auction", destination: "/auction-info", permanent: true },
+      /* The two legacy terms pages — SAV's package terms and JustRewards'
+         redemption terms — are one page here, and both addresses land on it.
+         These links are printed on vouchers and in old emails, so they are
+         the last redirects that should ever go home. The voucher page was the
+         free-vacation programme's explanation and FAQ, which now lives on
+         /faqs. */
+      { source: "/terms-conditions", destination: "/terms-and-conditions", permanent: true },
+      { source: "/travel-terms", destination: "/terms-and-conditions", permanent: true },
+      { source: "/terms-and-conditions-voucher", destination: "/faqs", permanent: true },
       // No equivalent on the new site — sent home rather than to a soft 404.
       { source: "/cbid", destination: "/", permanent: true },
-      { source: "/travel-terms", destination: "/", permanent: true },
-      { source: "/terms-conditions", destination: "/", permanent: true },
-      { source: "/terms-and-conditions-voucher", destination: "/", permanent: true },
     ];
   },
 
