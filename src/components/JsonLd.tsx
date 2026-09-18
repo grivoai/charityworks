@@ -70,6 +70,11 @@ export async function OrganizationJsonLd() {
            Split from the stored `principals` string rather than written here,
            because names are content. */
         founder: foundersFrom(site.contact.principals),
+        /* Confirmed by the client, September 2026: in business since 1990.
+           The year rather than a count, because a count is wrong by January
+           and a year never is — the page copy carries the "36 years", and is
+           what needs a bump each new year. */
+        foundingDate: "1990",
         slogan: site.strapline,
         areaServed: {
           "@type": "Country",
