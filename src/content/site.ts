@@ -77,6 +77,17 @@ export const site: SiteContent = {
         label: "Service Area",
         value: "All 50 States",
       },
+      {
+        // The same calendar the form's success state embeds, offered up front
+        // for anyone who would rather talk than fill in a form. Carries its
+        // own utm pair so a booking made from here is distinguishable in
+        // Calendly from one made after an enquiry.
+        id: "channel-book",
+        icon: "calendar-check",
+        label: "Book a Call",
+        value: "Pick a time with Ira",
+        href: "https://calendly.com/iraklein82/new-meeting?utm_source=website&utm_medium=contact-page",
+      },
     ],
   },
 
@@ -97,5 +108,15 @@ export const site: SiteContent = {
     exploreHeading: "Explore",
     contactHeading: "Contact",
     legal: "All rights reserved.",
+    // The travel partners' terms, reproduced from the legacy site. A custom
+    // page rather than a route, so the client can edit it; the legacy
+    // /terms-conditions and /travel-terms addresses redirect there.
+    links: [
+      {
+        id: "footer-terms",
+        label: "Terms & Conditions",
+        href: "/terms-and-conditions",
+      },
+    ],
   },
 };
