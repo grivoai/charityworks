@@ -129,7 +129,12 @@ function ColumnPiece({ item }: { item: ColumnItem }) {
     case "button":
       return (
         <div className="block-column-cta">
-          <Cta cta={item.cta} />
+          {/* Never on dark: a columns block paints paper or cream and nothing
+              else, so the on-dark default — white text on the section's
+              cream — rendered every "secondary" button here invisible. The
+              client reported the newsletter links as missing; they were
+              there, in white. */}
+          <Cta cta={item.cta} onDark={false} />
         </div>
       );
   }
