@@ -17,6 +17,12 @@ site quotes no figure for any individual lot; pricing is a phone conversation.
 Please do not send prices expecting them to appear on the page — they will not
 be published.
 
+The one agreed exception (September 2026): jewelry and Swarovski handbag lots
+carry an **"Appraised retail value"** row. That is the figure a bidder is shown
+at the auction and the one the client already publishes on
+jewelsforyourcause.com — it is not a selling price, and it does not extend to
+any other category.
+
 (This is separate from the consignment terms already described elsewhere on the
 site — items at 75% of retail, bidding opening at retail. That explains how the
 arrangement works, which is a different thing from putting a number on a
@@ -62,8 +68,8 @@ figures.
 | Sports & Celebrity Memorabilia | 27 | `catalog-memorabilia.ts` |
 | Gold Album Showcases | 21 | `catalog-gold-albums.ts` |
 | Taylor Swift Signed Guitar | 2 | `auction-items.ts` (inline) |
-| Gemstone & Costume Jewelry | 2 (general) | `auction-items.ts` (inline) |
-| Swarovski Handbags | 1 (general) | `auction-items.ts` (inline) |
+| Gemstone & Costume Jewelry | 2 | `auction-items.ts` (inline) — supplied from jewelsforyourcause.com |
+| Swarovski Handbags | 2 | `auction-items.ts` (inline) — supplied from jewelsforyourcause.com |
 
 Memorabilia is the only category split into tiers, and the split matters — a
 hand-signed piece and a laser-signature reproduction are different products and

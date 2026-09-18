@@ -16,10 +16,16 @@ import {
  * Lots and photography are the client's real inventory, held in
  * src/content/collections/catalog-*.ts and public/images/catalog/.
  *
- * Two categories — Jewelry and Handbags with Swarovski Crystals — carry `generalOnly: true`.
- * The client lists those only as categories with no named lots, so the pages
- * describe what the category contains rather than claiming specific stock.
- * They are also the only two still using stock photography.
+ * Jewelry and Handbags with Swarovski Crystals were `generalOnly: true` until
+ * September 2026 — the client's legacy site sent both to their sister site,
+ * jewelsforyourcause.com, and this one described the category rather than
+ * naming stock. Each now opens with two real lots transcribed from that site
+ * (names, stone sizes, appraised values, the client's own photographs) so the
+ * client can add the rest through the admin. Appraised retail values are
+ * shown on these lots by the client's decision: it is the figure a bidder
+ * sees at the auction, and the one the client already publishes.
+ *
+ * `generalOnly` stays in the schema for any future category that needs it.
  */
 
 /** Shown on every category page. Inventory turns over constantly. */
@@ -173,12 +179,14 @@ export const auctionItems: AuctionItem[] = [
     title: "Gemstone & Costume Jewelry",
     blurb: "Sparkle that sells across every demographic.",
     image: {
-      src: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=70",
-      alt: "Pearl necklace displayed in an open presentation case, representing the jewelry selection available for gala auctions",
+      src: "/images/catalog/jewelry/jewelry_01_sapphire-white-topaz-necklace.jpg",
+      alt: "Sterling silver necklace set with dark blue sapphires framed in white topaz, representing the gemstone jewelry offered for gala auctions",
+      width: 480,
+      height: 477,
     },
     heading: "Jewelry for Gala & Silent Auctions",
     intro:
-      "Jewelry is the workhorse of a silent auction. It covers a wide range of price points, so it keeps bidding sheets busy across every table rather than concentrating spend on a handful of headline lots.",
+      "Jewelry is the workhorse of a silent auction. It covers a wide range of price points, so it keeps bidding sheets busy across every table rather than concentrating spend on a handful of headline lots. Every gemstone piece is set in .925 sterling silver and comes with its appraisal card stating the stone sizes and weights.",
     seo: {
       title: "Gemstone & Costume Jewelry for Gala Auctions | CharityWorks",
       description:
@@ -190,22 +198,51 @@ export const auctionItems: AuctionItem[] = [
       ],
       path: "/auction-items/jewelry",
     },
-    generalOnly: true,
     groups: [
       {
         id: "jewelry-all",
+        title: "Gemstone Jewelry",
+        blurb:
+          "Set in .925 sterling silver, each piece supplied with its appraisal card detailing stone size and weight. Costume pieces at accessible price points are also available — ask us.",
+        // Transcribed from jewelsforyourcause.com, the client's own site:
+        // names, stone sizes and appraised values are theirs, and nothing
+        // about a stone is stated that the listing does not state. "Dyed"
+        // stays in the name — it is a disclosure, not a flourish.
         items: [
           {
-            id: "jewelry-gemstone",
-            name: "Gemstone Jewelry",
+            id: "jewelry-sapphire-white-topaz-necklace",
+            name: "Dyed Sapphire & White Topaz Necklace",
             description:
-              "Gemstone pieces across a range of price points, supplied with their appraisal documentation.",
+              "Dyed sapphires framed in white topaz, set in .925 sterling silver. Supplied with the appraisal card stating the stone sizes and weights.",
+            image: {
+              src: "/images/catalog/jewelry/jewelry_01_sapphire-white-topaz-necklace.jpg",
+              alt: "Sterling silver necklace of dark blue dyed sapphires, each framed in white topaz, with a pear-shaped sapphire drop, a charity auction lot",
+              width: 480,
+              height: 477,
+            },
+            details: [
+              { label: "Appraised retail value", value: "$5,320" },
+              { label: "Metal", value: ".925 sterling silver" },
+              { label: "Includes", value: "Appraisal card" },
+            ],
           },
           {
-            id: "jewelry-costume",
-            name: "Costume Jewelry",
+            id: "jewelry-emerald-pearl-necklace",
+            name: "Emerald & Pearl Necklace",
             description:
-              "Coordinated costume pieces at accessible price points, useful for filling out a silent auction table.",
+              "A 7mm pearl set among 2mm emeralds in .925 sterling silver. Supplied with the appraisal card stating the stone sizes and weights.",
+            image: {
+              src: "/images/catalog/jewelry/jewelry_02_emerald-pearl-necklace.jpg",
+              alt: "Sterling silver pendant necklace with a white pearl at the centre of an open frame edged in small green emeralds, a charity auction lot",
+              width: 488,
+              height: 480,
+            },
+            details: [
+              { label: "Appraised retail value", value: "$910" },
+              { label: "Stones", value: "Pearl 7.00mm, emerald 2.00mm" },
+              { label: "Metal", value: ".925 sterling silver" },
+              { label: "Includes", value: "Appraisal card" },
+            ],
           },
         ],
       },
@@ -218,15 +255,17 @@ export const auctionItems: AuctionItem[] = [
     title: "Handbags with Swarovski Crystals",
     blurb: "Dazzling statement pieces guests adore.",
     image: {
-      // Deliberately an unbranded studio photograph. Do not swap in a shot of a
-      // competitor-branded bag: it misrepresents the product and uses a third
-      // party's trademark.
-      src: "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?auto=format&fit=crop&w=800&q=70",
-      alt: "Pastel pink handbag on a white studio pedestal, representing the crystal-embellished handbags available for silent auctions",
+      // The client's own photograph, uploaded by them through the admin in
+      // September 2026 and mirrored here for the seed. Their bags are their
+      // own make, so there is no third-party trademark in the picture.
+      src: "/images/catalog/handbags/handbag_01_spectacular-odyssey-blue.jpg",
+      alt: "Swarovski element purse",
+      width: 725,
+      height: 464,
     },
     heading: "Crystal Handbags for Charity Auctions",
     intro:
-      "Crystal-embellished handbags photograph exceptionally well and draw guests toward a table. They work as a mid-tier lot that lifts the average bid across a silent auction.",
+      "Crystal-embellished handbags photograph exceptionally well and draw guests toward a table. They work as a mid-tier lot that lifts the average bid across a silent auction. Each bag is hand-finished with over a thousand Swarovski crystals, fully lined, with a 24-inch metal chain.",
     seo: {
       title: "Handbags with Swarovski Crystals for Auctions | CharityWorks",
       description:
@@ -238,20 +277,50 @@ export const auctionItems: AuctionItem[] = [
       ],
       path: "/auction-items/handbags",
     },
-    generalOnly: true,
     groups: [
       {
         id: "handbags-all",
+        title: "Hand-Crafted Purses with Swarovski Elements",
+        // The client's own wording from jewelsforyourcause.com, lightly
+        // joined. The $1,200+ figure is theirs: an appraised value shown to
+        // bidders, which the client asked to have on the page.
+        blurb:
+          "Each purse is made with over 1,000 Swarovski crystals — they never lose their luster and never fade — and is as much a display piece as an evening bag. Fully lined, with a 24-inch metal chain. Purses are valued at $1,200 or more.",
         items: [
           {
-            id: "handbags-crystal",
-            name: "Crystal-Embellished Handbags",
+            id: "handbags-spectacular-odyssey-blue",
+            name: "Spectacular Odyssey — Blue",
             description:
-              "Evening and day bags finished with crystal detailing, supplied with a dust bag.",
-            // One-off: the client confirmed $1200+ is an appraised/retail value
-            // shown to bidders (standard at auctions), not a consignment or
-            // selling price. Prices are kept off every other lot on the site.
-            details: [{ label: "Appraised value", value: "$1200+" }],
+              "A hard-case evening clutch covered edge to edge in blue and clear Swarovski crystals, with a jewelled clasp. Fully lined, with a 24-inch metal chain.",
+            image: {
+              src: "/images/catalog/handbags/handbag_01_spectacular-odyssey-blue.jpg",
+              alt: "Rectangular evening clutch covered in blue and clear Swarovski crystals in a radiating medallion pattern, a charity auction lot",
+              width: 725,
+              height: 464,
+            },
+            details: [
+              { label: "Appraised retail value", value: "$1,200+" },
+              { label: "Crystals", value: "Swarovski Elements, over 1,000 per bag" },
+              { label: "Includes", value: "24-inch metal chain; fully lined" },
+            ],
+          },
+          {
+            id: "handbags-inspired-by-princess-diana-blue",
+            name: "Inspired by Princess Diana — Blue",
+            description:
+              "A hard-case clutch set with blue and clear Swarovski crystals in a rose-and-leaf design. Fully lined, with a 24-inch metal chain.",
+            image: {
+              src: "/images/catalog/handbags/handbag_02_inspired-by-princess-diana-blue.jpg",
+              alt: "Hard-case clutch covered in blue and clear Swarovski crystals arranged as a large rose with leaves, a charity auction lot",
+              width: 525,
+              height: 394,
+            },
+            details: [
+              { label: "Appraised retail value", value: "$1,200+" },
+              { label: "Size", value: "Approx. 7 × 4.5 in" },
+              { label: "Crystals", value: "Swarovski Elements, over 1,000 per bag" },
+              { label: "Includes", value: "24-inch metal chain; fully lined" },
+            ],
           },
         ],
       },
