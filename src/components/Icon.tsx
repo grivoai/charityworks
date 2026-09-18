@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Ban, BellRing, Circle, Compass, Disc3, EyeOff, Flame, Gavel, Gem, Guitar,
+  Ban, BellRing, CalendarCheck, Circle, Compass, Disc3, EyeOff, Flame, Gavel, Gem, Guitar,
   HandCoins, Handshake, Laptop, LayoutGrid, Link2, Mail, MapPin, Mic, Package,
   Palmtree, PartyPopper, Phone, Plane, Receipt, Repeat, ShieldCheck,
   ShoppingBag, Smartphone, Sparkles, Star, Tag, Ticket, TicketCheck,
@@ -56,6 +56,7 @@ const BY_SLUG: Record<string, LucideIcon> = {
   "party-popper": PartyPopper,
   ticket: Ticket,
   "ticket-check": TicketCheck,
+  "calendar-check": CalendarCheck,
 };
 
 /** Legacy emoji → slug, so un-migrated content still resolves. */
@@ -68,7 +69,7 @@ const BY_EMOJI: Record<string, string> = {
   "🛎️": "bell-ring", "🔁": "repeat", "⚡": "zap", "🚫": "ban", "🏷️": "tag",
   "💰": "hand-coins", "↩️": "undo", "🧾": "receipt", "🤫": "eye-off",
   "🔨": "gavel", "💻": "laptop", "📱": "smartphone", "🔗": "link", "🗂️": "layout-grid",
-  "🎉": "party-popper", "🎟️": "ticket", "🎫": "ticket-check",
+  "🎉": "party-popper", "🎟️": "ticket", "🎫": "ticket-check", "📅": "calendar-check",
 };
 
 /** The set of legal slugs, exported for the content migration to validate against. */

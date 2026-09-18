@@ -43,7 +43,16 @@ export function ContactChannels({
           <div>
             <div className="lbl">{channel.label}</div>
             {channel.href ? (
-              <a href={channel.href} className="val">
+              <a
+                href={channel.href}
+                className="val"
+                // Another site — the booking calendar — opens beside this one
+                // rather than over it. `tel:` and `mailto:` are not http and
+                // hand off to another app either way, so they stay as they are.
+                {...(/^https?:\/\//.test(channel.href)
+                  ? { target: "_blank", rel: "noopener" }
+                  : {})}
+              >
                 {channel.value}
               </a>
             ) : (
