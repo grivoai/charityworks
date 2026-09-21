@@ -51,11 +51,16 @@ export const auctionInfoPage: AuctionInfoPage = {
   },
 
   // Sits after the event formats and above the closing call to action.
+  //
+  // On YouTube, unlisted, since September 2026. It was a Google Drive player,
+  // and Drive put a phishing warning in front of it for some visitors — its
+  // own interstitial for a file framed on another domain, and nothing this
+  // site can switch off. The nocookie host, as the help text recommends.
+  // `scripts/swap-donation-video.ts` moved the live record.
   video: {
     heading: "How donation matching works",
     lede: "A short walkthrough of matching gifts, and how they lift what a paddle raise brings in.",
-    embedUrl:
-      "https://drive.google.com/file/d/1nLCpPgzkKCQ6MxfT9-frUY28noxADT8K/preview",
+    embedUrl: "https://www.youtube-nocookie.com/embed/ptbstdMqcRM",
   },
 
   cta: {

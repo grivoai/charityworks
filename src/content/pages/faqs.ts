@@ -33,8 +33,7 @@ export const faqsPage: FaqsPage = {
   video: {
     heading: "How donation matching works",
     lede: "A short walkthrough of matching gifts, and how they lift what a paddle raise brings in.",
-    embedUrl:
-      "https://drive.google.com/file/d/1nLCpPgzkKCQ6MxfT9-frUY28noxADT8K/preview",
+    embedUrl: "https://www.youtube-nocookie.com/embed/ptbstdMqcRM",
   },
 
   /**
