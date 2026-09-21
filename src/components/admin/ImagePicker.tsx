@@ -91,6 +91,17 @@ export function ImagePicker({
                   </li>
                 ))}
               </ul>
+              {/* A new tab, deliberately: this panel sits inside a form that
+                  may hold unsaved edits, and a link that replaced the page
+                  would take them with it. */}
+              <p className="admin-image-library-foot">
+                To see where each photograph is used, or delete one you no
+                longer need,{" "}
+                <a href="/admin/photos" target="_blank" rel="noopener">
+                  open the photo library
+                </a>{" "}
+                (opens in a new tab, so nothing here is lost).
+              </p>
             </>
           )}
         </div>

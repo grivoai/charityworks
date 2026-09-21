@@ -34,10 +34,13 @@ async function countIn<T>(
 }
 
 /** One count, or null if the table cannot be read. */
-async function countOf(table: string): Promise<number | null> {
-  const { count, error } = await getServiceClient()
-    .from(table)
-    .select("*", { count: "exact", head: true });
+async function countOf(
+  table: string,
+  where?: { column: string; equals: string }
+): Promise<number | null> {
+  let query = getServiceClient().from(table).select("*", { count: "exact", head: true });
+  if (where) query = query.eq(where.column, where.equals);
+  const { count, error } = await query;
   if (error) {
     console.error(`[admin] could not count ${table}`, error);
     return null;
@@ -48,7 +51,7 @@ async function countOf(table: string): Promise<number | null> {
 export default async function AdminDashboard() {
   const admin = await requireAdmin();
 
-  const [pages, categories, lots, submissions, documents, formFields, navLinks, customPages] =
+  const [pages, categories, lots, submissions, documents, photos, formFields, navLinks, customPages] =
     await Promise.all([
       countOf("pages"),
       countOf("catalog_categories"),
@@ -57,6 +60,7 @@ export default async function AdminDashboard() {
       // The links, not the uploads: what the card offers is an address to hand
       // out, and superseded files are not that.
       countOf("document_links"),
+      countOf("uploads", { column: "bucket", equals: "images" }),
       countIn(() => getPage("contact"), (page) => page.form.fields),
       countIn(() => getSite(), (site) => site.nav),
       countOf("custom_pages"),
@@ -115,6 +119,16 @@ export default async function AdminDashboard() {
           <p>
             PDFs with a link you can put in an email. Replace the file later and
             the link keeps working.
+          </p>
+        </Link>
+
+        <Link href="/admin/photos" className="admin-card">
+          <h2>
+            Photographs <span className="admin-count">{show(photos)}</span>
+          </h2>
+          <p>
+            Every photograph you have uploaded, where each one is shown, and a
+            way to delete the ones you no longer need.
           </p>
         </Link>
 

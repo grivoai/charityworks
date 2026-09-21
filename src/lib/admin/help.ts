@@ -224,6 +224,40 @@ export const HELP_TOPICS: HelpTopic[] = [
           "search engine reads. The photograph is on the site once you save, " +
           "not before. Uploading the same file twice keeps one copy.",
       },
+      {
+        p:
+          "Everything you have uploaded is listed on the Photographs screen, " +
+          "with where each one is shown, and that is where to delete the ones " +
+          "you no longer need.",
+      },
+    ],
+    link: { href: "/admin/photos", label: "Open the photo library" },
+  },
+  {
+    id: "photo-library",
+    title: "Tidying up photographs",
+    routes: ["/admin/photos"],
+    body: [
+      {
+        p:
+          "Every photograph uploaded through this admin, newest first, with " +
+          "where each one is shown. Uploading is done on the page or lot that " +
+          "will show the picture — this screen is for seeing what has built up " +
+          "and clearing out what is no longer used.",
+      },
+      {
+        p:
+          "A photograph that is shown somewhere cannot be deleted from here: " +
+          "follow the link to that screen, change the picture there and save, " +
+          "and the Delete button appears. Deleting is permanent. If you later " +
+          "restore an older version of a page that used it, that version will " +
+          "show a blank picture where it was.",
+      },
+      {
+        p:
+          "The pictures that came with the site are files rather than uploads, " +
+          "so they are not listed here and cannot be deleted.",
+      },
     ],
   },
   {
