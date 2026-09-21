@@ -37,7 +37,7 @@ export interface TransferOptions {
  */
 export function putFile(
   url: string,
-  file: File,
+  file: Blob,
   { contentType, tooLarge, onProgress }: TransferOptions
 ): Promise<void> {
   return new Promise((resolve, reject) => {

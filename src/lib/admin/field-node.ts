@@ -105,6 +105,13 @@ export interface ArrayNode extends NodeBase {
  */
 export interface ImageNode extends NodeBase {
   kind: "image";
+  /**
+   * The frame this picture is shown in, when the site shows it in one — a
+   * 4:3 lot card, a square team portrait. Read off the field's path by
+   * `image-slots.ts`; absent for a picture shown at its own shape. The
+   * cropper opens on it and says what it is for.
+   */
+  slot?: { label: string; aspect: number; hint: string };
 }
 
 /** A fixed value, such as a page's slug. Preserved on save, never shown. */
