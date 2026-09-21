@@ -9,7 +9,7 @@ import {
   signImageUpload,
 } from "@/lib/admin/uploads";
 import { imageWarning } from "@/lib/admin/image-rules";
-import { findImageUses } from "@/lib/admin/image-usage";
+import { findImageUses, uploadPathOf } from "@/lib/admin/image-usage";
 import { recordAudit } from "@/lib/admin/audit";
 import { getServiceClient } from "@/lib/supabase";
 import { formatWhen } from "@/lib/admin/page-meta";
@@ -87,6 +87,32 @@ export async function addImage(input: {
     console.error("[images] could not ingest an upload", error);
     return { ok: false, message: "That photograph could not be added. Please try again." };
   }
+}
+
+/**
+ * The name a picture was uploaded under, for filing a crop of it.
+ *
+ * A crop of a library photograph is uploaded as a new file, and its name is
+ * the only thing the library will show for it. The field holds the object
+ * URL, which ends in a UUID; the row holds "Festive Splendor.JPG". For a
+ * picture that is not an upload — one of the site's own files — the path's
+ * last segment is the name, and it is already a readable one.
+ */
+export async function nameForImage(src: string): Promise<string> {
+  await requireAdmin();
+
+  const fallback = decodeURIComponent(src.split(/[?#]/)[0].split("/").pop() || "photograph.jpg");
+  const path = uploadPathOf(src);
+  if (!path) return fallback;
+
+  const { data } = await getServiceClient()
+    .from("uploads")
+    .select("filename")
+    .eq("bucket", IMAGE_BUCKET)
+    .eq("path", path)
+    .maybeSingle<{ filename: string }>();
+
+  return data?.filename ?? fallback;
 }
 
 /* ------------------------------------------------------------------ */

@@ -1861,6 +1861,77 @@ section.site-preview-body {
   min-height: 100vh;
 }
 
+/* ---- Cropping a photograph ----
+   A native <dialog>, kept as the browser's centred box, sized to the
+   photograph rather than the screen. The stage is where react-easy-crop
+   draws; it positions itself absolutely inside whatever it is given, so the
+   stage sets the size and nothing else. Dark, so the crop frame reads
+   against a photograph of any tone. */
+.admin-crop {
+  width: min(720px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+  box-shadow: var(--shadow-lg);
+  overflow: auto;
+}
+.admin-crop::backdrop { background: rgba(10, 31, 61, 0.5); }
+.admin-crop-inner { padding: 20px 22px 22px; display: grid; gap: 14px; }
+.admin-crop-head h2 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+.admin-crop-head .admin-help { margin: 0; }
+.admin-crop-stage {
+  position: relative;
+  height: min(56vh, 440px);
+  min-height: 240px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #17181a;
+  /* The cropper's own dragging is pointer-driven; without this a phone
+     scrolls the dialog instead of moving the picture. */
+  touch-action: none;
+}
+.admin-crop-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 13.5px;
+  padding: 20px;
+  text-align: center;
+}
+.admin-crop-controls { display: grid; gap: 10px; }
+.admin-crop-controls .admin-help { margin: 0; }
+.admin-crop-shapes { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-crop-shapes .admin-btn { padding: 7px 13px; font-size: 13px; }
+.admin-btn.is-selected {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+.admin-btn.is-selected:hover:not(:disabled) { background: var(--green); border-color: var(--green); }
+.admin-crop-zoom {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+}
+.admin-crop-zoom input[type="range"] { width: 100%; accent-color: var(--green); }
+.admin-crop-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.admin-crop-actions .admin-btn { margin-top: 0; }
+
+@media (max-width: 560px) {
+  .admin-crop { width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
+  .admin-crop-inner { padding: 14px 14px 16px; }
+  .admin-crop-stage { height: min(48vh, 360px); }
+}
+
 /* ---- Help panel ----
    A native <dialog>, restyled from the browser's centred box into a sheet
    against the right edge. The inset/margin/max-* overrides are what undo the

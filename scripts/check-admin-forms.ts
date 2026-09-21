@@ -18,11 +18,12 @@
 
 import { readFileSync } from "node:fs";
 
-import { pageSchemas } from "@/content/schema";
+import { auctionItemSchema, customPageSchema, pageSchemas } from "@/content/schema";
 import type { PageSlug } from "@/content/types";
 import type { FieldNode } from "@/lib/admin/field-node";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
-import { CORE_FORM_FIELDS, locksForPage } from "@/lib/admin/locks";
+import { CORE_FORM_FIELDS, locksForPage, matchesPattern } from "@/lib/admin/locks";
+import { SLOT_PATTERNS, slotFor } from "@/lib/admin/image-slots";
 import {
   FormWriteError,
   applyContactFormRules,
@@ -340,14 +341,66 @@ if (failures === 0) {
       "a picture dragged off a web page gets its own message",
     ],
     [
-      field.includes("void upload(") && field.includes('type="file"'),
-      "a dropped file takes the same upload path as a chosen one",
+      // Both ways in call pick(), which opens the cropper; only the cropper's
+      // onDone calls upload(). A chosen file and a dropped file therefore
+      // cannot take different paths, and neither can skip the cropper.
+      (field.match(/\bpick\(/g) ?? []).length >= 2 &&
+        (field.match(/void upload\(/g) ?? []).length === 1 &&
+        field.includes("<ImageCropper"),
+      "a dropped file and a chosen file both go through the cropper to the one upload path",
+    ],
+    [
+      field.includes('current={image.src || undefined}') && field.includes("nameForImage("),
+      "a picture already in the field can be cropped, filed under its library name",
     ],
   ] as const;
 
   for (const [okay, what] of wired) {
     if (okay) console.log(`  ok    ${what}`);
     else fail(what);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Image slots                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Every slot pattern names a field that exists, and every image field the
+ * site shows in a fixed frame has a slot. The first catches a pattern left
+ * behind by a rename; the second is a list of the frames, kept here so that
+ * a new fixed-shape slot on the site gets a cropper preset or a red line.
+ */
+{
+  const imagePaths = new Set<string>();
+  const walk = (node: FieldNode, path: string) => {
+    if (node.kind === "image") imagePaths.add(path);
+    if (node.kind === "object") for (const f of node.fields) walk(f.node, path ? `${path}.${f.key}` : f.key);
+    if (node.kind === "array") walk(node.element, path ? `${path}.*` : "*");
+    if (node.kind === "variant") for (const o of node.options) walk(o.node, path);
+  };
+  for (const slug of Object.keys(pageSchemas) as PageSlug[]) {
+    walk(buildFieldTree(pageSchemas[slug], []), "");
+  }
+  walk(buildFieldTree(auctionItemSchema, []), "");
+  walk(buildFieldTree(customPageSchema, []), "");
+
+  for (const pattern of SLOT_PATTERNS) {
+    const hit = [...imagePaths].some((path) => matchesPattern(path, pattern));
+    if (hit) console.log(`  ok    slot "${pattern}" names an image field`);
+    else fail(`slot "${pattern}" matches no image field in any editor`);
+  }
+
+  const framed = [
+    "image",
+    "groups.*.items.*.image",
+    "auctioneers.*.image",
+    "blocks.*.images.*.image",
+    "blocks.*.people.*.photo",
+  ];
+  for (const path of framed) {
+    if (slotFor(path)) console.log(`  ok    "${path}" is shown in a frame and has a slot`);
+    else fail(`"${path}" is shown in a fixed frame but has no slot for the cropper`);
   }
 }
 

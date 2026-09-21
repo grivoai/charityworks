@@ -14,8 +14,9 @@ import { withFreshId } from "@/lib/admin/entry-id";
 import { putFile } from "@/components/admin/upload-transfer";
 import { useStrayDropGuard } from "@/components/admin/drop-guard";
 import { ImagePicker } from "@/components/admin/ImagePicker";
+import { ImageCropper } from "@/components/admin/ImageCropper";
 import { Icon, ICON_SLUGS } from "@/components/Icon";
-import { addImage, signImage } from "@/lib/admin/image-actions";
+import { addImage, nameForImage, signImage } from "@/lib/admin/image-actions";
 import {
   IMAGE_TYPES,
   MAX_IMAGE_BYTES,
@@ -309,30 +310,81 @@ function EnumField({ node, value, onChange, path, errors }: FieldProps) {
  * off a web page, which arrives as a URL and no file; that gets its own
  * message rather than the generic refusal, because "JPG, PNG or WebP" is a
  * baffling answer to someone who just dragged a JPG.
+ *
+ * Between choosing and sending there is now a cropper (ImageCropper). A file
+ * is checked first — the refusals are cheap and a HEIC should be refused
+ * before anyone spends a minute framing it — then shown in a frame of the
+ * slot's shape, and what comes out of the dialog is what uploads: the crop,
+ * or the original when the client says "as is". The upload itself does not
+ * know which; a crop is a file like any other.
+ *
+ * The same dialog opens on a picture the field already holds — a library
+ * photograph just chosen, or one on the live page — through `current`. The
+ * bytes are fetched, cropped and uploaded as a new file; the original is
+ * untouched and stays in the library.
  */
 function ImageUpload({
   onChosen,
+  slot,
+  current,
 }: {
   onChosen: (image: { src: string; width: number | null; height: number | null }) => void;
+  slot: ImageNode["slot"] | null;
+  /** The field's present picture, which gets a "Crop or resize" way in. */
+  current?: string;
 }) {
   const [percent, setPercent] = useState<number | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [over, setOver] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [pending, setPending] = useState<{ file: Blob; name: string; extra?: string } | null>(null);
   const input = useRef<HTMLInputElement>(null);
   useStrayDropGuard();
 
-  const busy = percent !== null;
+  const busy = percent !== null || fetching;
 
-  const upload = async (file: File, extra?: string) => {
+  /** A chosen or dropped file: refuse the obvious, then open the cropper. */
+  const pick = (file: File, extra?: string) => {
     setNote(null);
     const bad = imageProblem(file.name, file.size);
     if (bad) return setProblem(bad);
+    setProblem(null);
+    setPending({ file, name: file.name, extra });
+  };
 
+  /**
+   * The picture already in the field, fetched for the cropper.
+   *
+   * Same-origin for the site's own files; the storage bucket answers with
+   * `Access-Control-Allow-Origin: *`, so an upload's URL fetches too. The
+   * name comes from the library where the URL is an upload's, so the crop
+   * is filed as "Festive Splendor (cropped).JPG" rather than under a UUID.
+   */
+  const adjust = async (src: string) => {
+    setNote(null);
+    setProblem(null);
+    setFetching(true);
+    try {
+      const [response, name] = await Promise.all([fetch(src), nameForImage(src)]);
+      if (!response.ok) throw new Error();
+      const blob = await response.blob();
+      const bad = imageProblem(name, blob.size);
+      if (bad) return setProblem(bad);
+      setPending({ file: blob, name });
+    } catch {
+      setProblem("That picture could not be opened for cropping. Upload it again instead.");
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const upload = async (file: File | Blob, name: string, extra?: string) => {
+    setNote(null);
     setProblem(null);
     setPercent(0);
 
-    const signed = await signImage(file.name);
+    const signed = await signImage(name);
     if (!signed.ok) {
       setPercent(null);
       return setProblem(signed.message);
@@ -342,7 +394,7 @@ function ImageUpload({
       await putFile(signed.signedUrl, file, {
         contentType:
           IMAGE_TYPES[
-            file.name.slice(file.name.lastIndexOf(".")).toLowerCase() as keyof typeof IMAGE_TYPES
+            name.slice(name.lastIndexOf(".")).toLowerCase() as keyof typeof IMAGE_TYPES
           ] ?? "application/octet-stream",
         tooLarge: `That photograph is larger than the ${formatBytes(MAX_IMAGE_BYTES)} limit.`,
         onProgress: setPercent,
@@ -352,7 +404,7 @@ function ImageUpload({
       return setProblem((error as Error).message);
     }
 
-    const added = await addImage({ path: signed.path, filename: file.name });
+    const added = await addImage({ path: signed.path, filename: name });
     setPercent(null);
     if (input.current) input.current.value = "";
 
@@ -392,7 +444,7 @@ function ImageUpload({
         "That was a picture from a web page, not a file. Save it to your computer first, then drop it here."
       );
     }
-    void upload(
+    pick(
       files[0],
       files.length > 1
         ? `This field holds one photograph, so the first of the ${files.length} was used.`
@@ -418,7 +470,7 @@ function ImageUpload({
         hidden
         onChange={(event) => {
           const file = event.target.files?.[0];
-          if (file) void upload(file);
+          if (file) pick(file);
         }}
       />
       <button
@@ -427,12 +479,39 @@ function ImageUpload({
         disabled={busy}
         onClick={() => input.current?.click()}
       >
-        {busy ? `Uploading — ${percent}%` : "Upload a photograph"}
+        {percent !== null ? `Uploading — ${percent}%` : "Upload a photograph"}
       </button>
       {!busy && (
         <span className="admin-drop-hint" aria-hidden="true">
           or drop one here
         </span>
+      )}
+      {current && (
+        <button
+          type="button"
+          className="admin-btn"
+          disabled={busy}
+          onClick={() => void adjust(current)}
+        >
+          {fetching ? "Opening…" : "Crop or resize this one"}
+        </button>
+      )}
+
+      {pending && (
+        <ImageCropper
+          file={pending.file}
+          name={pending.name}
+          slot={slot ?? null}
+          onDone={(file) => {
+            const { name, extra } = pending;
+            setPending(null);
+            void upload(file, name, extra);
+          }}
+          onCancel={() => {
+            setPending(null);
+            if (input.current) input.current.value = "";
+          }}
+        />
       )}
 
       {busy && (
@@ -461,7 +540,7 @@ function ImageField({
     return (
       <div className="admin-f" {...marker(path)}>
         <label>{node.label}</label>
-        <ImageUpload onChosen={(image) => onChange({ ...image, alt: "" })} />
+        <ImageUpload slot={node.slot ?? null} onChosen={(image) => onChange({ ...image, alt: "" })} />
         <ImagePicker onChosen={(image) => onChange({ ...image, alt: "" })} />
         <button
           type="button"
@@ -508,7 +587,11 @@ function ImageField({
                 clear it rather than carrying it onto a different one. Leaving
                 it would be worse than empty: a caption that confidently
                 describes something that is no longer there. */}
-            <ImageUpload onChosen={(image) => onChange({ ...image, alt: "" })} />
+            <ImageUpload
+              slot={node.slot ?? null}
+              current={image.src || undefined}
+              onChosen={(image) => onChange({ ...image, alt: "" })}
+            />
             <ImagePicker onChosen={(image) => onChange({ ...image, alt: "" })} />
           </div>
 
