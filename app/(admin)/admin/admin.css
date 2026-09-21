@@ -1272,6 +1272,50 @@ a.admin-card:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The way from the picker to the library page. In the panel's footer rather
+   than beside the button, so it reads as "more about these" and not as a
+   fourth way to choose one. */
+.admin-image-library-foot { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+
+/* ---- The photo library page ----
+   The document library's file rows with a thumbnail at the front: the same
+   name / details / tools arrangement, so the two pages read as one kind of
+   thing. */
+.admin-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px 10px 10px;
+}
+.admin-photo-thumb {
+  flex: 0 0 auto;
+  width: 96px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #eceae2;
+  border: 1px solid var(--line);
+}
+/* A basis small enough that the thumbnail and the words share a line at
+   390px (72 + 14 + 200 fits in 358), with the Delete button wrapping below. */
+.admin-photo-row .admin-doc-file-main { flex: 1 1 200px; }
+.admin-photo-row .admin-doc-file-sub a { color: var(--green); text-decoration: underline; text-underline-offset: 2px; }
+.admin-photo-unused { color: #7a5c12; }
+.admin-photo-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+@media (max-width: 520px) {
+  .admin-photo-thumb { width: 72px; }
+}
 
 /* ---- Two-factor authentication ---- */
 .admin-panel {

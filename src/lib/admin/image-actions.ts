@@ -9,6 +9,8 @@ import {
   signImageUpload,
 } from "@/lib/admin/uploads";
 import { imageWarning } from "@/lib/admin/image-rules";
+import { findImageUses } from "@/lib/admin/image-usage";
+import { recordAudit } from "@/lib/admin/audit";
 import { getServiceClient } from "@/lib/supabase";
 import { formatWhen } from "@/lib/admin/page-meta";
 
@@ -145,4 +147,84 @@ export async function listImages(limit = 60): Promise<LibraryImage[]> {
     height: row.height,
     uploadedLabel: formatWhen(row.created_at),
   }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Deleting                                                            */
+/* ------------------------------------------------------------------ */
+
+export type DeleteImageResult =
+  | { ok: true; note: string }
+  | { ok: false; message: string };
+
+/**
+ * Deletes a photograph outright. Refused while anything on the site shows it.
+ *
+ * The same shape as `deleteUpload` for documents, with the usage scan where
+ * that has the `document_links` foreign key: the content holds a URL string,
+ * not a reference, so the database cannot refuse this on its own and the scan
+ * has to. Run strict — a scan that could not read a table would otherwise
+ * answer "unused" for a photograph it never looked for.
+ *
+ * Row first, then object, for the reason the document version gives: a row
+ * with no object is a broken picture, an object with no row is invisible, and
+ * the second is the better one to be left with if this is interrupted.
+ */
+export async function deleteImage(uploadId: string): Promise<DeleteImageResult> {
+  const admin = await requireAdmin();
+  const supabase = getServiceClient();
+
+  const upload = await supabase
+    .from("uploads")
+    .select("id, path, filename")
+    .eq("id", uploadId)
+    .eq("bucket", IMAGE_BUCKET)
+    .maybeSingle<{ id: string; path: string; filename: string }>();
+
+  if (upload.error || !upload.data) {
+    return { ok: false, message: "That photograph is not in the library." };
+  }
+
+  let uses;
+  try {
+    uses = (await findImageUses({ strict: true })).get(upload.data.path) ?? [];
+  } catch (error) {
+    console.error("[images] the usage scan failed, so nothing was deleted", error);
+    return {
+      ok: false,
+      message: "It could not be confirmed that nothing uses this photograph, so it was not deleted. Please try again.",
+    };
+  }
+
+  if (uses.length > 0) {
+    return {
+      ok: false,
+      message:
+        `${upload.data.filename} is still shown on ` +
+        uses.map((u) => u.label).join("; ") +
+        ". Change the picture there first, then delete it here.",
+    };
+  }
+
+  const { error } = await supabase.from("uploads").delete().eq("id", uploadId);
+  if (error) {
+    return { ok: false, message: `That photograph could not be removed: ${error.message}` };
+  }
+
+  const removed = await supabase.storage.from(IMAGE_BUCKET).remove([upload.data.path]);
+  if (removed.error) {
+    console.error("[images] row deleted but object remains", upload.data.path, removed.error);
+  }
+
+  /* The filename and path go in the entry because the row that held them is
+     gone — "who deleted that photograph" is unanswerable otherwise. */
+  await recordAudit({
+    actorId: admin.id,
+    action: "upload.delete",
+    entity: "uploads",
+    entityId: uploadId,
+    detail: { bucket: IMAGE_BUCKET, filename: upload.data.filename, path: upload.data.path },
+  });
+
+  return { ok: true, note: `${upload.data.filename} was deleted.` };
 }
