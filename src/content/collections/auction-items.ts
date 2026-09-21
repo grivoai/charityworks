@@ -198,12 +198,20 @@ export const auctionItems: AuctionItem[] = [
       ],
       path: "/auction-items/jewelry",
     },
+    /**
+     * Two sections, Gemstone and Costume, since September 2026 — the client
+     * asked for the split, with a way to pick between them at the top of
+     * the page. The category page draws a section picker for any category
+     * with two or more titled groups, so this is content rather than a
+     * special case. Costume began with its wording and no pieces: the
+     * client adds those through the admin as they come in.
+     */
     groups: [
       {
         id: "jewelry-all",
         title: "Gemstone Jewelry",
         blurb:
-          "Set in .925 sterling silver, each piece supplied with its appraisal card detailing stone size and weight. Costume pieces at accessible price points are also available — ask us.",
+          "Set in .925 sterling silver, each piece supplied with its appraisal card detailing stone size and weight.",
         // Transcribed from jewelsforyourcause.com, the client's own site:
         // names, stone sizes and appraised values are theirs, and nothing
         // about a stone is stated that the listing does not state. "Dyed"
@@ -245,6 +253,16 @@ export const auctionItems: AuctionItem[] = [
             ],
           },
         ],
+      },
+      {
+        id: "jewelry-costume",
+        title: "Costume Jewelry",
+        // The "ask us" line that closed the gemstone blurb, moved to the
+        // section it was about. No pieces are named until the client names
+        // them: the section says what it holds, not what is in stock.
+        blurb:
+          "Costume pieces at accessible price points, alongside the gemstone collection. Pieces are added here as they come in — ask us what is in stock for your date.",
+        items: [],
       },
     ],
   },

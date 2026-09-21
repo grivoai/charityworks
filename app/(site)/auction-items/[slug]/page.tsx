@@ -94,6 +94,14 @@ export default async function AuctionCategoryRoute({
   const requestHref = (id: string) =>
     `/contact?interest=${encodeURIComponent(id)}&from=${encodeURIComponent(categoryPath)}`;
 
+  /**
+   * The groups a visitor can pick between: the titled ones. An untitled
+   * group is the category's whole stock under the section heading (the
+   * guitars, the albums), not a section of it, and has nothing to be picked
+   * against. Two or more is what makes a picker; one is just the page.
+   */
+  const sections = category.groups.filter((group) => group.title);
+
   return (
     <>
       <CategoryJsonLd category={category} />
@@ -131,6 +139,64 @@ export default async function AuctionCategoryRoute({
             </p>
           </div>
 
+          {/* ---------- SECTION PICKER ----------
+              A category of several titled groups opens with a tile per
+              group, each a jump to that group further down the page. The
+              client asked for a way to pick between Gemstone and Costume
+              jewelry before scrolling; Travel, with 26 lots under three
+              headings, and Memorabilia get the same for the same reason.
+
+              Tiles rather than a row of links because a photograph is what
+              tells "Bucket List Trips" from "Affordable Vacations" at a
+              glance. The photograph is the group's first lot's; a group
+              with none yet — Costume Jewelry started with wording and no
+              pieces — shows the category's icon instead, so the tile is
+              still a tile and the section it points to still exists.
+
+              Anchors, not separate pages. One page keeps every lot one
+              scroll away, and a group of two lots does not carry a page of
+              its own well. */}
+          {sections.length >= 2 && (
+            <nav className="cat-sections reveal" aria-label="Sections of this category">
+              <ol>
+                {sections.map((group) => {
+                  const photo = group.items.find((item) => item.image)?.image;
+                  return (
+                    <li key={group.id} className="cat-section-tile">
+                      <div className="cat-section-media" aria-hidden="true">
+                        {photo ? (
+                          <Image
+                            src={photo.src}
+                            alt=""
+                            fill
+                            sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                            style={{ objectFit: "contain" }}
+                          />
+                        ) : (
+                          <span className="cat-section-glyph">
+                            <Icon name={category.icon} />
+                          </span>
+                        )}
+                      </div>
+                      <div className="cat-section-body">
+                        <h3>{group.title}</h3>
+                        {group.blurb && <p>{group.blurb}</p>}
+                        {/* The whole tile is the link, stretched from this
+                            anchor by ::after — the same arrangement as the
+                            bento tiles, so the accessible name stays the
+                            title and not "view". */}
+                        <a href={`#${group.id}`} className="cat-section-link">
+                          View {group.title}
+                          <span aria-hidden="true"> →</span>
+                        </a>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
+          )}
+
           {category.groups.map((group, groupIndex) => {
             const at_ = (...rest: Array<string | number>) =>
               at("groups", groupIndex, ...rest);
@@ -150,7 +216,16 @@ export default async function AuctionCategoryRoute({
               (item) => item.affordableTier
             );
             return (
-            <div key={group.id} className="cat-group">
+            <div
+              key={group.id}
+              /* The id is what the section picker's anchors point at, and
+                 `is-section` is what draws the rule between one group and
+                 the next. Both only when there are sections to tell apart:
+                 a category of one group gets neither, and a rule above a
+                 lone group would be underlining nothing. */
+              id={sections.length >= 2 ? group.id : undefined}
+              className={`cat-group${sections.length >= 2 ? " is-section" : ""}`}
+            >
               {group.title && (
                 <div className="cat-group-head reveal">
                   <h3 {...editable(at_("title"))}>{group.title}</h3>
