@@ -1291,6 +1291,141 @@ main.is-transitioning {
 .cat-card-request:hover { color: var(--green); }
 .cat-card-request:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
 
+/* ---- Section picker ----
+   A category with two or more titled groups opens with a tile per group,
+   each a jump to that group below. The planner's pick cards, near enough:
+   the same centred flex arithmetic as .cat-grid so one tile sits in the
+   middle, a shorter 16:9 media box because these are signposts and not the
+   lots themselves, and the whole tile clickable from one anchor. */
+.cat-sections { margin-top: 44px; }
+.cat-sections ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 22px;
+}
+.cat-section-tile {
+  position: relative;
+  flex: 0 1 calc((100% - 2 * 22px) / 3);
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+.cat-section-tile:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+/* `contain`, as .cat-card-media: the photograph is a lot's, and several are
+   photographed tall. A group with no lot yet shows the category's icon on
+   the same background, so an empty section is still a tile. */
+.cat-section-media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(160deg, #f3f1ea, #e9e6dc);
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+}
+.cat-section-glyph { color: var(--gold); display: inline-flex; }
+.cat-section-glyph svg { width: 46px; height: 46px; }
+.cat-section-body { display: flex; flex-direction: column; flex: 1; padding: 16px 18px 18px; }
+.cat-section-body h3 { font-size: 1.05rem; color: var(--green); line-height: 1.25; }
+/* Three lines of the group's blurb. The full wording is at the section
+   head this tile jumps to; here it only has to say which section this is. */
+.cat-section-body p {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* Stretched over the tile by ::after, from the one positioned ancestor
+   (.cat-section-tile). Nothing between the two is positioned — see the
+   bento tiles for what happens when something is. */
+.cat-section-link {
+  position: static;
+  margin-top: auto;
+  padding-top: 12px;
+  align-self: flex-start;
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--gold);
+  transition: color 0.3s;
+}
+.cat-section-link::after { content: ""; position: absolute; inset: 0; }
+.cat-section-tile:hover .cat-section-link { color: var(--green); }
+.cat-section-link:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; border-radius: 4px; }
+/* One column on a phone, and the tile turns sideways: photograph on the
+   left, words on the right. Three stacked 16:9 tiles would be a screen and
+   a half of signposts before the first lot; three sideways ones are a
+   third of that, and still a picture each. */
+@media (max-width: 700px) {
+  .cat-sections { margin-top: 34px; }
+  .cat-sections ol { gap: 12px; }
+  .cat-section-tile { flex-basis: 100%; min-width: 0; flex-direction: row; }
+  .cat-section-media {
+    flex: 0 0 36%;
+    aspect-ratio: auto;
+    min-height: 112px;
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+  }
+  .cat-section-glyph svg { width: 36px; height: 36px; }
+  .cat-section-body { padding: 12px 14px 14px; min-width: 0; }
+  .cat-section-body p { -webkit-line-clamp: 2; }
+  .cat-section-link { padding-top: 8px; }
+}
+
+/* ---- Dividers between sections ----
+   Where there is a picker, each group is a section with a rule above it,
+   rather than 56px of nothing: on the travel page the third heading arrives
+   after 25 lots, and a rule is what says "a different kind of thing starts
+   here". The scroll margin clears the fixed nav for the picker's anchors,
+   as .faq-incentive's does. */
+.cat-group.is-section { scroll-margin-top: 110px; }
+.cat-group.is-section + .cat-group.is-section {
+  margin-top: 64px;
+  padding-top: 56px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---- Dividers between lots, on a phone ----
+   Stacked in one column, a card's pale foot runs into the next card's pale
+   photograph and five lots read as one long strip. A short gold rule in the
+   gap says where one lot ends. Only in one column: at any width with two
+   cards to a row the rule would sit above every card but the first, which
+   is a pattern rather than a divider. 540px is below the width at which two
+   250px cards fit the wrap (2 × 250 + 26, inside 24px gutters).
+
+   The card gives up `overflow: hidden` here so the rule can sit outside it;
+   the media box takes over clipping the photograph's corners. */
+@media (max-width: 540px) {
+  .cat-grid { row-gap: 46px; }
+  .cat-card { position: relative; overflow: visible; }
+  .cat-card-media {
+    overflow: hidden;
+    border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+  }
+  .cat-card + .cat-card::before {
+    content: "";
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    width: 44px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--gold);
+    transform: translateX(-50%);
+  }
+}
+
 /* Availability disclosure. Visually distinct so it cannot be mistaken for
    catalog copy. */
 .cat-notice {

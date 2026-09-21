@@ -299,6 +299,15 @@ export const HELP_TOPICS: HelpTopic[] = [
           "leaves the site, but the record is kept, so an enquiry that named it " +
           "still makes sense.",
       },
+      {
+        p:
+          "Lots sit in groups — Gemstone and Costume under Jewelry, the three " +
+          "kinds of trip under Travel. A category with two or more titled " +
+          "groups opens with a tile for each, and each group is its own " +
+          "section on the page. Add a lot under the group it belongs to. " +
+          "Groups themselves cannot be added or removed here; ask whoever set " +
+          "up the site.",
+      },
     ],
     link: { href: "/admin/catalog", label: "Auction items" },
   },
