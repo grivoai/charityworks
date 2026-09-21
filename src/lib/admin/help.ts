@@ -220,6 +220,16 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       {
         p:
+          "Before it uploads, the photograph opens in a cropping window set " +
+          "to the shape it will be shown in — a lot's picture goes in a 4:3 " +
+          "card, a person's in a square, a category's across a tile. Drag " +
+          "to move it, pinch or scroll to zoom, pick another shape if you " +
+          "want one, then Use this crop. Use as is uploads it unchanged. " +
+          "Crop or resize this one does the same to a picture already in " +
+          "the field, and keeps the original in the library.",
+      },
+      {
+        p:
           "Fill in the alt text: it is what a screen reader says and what a " +
           "search engine reads. The photograph is on the site once you save, " +
           "not before. Uploading the same file twice keeps one copy.",

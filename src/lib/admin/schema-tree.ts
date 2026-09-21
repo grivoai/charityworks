@@ -8,6 +8,7 @@ import type {
   StringNode,
 } from "@/lib/admin/field-node";
 import { findLock, findRule, type LockRule } from "@/lib/admin/locks";
+import { slotFor } from "@/lib/admin/image-slots";
 
 /**
  * Turns a Zod schema into a tree of plain field descriptions the admin can render.
@@ -274,7 +275,8 @@ function toNode(schema: Internal, ctx: Context): FieldNode {
       const shape = inner.def.shape as Record<string, Internal>;
 
       if (isImageShape(shape)) {
-        return { ...base, kind: "image" };
+        const slot = slotFor(ctx.shapePath);
+        return { ...base, kind: "image", ...(slot ? { slot } : {}) };
       }
 
       const node: ObjectNode = {
