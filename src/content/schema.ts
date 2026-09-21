@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { EMBED_HOSTS, embedProblem, isAllowedEmbed } from "@/lib/embeds";
+import { embedProblem, isAllowedEmbed, toEmbedUrl } from "@/lib/embeds";
 
 /**
  * Runtime schema for the CharityWorks content model.
@@ -403,7 +403,10 @@ export const siteContentSchema = z.object({
  * `embedUrl` is checked against the host list in `lib/embeds.ts` on save AND
  * again where it renders. It is the one editable field on this site that
  * decides what runs in a frame on the domain, so it does not get to be free
- * text with a hopeful description.
+ * text with a hopeful description. A share link (youtu.be/…, watch?v=…, a
+ * Drive /view address) is turned into the player address for the same video
+ * before the check runs — that is what is stored, so the renderer's copy of
+ * the check sees the same value the save did.
  *
  * One definition rather than one per page. The hero briefly had a third variant
  * of this shape with a `linkLabel` instead of a `caption`, because it opened a
@@ -416,13 +419,13 @@ const videoFields = {
   ),
   lede: optionalText,
   embedUrl: text
+    .transform(toEmbedUrl)
     .refine(isAllowedEmbed, { message: embedProblem("") ?? "" })
     .describe(
-      "The player address, from " +
-        EMBED_HOSTS +
-        ". For Google Drive that is the file address ending in /preview, " +
-        "not /view — /view shows a sign-in wall inside a frame. Share the " +
-        "file with anyone who has the link, or visitors see the same wall."
+      "A link to the video on YouTube, Vimeo or Google Drive — the share " +
+        "link is fine, it is turned into the player address when you save. " +
+        "A Google Drive file must be shared with anyone who has the link, " +
+        "or visitors see a sign-in wall where the video should be."
     ),
   caption: optionalText.describe("A line under the player. Optional."),
 };

@@ -267,11 +267,11 @@ export const HELP_TOPICS: HelpTopic[] = [
     body: [
       {
         p:
-          `A video field takes a player address from ${EMBED_HOSTS} and nothing ` +
-          "else. For YouTube use the embed address (youtube.com/embed/… or " +
-          "youtube-nocookie.com/embed/…), not the watch address; for Vimeo, " +
-          "player.vimeo.com/video/…; for Google Drive, the file address ending " +
-          "in /preview.",
+          "A video field takes a link to a video on YouTube, Vimeo or Google " +
+          "Drive. Paste whatever the share button gives you — youtu.be/…, " +
+          "youtube.com/watch?v=…, vimeo.com/…, or a Drive link ending in /view " +
+          "— and it is turned into the player address when you save. Only " +
+          `players from ${EMBED_HOSTS} can be shown; anything else is refused.`,
       },
       {
         p:

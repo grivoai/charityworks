@@ -489,12 +489,12 @@ for (const [type, block] of Object.entries(gridBlocks)) {
     [refused({ ...gridBlocks.team, people: many(7, person) }), "seven people are refused"],
     [!refused({ ...gridBlocks.team, people: many(6, person) }), "six people are allowed"],
     [
-      refused({ ...gridBlocks.video, embedUrl: "https://www.youtube.com/watch?v=abc123" }),
-      "a YouTube watch address is refused on save — only the embed form plays in a frame",
-    ],
-    [
       refused({ ...gridBlocks.video, embedUrl: "https://example.com/embed/abc" }),
       "an address off the allowlist is refused on save",
+    ],
+    [
+      refused({ ...gridBlocks.video, embedUrl: "https://www.youtube.com/channel/UCabc123" }),
+      "a YouTube address that is not a video is refused — there is no player to turn it into",
     ],
     [
       refused({ ...gridBlocks.video, heading: "" }),
@@ -506,6 +506,41 @@ for (const [type, block] of Object.entries(gridBlocks)) {
     ],
   ];
   for (const [okay, what] of bounds) check(okay, what);
+}
+
+/* A share link is stored as the player address for the same video. The client
+   pastes what the share button gives them, the allowlist wants the embed form,
+   and `toEmbedUrl` is what stands between the two — so what is asserted is the
+   value the save would write, not just that it was accepted. */
+{
+  const stored = (embedUrl: string) => {
+    const parsed = pageBlockSchema.safeParse({ ...gridBlocks.video, embedUrl });
+    return parsed.success ? (parsed.data as { embedUrl: string }).embedUrl : null;
+  };
+  const YT = "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ";
+  const DRIVE = "https://drive.google.com/file/d/1abcDEF_-9/preview";
+  const cases: Array<[string, string | null, string]> = [
+    ["https://youtu.be/dQw4w9WgXcQ", YT, "a youtu.be share link"],
+    ["https://youtu.be/dQw4w9WgXcQ?si=abc123", YT, "a youtu.be share link with ?si="],
+    ["https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s", YT, "a watch address with a timestamp"],
+    ["https://m.youtube.com/watch?v=dQw4w9WgXcQ", YT, "a mobile watch address"],
+    ["https://www.youtube.com/shorts/dQw4w9WgXcQ", YT, "a shorts address"],
+    ["https://www.youtube.com/embed/dQw4w9WgXcQ?si=abc", YT, "an embed address with a query"],
+    ["https://vimeo.com/123456789", "https://player.vimeo.com/video/123456789", "a vimeo.com address"],
+    ["https://drive.google.com/file/d/1abcDEF_-9/view?usp=sharing", DRIVE, "a Drive /view link"],
+    [DRIVE, DRIVE, "a Drive /preview address"],
+    ["http://youtu.be/dQw4w9WgXcQ", null, "an http share link"],
+    ["https://www.youtube.com/watch?list=PLabc", null, "a watch address with no video id"],
+  ];
+  for (const [input, expected, what] of cases) {
+    const got = stored(input);
+    check(
+      got === expected,
+      got === expected
+        ? `${what} is ${expected ? `stored as ${expected}` : "refused"}`
+        : `${what}: expected ${expected ?? "refused"}, got ${got ?? "refused"}`
+    );
+  }
 }
 
 /* The video block re-checks its address where it renders, as /auction-info
