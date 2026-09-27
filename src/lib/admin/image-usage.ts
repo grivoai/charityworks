@@ -12,8 +12,9 @@ import { PAGE_LABELS, formatWhen, isPageSlug } from "@/lib/admin/page-meta";
  * the catalog tables and nothing writes it — so "is this photograph on the
  * site" has one honest answer: read every document that can carry a picture
  * and look. That is eight page documents, the site record, the client's own
- * pages, and the two catalog tables with an `image_src` column. A few dozen
- * rows behind an admin login, read uncached, as every other admin list is.
+ * pages, and the three catalog tables with a picture on them — a category's
+ * tile, a group's section tile, a lot's photograph. A few dozen rows behind an
+ * admin login, read uncached, as every other admin list is.
  *
  * The scan is what makes deletion safe. The library shows a Delete button
  * only on a photograph nothing uses, and `deleteImage` runs the same scan
@@ -95,8 +96,15 @@ export async function findImageUses(options: { strict?: boolean } = {}): Promise
       .returns<{ id: string; slug: string; title: string; image_src: string }[]>(),
     supabase
       .from("catalog_groups")
-      .select("id, category_id")
-      .returns<{ id: string; category_id: string }[]>(),
+      .select("id, category_id, title, cover_image_src")
+      .returns<
+        {
+          id: string;
+          category_id: string;
+          title: string | null;
+          cover_image_src: string | null;
+        }[]
+      >(),
     supabase
       .from("catalog_items")
       .select("id, group_id, name, image_src, published")
@@ -135,6 +143,17 @@ export async function findImageUses(options: { strict?: boolean } = {}): Promise
     note(uses, c.image_src, {
       label: `Catalog › ${c.title} (the tile)`,
       href: `/admin/catalog/${c.slug}`,
+    });
+  }
+  /* A group's cover photograph. Counted like any other use, and for the same
+     reason: without this the scan would call it unused, the library would offer
+     a Delete button, and the section tile it is the whole point of would go
+     blank with nothing having warned anyone. */
+  for (const group of groups.data ?? []) {
+    const c = category.get(group.category_id);
+    note(uses, group.cover_image_src, {
+      label: `Catalog › ${c?.title ?? "?"} › ${group.title ?? "this section"} (the section tile)`,
+      href: c ? `/admin/catalog/${c.slug}` : "/admin/catalog",
     });
   }
   for (const item of items.data ?? []) {

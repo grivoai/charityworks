@@ -73,6 +73,10 @@ interface GroupRow {
   category_id: string;
   title: string | null;
   blurb: string | null;
+  cover_image_src: string | null;
+  cover_image_alt: string | null;
+  cover_image_width: number | null;
+  cover_image_height: number | null;
   position: number;
 }
 
@@ -105,19 +109,38 @@ function fail(what: string, error: PostgrestError | null): never {
 }
 
 /** Drops nulls so an absent column becomes an absent key, which is what the schemas expect. */
+function imageFrom(
+  src: string | null,
+  alt: string | null,
+  width: number | null,
+  height: number | null
+): ImageRef | undefined {
+  if (!src) return undefined;
+  return {
+    src,
+    alt: alt ?? "",
+    ...(width ? { width } : {}),
+    ...(height ? { height } : {}),
+  };
+}
+
 function imageOf(row: {
   image_src: string | null;
   image_alt: string | null;
   image_width: number | null;
   image_height: number | null;
 }): ImageRef | undefined {
-  if (!row.image_src) return undefined;
-  return {
-    src: row.image_src,
-    alt: row.image_alt ?? "",
-    ...(row.image_width ? { width: row.image_width } : {}),
-    ...(row.image_height ? { height: row.image_height } : {}),
-  };
+  return imageFrom(row.image_src, row.image_alt, row.image_width, row.image_height);
+}
+
+/** The same, for the group row, whose picture sits under a `cover_image_` prefix. */
+function coverOf(row: GroupRow): ImageRef | undefined {
+  return imageFrom(
+    row.cover_image_src,
+    row.cover_image_alt,
+    row.cover_image_width,
+    row.cover_image_height
+  );
 }
 
 function omitNull<T>(value: T | null): T | undefined {
@@ -273,6 +296,7 @@ export const supabaseContentSource: ContentSource = {
           id: group.id,
           ...(group.title ? { title: group.title } : {}),
           ...(group.blurb ? { blurb: group.blurb } : {}),
+          ...(coverOf(group) ? { coverImage: coverOf(group) } : {}),
           items: (itemsByGroup.get(group.id) ?? []).map((item) => ({
             id: item.id,
             name: item.name,

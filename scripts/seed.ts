@@ -209,7 +209,8 @@ async function guard(): Promise<void> {
         "image_src", "image_alt", "span", "general_only", "seo", "position", "published",
       ]),
       surveyTable("catalog_groups", "id", groupRows, [
-        "category_id", "title", "blurb", "position",
+        "category_id", "title", "blurb",
+        "cover_image_src", "cover_image_alt", "position",
       ]),
       surveyTable("catalog_items", "id", itemRows, [
         "group_id", "name", "description", "image_src", "image_alt",
@@ -345,6 +346,15 @@ function flatten(categories: AuctionItem[]) {
         category_id: category.id,
         title: group.title ?? null,
         blurb: group.blurb ?? null,
+        // Null for every group in the modules, and written as null on purpose:
+        // a section tile's cover photograph is something the client chooses in
+        // the admin, and this is a restore of the content the modules describe.
+        // Leaving the column out would keep a photograph the restored wording
+        // no longer has anything to do with.
+        cover_image_src: group.coverImage?.src ?? null,
+        cover_image_alt: group.coverImage?.alt ?? null,
+        cover_image_width: group.coverImage?.width ?? null,
+        cover_image_height: group.coverImage?.height ?? null,
         position: groupIndex,
       });
 

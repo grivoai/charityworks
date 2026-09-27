@@ -46,6 +46,10 @@ export interface GroupRowPatch {
   id: string;
   title: string | null;
   blurb: string | null;
+  cover_image_src: string | null;
+  cover_image_alt: string | null;
+  cover_image_width: number | null;
+  cover_image_height: number | null;
   position: number;
 }
 
@@ -161,6 +165,13 @@ export function planCategoryWrite(
     // treats a missing title as "this group has no heading".
     title: group.title ?? null,
     blurb: group.blurb ?? null,
+    // The tile's photograph, nulled the way a lot's is when it has none: a
+    // cleared picture has to reach the row as null, or the tile would keep
+    // showing the one the client just removed.
+    cover_image_src: group.coverImage?.src ?? null,
+    cover_image_alt: group.coverImage?.alt ?? null,
+    cover_image_width: group.coverImage?.width ?? null,
+    cover_image_height: group.coverImage?.height ?? null,
     position: index,
   }));
 

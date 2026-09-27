@@ -148,10 +148,10 @@ export default async function AuctionCategoryRoute({
 
               Tiles rather than a row of links because a photograph is what
               tells "Bucket List Trips" from "Affordable Vacations" at a
-              glance. The photograph is the group's first lot's; a group
-              with none yet — Costume Jewelry started with wording and no
-              pieces — shows the category's icon instead, so the tile is
-              still a tile and the section it points to still exists.
+              glance. The photograph is the group's cover photograph when it
+              has one, its first lot's when it does not, and the category's
+              icon while it has no lots at all — so the tile is still a tile
+              and the section it points to still exists.
 
               Anchors, not separate pages. One page keeps every lot one
               scroll away, and a group of two lots does not carry a page of
@@ -160,17 +160,30 @@ export default async function AuctionCategoryRoute({
             <nav className="cat-sections reveal" aria-label="Sections of this category">
               <ol>
                 {sections.map((group) => {
-                  const photo = group.items.find((item) => item.image)?.image;
+                  /**
+                   * A cover photograph was chosen for this frame, so it fills
+                   * it and its alt text is read out; a borrowed lot photograph
+                   * was not, so it is shown whole (several are photographed
+                   * tall) and stays decorative — that same picture is on a
+                   * card further down the page with its own description, and
+                   * hearing it twice on one page says nothing new.
+                   */
+                  const cover = group.coverImage;
+                  const photo =
+                    cover ?? group.items.find((item) => item.image)?.image;
                   return (
                     <li key={group.id} className="cat-section-tile">
-                      <div className="cat-section-media" aria-hidden="true">
+                      <div
+                        className="cat-section-media"
+                        aria-hidden={cover ? undefined : true}
+                      >
                         {photo ? (
                           <Image
                             src={photo.src}
-                            alt=""
+                            alt={cover ? cover.alt : ""}
                             fill
                             sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"
-                            style={{ objectFit: "contain" }}
+                            style={{ objectFit: cover ? "cover" : "contain" }}
                           />
                         ) : (
                           <span className="cat-section-glyph">

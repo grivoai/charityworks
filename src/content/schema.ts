@@ -183,6 +183,22 @@ export const categoryGroupSchema = z.object({
   id: text,
   title: optionalText,
   blurb: optionalText,
+  /**
+   * The photograph on this group's tile in the section picker.
+   *
+   * Optional, and the fallback is what the picker did on its own: the first
+   * lot's picture. That fallback is not a choice anybody made — which lot is
+   * first is an ordering decision about the list of lots, so the tile moved
+   * whenever a lot was added or reordered, and a group with no lots yet had
+   * only the category's icon. This is where the choice gets made instead.
+   */
+  coverImage: imageRefSchema
+    .optional()
+    .describe(
+      "The photograph on this section's tile at the top of the category page. " +
+        "Leave it empty and the tile shows the first lot's picture, or the " +
+        "category's icon while the section has no lots."
+    ),
   items: z.array(categoryItemSchema),
 });
 

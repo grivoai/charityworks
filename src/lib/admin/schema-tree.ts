@@ -58,6 +58,7 @@ const LABELS: Record<string, string> = {
   id: "Identifier",
   eyebrow: "Eyebrow",
   blurb: "Short description",
+  coverImage: "Cover photograph",
   intro: "Introduction",
   bio: "Biography",
   targetTerms: "Target search terms",

@@ -192,6 +192,24 @@ export const CATALOG_NOT_VISIBLE: NotVisibleRule[] = [
       "describes what it contains or lists named lots.",
   },
   {
+    /**
+     * The section tile IS on this page, unlike everything else in this list —
+     * what it is not is clickable. The whole tile is one link (stretched over
+     * it by `::after`, so it covers the photograph), and the preview never
+     * forwards a click to a link or looks for a field behind one. Marking the
+     * picture would therefore claim a way in that does not exist, which is the
+     * failure this file was written to stop.
+     *
+     * Nothing is lost: the tile's own words are the group's title and blurb,
+     * and both are clickable at the section heading the tile jumps to.
+     */
+    pattern: "groups.*.coverImage.**",
+    reason:
+      "The photograph on this section's tile at the top of the page. The whole " +
+      "tile is a link to the section, so clicking it there jumps down the page " +
+      "instead — set the picture in the form, under this section's wording.",
+  },
+  {
     pattern: "groups.*.items.*.documentSlug",
     reason:
       "Which brochure the lot's download button opens. The button's words are " +
