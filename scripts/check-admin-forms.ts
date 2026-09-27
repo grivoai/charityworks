@@ -393,6 +393,7 @@ if (failures === 0) {
 
   const framed = [
     "image",
+    "groups.*.coverImage",
     "groups.*.items.*.image",
     "auctioneers.*.image",
     "blocks.*.images.*.image",

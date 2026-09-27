@@ -126,6 +126,49 @@ async function main(): Promise<void> {
           fail(`${category.slug}: an unchanged save would rewrite ${item.id}.details`);
         }
       }
+
+      /* The same question for the GROUP rows, which carry the section tile's
+       * cover photograph as well as the section's wording. A lot's picture is
+       * read back on the page it was set on, so a write that mangles it is
+       * visible; a group's is read back on a tile at the top of the page, and
+       * the one that matters most is a cleared one — which looks exactly like
+       * a photograph nobody ever set. */
+      const storedGroups = await getServiceClient()
+        .from("catalog_groups")
+        .select("id, title, blurb, cover_image_src, cover_image_alt, cover_image_width, cover_image_height, position")
+        .in("id", category.groups.map((g) => g.id));
+
+      /* Said plainly rather than left to look like missing rows. A column this
+         script names and the database does not have fails the whole query, and
+         "every group is missing" is a confusing way to report a migration that
+         has not been applied yet. */
+      if (storedGroups.error) {
+        fail(
+          `${category.slug}: the group rows could not be read — ` +
+            storedGroups.error.message
+        );
+      }
+
+      const groupById = new Map(
+        (storedGroups.data ?? []).map((row: Record<string, unknown>) => [row.id as string, row])
+      );
+
+      for (const group of storedGroups.error ? [] : plan.groups) {
+        const row = groupById.get(group.id);
+        if (!row) {
+          fail(`${category.slug}: group "${group.id}" is in the form but not in the database`);
+          continue;
+        }
+        for (const key of Object.keys(group) as Array<keyof typeof group>) {
+          if (key === "id") continue;
+          if (stableStringify(row[key] ?? null) !== stableStringify(group[key] ?? null)) {
+            fail(
+              `${category.slug}: an unchanged save would rewrite ${group.id}.${key} — ` +
+                `${JSON.stringify(row[key])} becomes ${JSON.stringify(group[key])}`
+            );
+          }
+        }
+      }
     }
 
     const parsed = parsedTrip;
@@ -266,6 +309,28 @@ async function main(): Promise<void> {
     fail(
       "lots are no longer read in `position` order, so dragging one would " +
         "change the stored rows and nothing on the site"
+    );
+  }
+
+  /* The group write, for the same reason one step earlier in the chain.
+   *
+   * `plan.groups` carries every column a group has, and the save applies the
+   * patch WHOLE — `const { id, ...columns }` — rather than naming the columns
+   * again. Naming them is how a field reaches the plan and not the database:
+   * the save succeeds, the history records the new value, and the tile keeps
+   * the old photograph. Nothing else here can see that, because the plan is
+   * right and the row is simply never told. */
+  const save = readFileSync("src/lib/admin/catalog-actions.ts", "utf8");
+  const groupWrite = save
+    .slice(save.indexOf('.from("catalog_groups")') - 200)
+    .slice(0, 600);
+  const spread = /const \{ id: \w+, \.\.\.(\w+) \} of plan\.groups/.exec(groupWrite);
+  if (!spread || !groupWrite.includes(`.update(${spread[1]})`)) {
+    fail(
+      "the group save no longer writes the whole row patch, so a column added " +
+        "to GroupRowPatch — the section tile's cover photograph is one — can be " +
+        "planned, validated and recorded in the history without ever reaching " +
+        "the database"
     );
   }
 

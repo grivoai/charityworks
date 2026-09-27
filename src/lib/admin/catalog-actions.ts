@@ -111,11 +111,16 @@ async function applyPlan(id: string, plan: CategoryWritePlan): Promise<void> {
     throw new Error(`the category could not be saved: ${category.error.message}`);
   }
 
-  for (const group of plan.groups) {
+  /* Every column of the patch, taken as a whole rather than listed again here.
+     Listing them is how a field gets added to the plan and not to the write:
+     the save then succeeds, the history records the new value, and the site
+     shows the old one — a save that reports success and does nothing, which is
+     the worst shape this file can fail in. `id` is the key, not a column. */
+  for (const { id: groupId, ...columns } of plan.groups) {
     const { error } = await supabase
       .from("catalog_groups")
-      .update({ title: group.title, blurb: group.blurb, position: group.position })
-      .eq("id", group.id);
+      .update(columns)
+      .eq("id", groupId);
     if (error) throw new Error(`a group could not be saved: ${error.message}`);
   }
 

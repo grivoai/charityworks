@@ -222,8 +222,8 @@ export const HELP_TOPICS: HelpTopic[] = [
         p:
           "Before it uploads, the photograph opens in a cropping window set " +
           "to the shape it will be shown in — a lot's picture goes in a 4:3 " +
-          "card, a person's in a square, a category's across a tile. Drag " +
-          "to move it, pinch or scroll to zoom, pick another shape if you " +
+          "card, a person's in a square, a category's or a section's across a " +
+          "tile. Drag to move it, pinch or scroll to zoom, pick another shape if you " +
           "want one, then Use this crop. Use as is uploads it unchanged. " +
           "Crop or resize this one does the same to a picture already in " +
           "the field, and keeps the original in the library.",
@@ -317,6 +317,13 @@ export const HELP_TOPICS: HelpTopic[] = [
           "section on the page. Add a lot under the group it belongs to. " +
           "Groups themselves cannot be added or removed here; ask whoever set " +
           "up the site.",
+      },
+      {
+        p:
+          "Each of those groups has a cover photograph, which is the picture on " +
+          "its tile. Leave it empty and the tile borrows the first lot's " +
+          "picture, which changes whenever the lots are reordered — set one and " +
+          "it stays the photograph you chose.",
       },
     ],
     link: { href: "/admin/catalog", label: "Auction items" },

@@ -46,6 +46,20 @@ const SLOTS: Array<{ pattern: string; slot: ImageSlot }> = [
     },
   },
   {
+    // A group's tile in the section picker at the top of a category page.
+    // Wide on a desktop, a panel beside the words on a phone — so, like the
+    // category tile, the useful thing the cropper can do is set a landscape
+    // frame and say that the edges go.
+    pattern: "groups.*.coverImage",
+    slot: {
+      label: "Section tile",
+      aspect: 16 / 9,
+      hint:
+        "A wide band above the section's name, and a panel beside it on a " +
+        "phone. It crops the edges to fill, so keep the subject in the middle.",
+    },
+  },
+  {
     pattern: "groups.*.items.*.image",
     slot: {
       label: "Lot card",

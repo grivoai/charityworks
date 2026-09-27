@@ -1319,9 +1319,12 @@ main.is-transitioning {
   transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
 }
 .cat-section-tile:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
-/* `contain`, as .cat-card-media: the photograph is a lot's, and several are
-   photographed tall. A group with no lot yet shows the category's icon on
-   the same background, so an empty section is still a tile. */
+/* Two fits, set in the route rather than here because they depend on where
+   the photograph came from: a cover photograph was cropped for this frame and
+   fills it, a borrowed lot photograph is shown whole as on .cat-card-media,
+   since several lots are photographed tall. A group with no lot yet shows the
+   category's icon on the same background, so an empty section is still a
+   tile. */
 .cat-section-media {
   position: relative;
   aspect-ratio: 16 / 9;
