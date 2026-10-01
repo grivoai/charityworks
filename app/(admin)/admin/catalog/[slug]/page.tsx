@@ -1,85 +1,68 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
-import { auctionItemSchema } from "@/content/schema";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/Icon";
-import { CategoryEditor } from "@/components/admin/CategoryEditor";
-import { PagePreview } from "@/components/admin/PagePreview";
 import { requireAdmin } from "@/lib/auth";
-import { getAuctionCategories, getAuctionCategory } from "@/lib/content";
+import { getAuctionCategory } from "@/lib/content";
 import { getServiceClient } from "@/lib/supabase";
-import { buildFieldTree } from "@/lib/admin/schema-tree";
-import { locksForCategory } from "@/lib/admin/locks";
-import { countRevisions } from "@/lib/admin/revisions";
-import { formatWhen } from "@/lib/admin/page-meta";
 
 export const metadata: Metadata = {
-  title: "Edit category | CharityWorks Admin",
+  title: "Category | CharityWorks Admin",
   robots: { index: false, follow: false, nocache: true },
 };
 
 export const dynamic = "force-dynamic";
 
-interface MetaRow {
-  updated_at: string | null;
+/** Enough of a description to tell two similar lots apart at a glance. */
+function excerpt(text: string): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > 90 ? `${flat.slice(0, 90).trimEnd()}…` : flat;
 }
 
-export default async function EditCategoryRoute({
+/**
+ * A category's lots, one row each, ahead of the form that edits them.
+ *
+ * The form holds every lot expanded, which for Gold Album Showcase is a very
+ * long page to scroll for one entry. This is the index into it: a click opens
+ * the same form landed on that lot (`?lot=<id>`). Nothing is edited here, so
+ * there is one way to write a lot and it stays the form.
+ *
+ * Read through the content layer like the form, so the list and the form
+ * cannot disagree about what is in the category.
+ */
+export default async function CategoryLotsRoute({
   params,
-  searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ restored?: string }>;
 }) {
   const admin = await requireAdmin();
   const { slug } = await params;
-  const { restored } = await searchParams;
 
-  /**
-   * Read through the content layer, so the editor is populated with exactly
-   * what the site renders — same assembly from the same three tables, checked
-   * by the same schema. A separate read here could differ from what is live,
-   * and the difference would only ever show up as a mystery.
-   */
   const category = await getAuctionCategory(slug);
   if (!category) notFound();
 
-  const [historyCount, meta, retired, siblings] = await Promise.all([
-    countRevisions("category", category.id),
-    getServiceClient()
-      .from("catalog_categories")
-      // No `updated_by` on this table — unlike `pages`, a category records when
-      // it changed but not who changed it.
-      .select("updated_at")
-      .eq("id", category.id)
-      .maybeSingle<MetaRow>(),
-    getServiceClient()
-      .from("catalog_items")
-      .select("id, name, group_id", { count: "exact" })
-      .eq("published", false)
-      .in(
-        "group_id",
-        category.groups.map((group) => group.id)
-      ),
-    // Every category, so browsing from one to another in the preview can offer
-    // the right editor rather than silently editing the wrong record.
-    getAuctionCategories(),
-  ]);
-
-  const tree = buildFieldTree(auctionItemSchema, locksForCategory());
-
-  const updatedLabel = meta.data?.updated_at
-    ? `Last edited ${formatWhen(meta.data.updated_at)}`
-    : "Not edited since the site was set up";
-
   const lots = category.groups.reduce((n, group) => n + group.items.length, 0);
 
-  const categoryPath = `/auction-items/${category.slug}`;
+  // A category described rather than listed has nothing to pick from; a page
+  // with only an "edit" button on it would be a click for nothing.
+  if (lots === 0) redirect(`/admin/catalog/${category.slug}/edit`);
+
+  const retired = await getServiceClient()
+    .from("catalog_items")
+    .select("id", { count: "exact", head: true })
+    .eq("published", false)
+    .in(
+      "group_id",
+      category.groups.map((group) => group.id)
+    );
+
+  const editHref = `/admin/catalog/${category.slug}/edit`;
+  const sectioned = category.groups.length > 1;
 
   return (
-    <AdminShell admin={admin} wide>
+    <AdminShell admin={admin}>
       <nav className="admin-crumbs">
         <Link href="/admin/catalog">Auction items</Link>
         <span aria-hidden="true">›</span>
@@ -91,12 +74,10 @@ export default async function EditCategoryRoute({
           <span aria-hidden="true"><Icon name={category.icon} /></span> {category.title}
         </h1>
         <p>
-          {lots} lot{lots === 1 ? "" : "s"}. Saving publishes straight to{" "}
-          <a href={`/auction-items/${category.slug}`} target="_blank" rel="noreferrer">
-            /auction-items/{category.slug}
-          </a>
-          , and updates the tiles on the home and auction items pages and the
-          planner&rsquo;s suggestions. Every save is kept.
+          {lots} lot{lots === 1 ? "" : "s"}
+          {sectioned ? ` in ${category.groups.length} sections` : ""}. Pick one to
+          edit it, or edit the category itself — its title, descriptions,
+          sections and search listing.
         </p>
       </div>
 
@@ -108,35 +89,74 @@ export default async function EditCategoryRoute({
         </p>
       ) : null}
 
-      {/* The same two columns as the pages editor, and the same component:
-          the preview is a locator into this form, not a second way to write.
-          A category is one record on four surfaces, and this is the one that
-          shows nearly all of its words — the tiles elsewhere carry the rest,
-          which is written down in CATALOG_NOT_VISIBLE. */}
-      <div className="admin-split has-preview">
-        <div className="admin-split-editor">
-          <CategoryEditor
-            slug={category.slug}
-            tree={tree}
-            initial={category as unknown as Record<string, unknown>}
-            historyCount={historyCount}
-            updatedLabel={updatedLabel}
-            restored={restored === "1"}
-          />
-        </div>
+      <ul className="admin-rows">
+        <li>
+          <Link href={editHref} className="admin-row admin-lot-head">
+            <span className="admin-row-main">
+              <span className="admin-row-title">Category details</span>
+              <span className="admin-row-sub">
+                Title, descriptions, tile photo, sections, search listing
+              </span>
+            </span>
+            <span className="admin-row-go" aria-hidden="true">
+              ›
+            </span>
+          </Link>
+        </li>
+      </ul>
 
-        <PagePreview
-          slug={category.slug}
-          path={categoryPath}
-          label={category.title}
-          pages={siblings.map((c) => ({
-            slug: c.slug,
-            label: c.title,
-            path: `/auction-items/${c.slug}`,
-            editorHref: `/admin/catalog/${c.slug}`,
-          }))}
-        />
-      </div>
+      {category.groups.map((group, g) =>
+        group.items.length === 0 ? null : (
+          <section key={group.id}>
+            <h2 className="admin-lot-group">
+              {sectioned
+                ? group.title || `Section ${g + 1}`
+                : "Lots"}
+              <span className="admin-count-inline">{group.items.length}</span>
+            </h2>
+            <ul className="admin-rows">
+              {group.items.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={`${editHref}?lot=${encodeURIComponent(item.id)}`}
+                    className="admin-row admin-lot-row"
+                  >
+                    {item.image?.src ? (
+                      <img
+                        className="admin-lot-thumb"
+                        src={item.image.src}
+                        alt=""
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="admin-lot-thumb is-empty">No photo</span>
+                    )}
+                    <span className="admin-row-main">
+                      <span className="admin-row-title">
+                        {item.name}
+                        {item.affordableTier ? (
+                          <>
+                            {" "}
+                            <span className="admin-lot-star" title="Marked as one of the more affordable lots">
+                              ★
+                            </span>
+                          </>
+                        ) : null}
+                      </span>
+                      {item.description ? (
+                        <span className="admin-row-sub">{excerpt(item.description)}</span>
+                      ) : null}
+                    </span>
+                    <span className="admin-row-go" aria-hidden="true">
+                      ›
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      )}
     </AdminShell>
   );
 }
