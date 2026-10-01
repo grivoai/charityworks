@@ -305,6 +305,13 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       {
         p:
+          "Opening a category lists its lots with their photographs. Click one " +
+          "and the form opens at that lot; Category details opens it at the " +
+          "top. It is the same form either way, holding every lot, so you can " +
+          "still scroll to any other.",
+      },
+      {
+        p:
           "Removing a lot from the form retires it rather than deleting it: it " +
           "leaves the site, but the record is kept, so an enquiry that named it " +
           "still makes sense.",

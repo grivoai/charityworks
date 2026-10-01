@@ -363,5 +363,5 @@ export async function restoreCategoryRevision(
 
   updateTag(CATALOG_TAG);
 
-  redirect(`/admin/catalog/${slug}?restored=1`);
+  redirect(`/admin/catalog/${slug}/edit?restored=1`);
 }

@@ -862,6 +862,12 @@ a.admin-card:hover {
   border-radius: 6px;
 }
 
+/* A lot opened from the category's list page. Longer than a field's flash:
+   the page has just loaded, and a halo that is over before the eye has found
+   the form is no help. The margin keeps the entry clear of the sticky top bar. */
+.admin-item { scroll-margin-top: 78px; }
+.admin-item.is-found { animation: admin-found 2.4s var(--ease); }
+
 @keyframes admin-found {
   0%   { box-shadow: 0 0 0 7px rgba(224, 168, 46, 0); }
   18%  { box-shadow: 0 0 0 7px rgba(224, 168, 46, 0.4); }
@@ -870,7 +876,8 @@ a.admin-card:hover {
 
 @media (prefers-reduced-motion: reduce) {
   .admin-f.is-found,
-  .admin-sub.is-found { animation-duration: 0.01ms; }
+  .admin-sub.is-found,
+  .admin-item.is-found { animation-duration: 0.01ms; }
   .admin-outline { transition: none; }
 }
 
@@ -1315,6 +1322,47 @@ a.admin-card:hover {
 }
 @media (max-width: 520px) {
   .admin-photo-thumb { width: 72px; }
+}
+
+/* ---- A category's lots ----
+   The auction items list, one level down: the same rows, with the lot's
+   photograph at the front so a long category is found by eye rather than by
+   reading every name. */
+.admin-lot-group {
+  margin: 26px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+}
+.admin-lot-row { padding: 10px 18px 10px 10px; }
+/* The row sub line is monospace for slugs and counts; here it is prose. */
+.admin-lot-row .admin-row-sub,
+.admin-lot-head .admin-row-sub { font-family: inherit; }
+/* No date column on these rows to push the arrow over, so it does it itself. */
+.admin-lot-row .admin-row-go,
+.admin-lot-head .admin-row-go { margin-left: auto; }
+.admin-lot-thumb {
+  flex: 0 0 auto;
+  width: 64px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #eceae2;
+  border: 1px solid var(--line);
+}
+.admin-lot-thumb.is-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.admin-lot-star { color: var(--gold); }
+/* The general row rule wraps on phones so a long meta line can drop below;
+   a lot row has no meta, and wrapping would push the name under its photo. */
+@media (max-width: 560px) {
+  .admin-lot-row { flex-wrap: nowrap; gap: 12px; }
 }
 
 /* ---- Two-factor authentication ---- */

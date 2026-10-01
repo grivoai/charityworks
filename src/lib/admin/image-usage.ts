@@ -142,7 +142,7 @@ export async function findImageUses(options: { strict?: boolean } = {}): Promise
   for (const c of categories.data ?? []) {
     note(uses, c.image_src, {
       label: `Catalog › ${c.title} (the tile)`,
-      href: `/admin/catalog/${c.slug}`,
+      href: `/admin/catalog/${c.slug}/edit`,
     });
   }
   /* A group's cover photograph. Counted like any other use, and for the same
@@ -153,7 +153,7 @@ export async function findImageUses(options: { strict?: boolean } = {}): Promise
     const c = category.get(group.category_id);
     note(uses, group.cover_image_src, {
       label: `Catalog › ${c?.title ?? "?"} › ${group.title ?? "this section"} (the section tile)`,
-      href: c ? `/admin/catalog/${c.slug}` : "/admin/catalog",
+      href: c ? `/admin/catalog/${c.slug}/edit` : "/admin/catalog",
     });
   }
   for (const item of items.data ?? []) {
@@ -163,7 +163,13 @@ export async function findImageUses(options: { strict?: boolean } = {}): Promise
     // a photograph that says it is still in use.
     note(uses, item.image_src, {
       label: `Catalog › ${c?.title ?? "?"} › ${item.name}${item.published ? "" : " (archived)"}`,
-      href: c ? `/admin/catalog/${c.slug}` : "/admin/catalog",
+      // Straight to the lot. An archived one is not in the form, so it gets
+      // the form's top instead of a jump to nothing.
+      href: !c
+        ? "/admin/catalog"
+        : item.published
+          ? `/admin/catalog/${c.slug}/edit?lot=${encodeURIComponent(item.id)}`
+          : `/admin/catalog/${c.slug}/edit`,
     });
   }
 
