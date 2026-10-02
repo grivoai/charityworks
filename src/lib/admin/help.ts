@@ -305,7 +305,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       {
         p:
-          "Opening a category lists its lots with their photographs. Click one " +
+          "Opening a category lists its lots with their photographs, with the " +
+          "live page beside it on a wide screen. Click a lot " +
           "and the form opens at that lot; Category details opens it at the " +
           "top. It is the same form either way, holding every lot, so you can " +
           "still scroll to any other.",

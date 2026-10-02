@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/Icon";
+import { PagePreview } from "@/components/admin/PagePreview";
 import { requireAdmin } from "@/lib/auth";
 import { getAuctionCategory } from "@/lib/content";
 import { getServiceClient } from "@/lib/supabase";
@@ -62,7 +63,7 @@ export default async function CategoryLotsRoute({
   const sectioned = category.groups.length > 1;
 
   return (
-    <AdminShell admin={admin}>
+    <AdminShell admin={admin} wide>
       <nav className="admin-crumbs">
         <Link href="/admin/catalog">Auction items</Link>
         <span aria-hidden="true">›</span>
@@ -89,74 +90,91 @@ export default async function CategoryLotsRoute({
         </p>
       ) : null}
 
-      <ul className="admin-rows">
-        <li>
-          <Link href={editHref} className="admin-row admin-lot-head">
-            <span className="admin-row-main">
-              <span className="admin-row-title">Category details</span>
-              <span className="admin-row-sub">
-                Title, descriptions, tile photo, sections, search listing
-              </span>
-            </span>
-            <span className="admin-row-go" aria-hidden="true">
-              ›
-            </span>
-          </Link>
-        </li>
-      </ul>
+      {/* The same two columns as the form, with the live page on the right.
+          Browse only: "Point & edit" finds a clicked element's field in the
+          form beside it, and there is no form beside it here — the mode would
+          take every click and do nothing with it. A lot is opened from its row. */}
+      <div className="admin-split has-preview">
+        <div className="admin-split-editor">
+          <ul className="admin-rows">
+            <li>
+              <Link href={editHref} className="admin-row admin-lot-head">
+                <span className="admin-row-main">
+                  <span className="admin-row-title">Category details</span>
+                  <span className="admin-row-sub">
+                    Title, descriptions, tile photo, sections, search listing
+                  </span>
+                </span>
+                <span className="admin-row-go" aria-hidden="true">
+                  ›
+                </span>
+              </Link>
+            </li>
+          </ul>
 
-      {category.groups.map((group, g) =>
-        group.items.length === 0 ? null : (
-          <section key={group.id}>
-            <h2 className="admin-lot-group">
-              {sectioned
-                ? group.title || `Section ${g + 1}`
-                : "Lots"}
-              <span className="admin-count-inline">{group.items.length}</span>
-            </h2>
-            <ul className="admin-rows">
-              {group.items.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    href={`${editHref}?lot=${encodeURIComponent(item.id)}`}
-                    className="admin-row admin-lot-row"
-                  >
-                    {item.image?.src ? (
-                      <img
-                        className="admin-lot-thumb"
-                        src={item.image.src}
-                        alt=""
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span className="admin-lot-thumb is-empty">No photo</span>
-                    )}
-                    <span className="admin-row-main">
-                      <span className="admin-row-title">
-                        {item.name}
-                        {item.affordableTier ? (
-                          <>
-                            {" "}
-                            <span className="admin-lot-star" title="Marked as one of the more affordable lots">
-                              ★
-                            </span>
-                          </>
-                        ) : null}
-                      </span>
-                      {item.description ? (
-                        <span className="admin-row-sub">{excerpt(item.description)}</span>
-                      ) : null}
-                    </span>
-                    <span className="admin-row-go" aria-hidden="true">
-                      ›
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )
-      )}
+          {category.groups.map((group, g) =>
+            group.items.length === 0 ? null : (
+              <section key={group.id}>
+                <h2 className="admin-lot-group">
+                  {sectioned
+                    ? group.title || `Section ${g + 1}`
+                    : "Lots"}
+                  <span className="admin-count-inline">{group.items.length}</span>
+                </h2>
+                <ul className="admin-rows">
+                  {group.items.map((item) => (
+                    <li key={item.id}>
+                      <Link
+                        href={`${editHref}?lot=${encodeURIComponent(item.id)}`}
+                        className="admin-row admin-lot-row"
+                      >
+                        {item.image?.src ? (
+                          <img
+                            className="admin-lot-thumb"
+                            src={item.image.src}
+                            alt=""
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="admin-lot-thumb is-empty">No photo</span>
+                        )}
+                        <span className="admin-row-main">
+                          <span className="admin-row-title">
+                            {item.name}
+                            {item.affordableTier ? (
+                              <>
+                                {" "}
+                                <span className="admin-lot-star" title="Marked as one of the more affordable lots">
+                                  ★
+                                </span>
+                              </>
+                            ) : null}
+                          </span>
+                          {item.description ? (
+                            <span className="admin-row-sub">{excerpt(item.description)}</span>
+                          ) : null}
+                        </span>
+                        <span className="admin-row-go" aria-hidden="true">
+                          ›
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )
+          )}
+        </div>
+
+        <PagePreview
+          slug={category.slug}
+          path={`/auction-items/${category.slug}`}
+          label={category.title}
+          canPointAndEdit={false}
+          pages={[]}
+          foot="The category page as it is live now. Pick a lot on the left to edit it."
+        />
+      </div>
     </AdminShell>
   );
 }

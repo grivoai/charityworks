@@ -114,6 +114,53 @@ async function fetchPage(path: string): Promise<string> {
   return response.text();
 }
 
+/**
+ * Whether the site may be framed by itself, and only by itself.
+ *
+ * Every marker this script checks is worthless if the preview cannot load the
+ * page at all — and that is exactly what happened from 2026-08-28: the
+ * security headers said `DENY` / `frame-ancestors 'none'`, every admin preview
+ * showed a browser "blocked" icon, and this check kept passing because it
+ * fetched the HTML directly. So both directions are asserted here: the
+ * preview's own origin must be allowed, and nothing wider may be, since the
+ * same header is what stops /admin/login being clickjacked from elsewhere.
+ */
+async function checkFraming(): Promise<void> {
+  const before = failures;
+  for (const path of ["/", "/admin/login"]) {
+    const response = await fetch(`${BASE}${path}`, {
+      headers: { connection: "close" },
+      redirect: "manual",
+    });
+    await response.arrayBuffer();
+
+    const xfo = response.headers.get("x-frame-options")?.trim().toUpperCase();
+    const ancestors = /frame-ancestors\s+([^;]+)/i
+      .exec(response.headers.get("content-security-policy") ?? "")?.[1]
+      .trim();
+
+    if (xfo !== "SAMEORIGIN") {
+      fail(
+        `${path}: X-Frame-Options is ${xfo ?? "missing"}, not SAMEORIGIN — ` +
+          (xfo === "DENY"
+            ? "the admin preview cannot frame the site"
+            : "other sites may be able to frame it")
+      );
+    }
+    if (ancestors !== "'self'") {
+      fail(
+        `${path}: frame-ancestors is ${ancestors ?? "missing"}, not 'self' — ` +
+          (ancestors === "'none'"
+            ? "the admin preview cannot frame the site"
+            : "other sites may be able to frame it")
+      );
+    }
+  }
+  if (failures === before) {
+    console.log("  Framing: the site may frame itself, and nothing else may");
+  }
+}
+
 async function main(): Promise<void> {
   console.log(`Checking the preview's element-to-field map against ${BASE}\n`);
 
@@ -302,6 +349,8 @@ async function main(): Promise<void> {
   }
 
   console.log(`\n  ${totalMarked} fields clickable on the live site`);
+
+  await checkFraming();
 
   if (failures > 0) {
     console.error(`\n  ${failures} check(s) failed\n`);

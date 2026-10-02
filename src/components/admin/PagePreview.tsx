@@ -38,7 +38,7 @@ export interface PreviewPage {
    *
    * Carried rather than assumed: the preview column now serves the catalog
    * editor as well as the pages editor, and a category is edited at
-   * /admin/catalog/<slug>. Building the link from a prefix here would send a
+   * /admin/catalog/<slug>/edit. Building the link from a prefix here would send a
    * click to a page that does not exist.
    */
   editorHref: string;
@@ -155,6 +155,7 @@ export function PagePreview({
   pages,
   canPointAndEdit = true,
   liveDraft = false,
+  foot,
 }: {
   slug: string;
   /** The public route this page renders at, e.g. `/faqs`. */
@@ -187,6 +188,15 @@ export function PagePreview({
    * is worth the machinery.
    */
   liveDraft?: boolean;
+  /**
+   * The line under the frame, where the default would say something untrue.
+   *
+   * Every default below assumes a form beside the preview. The category's
+   * list of lots has none — the preview there sits beside a list that leads
+   * to the form — so "change the wording in the form beside it" would send
+   * the client looking for something that is not on the screen.
+   */
+  foot?: string;
 }) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -809,7 +819,7 @@ export function PagePreview({
 
       {elsewhere && (
         <p className="admin-preview-note is-warn">
-          Showing <code>{elsewhere}</code>, which this form does not edit.{" "}
+          Showing <code>{elsewhere}</code>, not the page edited here.{" "}
           <button
             type="button"
             className="admin-linkish"
@@ -893,7 +903,9 @@ export function PagePreview({
       </div>
 
       <p className="admin-preview-foot">
-        {liveDraft
+        {foot
+          ? foot
+          : liveDraft
           ? "The header, footer and contact rows, updating as you type. Every page on the site carries these."
           : !canPointAndEdit
             ? "The page as it will look. Change the wording in the form beside it."
