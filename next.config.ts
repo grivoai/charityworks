@@ -121,11 +121,19 @@ const nextConfig: NextConfig = {
      * mattering. Turning off `noindex` is the last step of the launch
      * checklist, so the failure would have arrived with nobody looking.
      *
-     * `frame-ancestors 'none'` is the one that is not merely hygiene: without
-     * it /admin/login can be framed on an attacker's page and clickjacked.
+     * `frame-ancestors` is the one that is not merely hygiene: without it
+     * /admin/login can be framed on an attacker's page and clickjacked.
+     *
+     * 'self', NOT 'none'. The admin's live preview is this site framing its own
+     * pages — every editing screen puts the public page in an iframe beside the
+     * form. 'none' refuses that too, and did, silently, from 2026-08-28 until
+     * it was noticed: the panel showed a browser "blocked" icon on every screen
+     * and nothing reported it. 'self' still refuses every other origin, which
+     * is the whole of the clickjacking defence. X-Frame-Options says the same
+     * for browsers that predate frame-ancestors; the two must agree.
      */
     const security = [
-      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Frame-Options", value: "SAMEORIGIN" },
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       {
@@ -141,7 +149,7 @@ const nextConfig: NextConfig = {
        * page; the rest is worth doing deliberately rather than as a rider on
        * a security fix.
        */
-      { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+      { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
     ];
 
     const headers = [{ source: "/:path*", headers: security }];
