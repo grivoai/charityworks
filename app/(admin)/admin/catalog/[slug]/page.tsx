@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { Icon } from "@/components/Icon";
+import { LotOrder, type LotSection } from "@/components/admin/LotOrder";
 import { PagePreview } from "@/components/admin/PagePreview";
 import { requireAdmin } from "@/lib/auth";
 import { getAuctionCategory } from "@/lib/content";
@@ -27,8 +28,15 @@ function excerpt(text: string): string {
  *
  * The form holds every lot expanded, which for Gold Album Showcase is a very
  * long page to scroll for one entry. This is the index into it: a click opens
- * the same form landed on that lot (`?lot=<id>`). Nothing is edited here, so
- * there is one way to write a lot and it stays the form.
+ * the same form landed on that lot (`?lot=<id>`).
+ *
+ * It is also where the lots are put in order, which is the one thing written
+ * from here. The form can do that too and could not do it well: an expanded lot
+ * is around sixteen hundred pixels tall, so the two lots being swapped are
+ * never on screen together and the drag has nowhere to land. One row each, they
+ * are. The write is still narrow — `saveLotOrder` takes a permutation of the
+ * ids it already holds and refuses anything else — so a lot is still only ever
+ * EDITED in the form.
  *
  * Read through the content layer like the form, so the list and the form
  * cannot disagree about what is in the category.
@@ -62,6 +70,26 @@ export default async function CategoryLotsRoute({
   const editHref = `/admin/catalog/${category.slug}/edit`;
   const sectioned = category.groups.length > 1;
 
+  /**
+   * Just the parts of a lot a row shows.
+   *
+   * Narrowed here rather than handing the whole category over, because every
+   * field sent reaches the browser as part of the client component's payload —
+   * and a category's descriptions, details and photograph dimensions are a lot
+   * of bytes for a list that shows a name and one line.
+   */
+  const sections: LotSection[] = category.groups.map((group) => ({
+    id: group.id,
+    title: group.title ?? "",
+    lots: group.items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      excerpt: item.description ? excerpt(item.description) : "",
+      image: item.image?.src ?? null,
+      affordable: Boolean(item.affordableTier),
+    })),
+  }));
+
   return (
     <AdminShell admin={admin} wide>
       <nav className="admin-crumbs">
@@ -76,9 +104,10 @@ export default async function CategoryLotsRoute({
         </h1>
         <p>
           {lots} lot{lots === 1 ? "" : "s"}
-          {sectioned ? ` in ${category.groups.length} sections` : ""}. Pick one to
-          edit it, or edit the category itself — its title, descriptions,
-          sections and search listing.
+          {sectioned ? ` in ${category.groups.length} sections` : ""}. Drag a lot
+          by its handle, or use the arrows, to change the order they appear in on
+          the site — then save. Pick one to edit it, or edit the category itself
+          — its title, descriptions, sections and search listing.
         </p>
       </div>
 
@@ -93,7 +122,9 @@ export default async function CategoryLotsRoute({
       {/* The same two columns as the form, with the live page on the right.
           Browse only: "Point & edit" finds a clicked element's field in the
           form beside it, and there is no form beside it here — the mode would
-          take every click and do nothing with it. A lot is opened from its row. */}
+          take every click and do nothing with it. A lot is opened from its row.
+          The frame re-fetches itself when an order is saved, so the page on the
+          right is what the new order looks like. */}
       <div className="admin-split has-preview">
         <div className="admin-split-editor">
           <ul className="admin-rows">
@@ -112,58 +143,12 @@ export default async function CategoryLotsRoute({
             </li>
           </ul>
 
-          {category.groups.map((group, g) =>
-            group.items.length === 0 ? null : (
-              <section key={group.id}>
-                <h2 className="admin-lot-group">
-                  {sectioned
-                    ? group.title || `Section ${g + 1}`
-                    : "Lots"}
-                  <span className="admin-count-inline">{group.items.length}</span>
-                </h2>
-                <ul className="admin-rows">
-                  {group.items.map((item) => (
-                    <li key={item.id}>
-                      <Link
-                        href={`${editHref}?lot=${encodeURIComponent(item.id)}`}
-                        className="admin-row admin-lot-row"
-                      >
-                        {item.image?.src ? (
-                          <img
-                            className="admin-lot-thumb"
-                            src={item.image.src}
-                            alt=""
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span className="admin-lot-thumb is-empty">No photo</span>
-                        )}
-                        <span className="admin-row-main">
-                          <span className="admin-row-title">
-                            {item.name}
-                            {item.affordableTier ? (
-                              <>
-                                {" "}
-                                <span className="admin-lot-star" title="Marked as one of the more affordable lots">
-                                  ★
-                                </span>
-                              </>
-                            ) : null}
-                          </span>
-                          {item.description ? (
-                            <span className="admin-row-sub">{excerpt(item.description)}</span>
-                          ) : null}
-                        </span>
-                        <span className="admin-row-go" aria-hidden="true">
-                          ›
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )
-          )}
+          <LotOrder
+            slug={category.slug}
+            sections={sections}
+            sectioned={sectioned}
+            editHref={editHref}
+          />
         </div>
 
         <PagePreview
@@ -172,7 +157,10 @@ export default async function CategoryLotsRoute({
           label={category.title}
           canPointAndEdit={false}
           pages={[]}
-          foot="The category page as it is live now. Pick a lot on the left to edit it."
+          foot={
+            "The category page as it is live now — it reloads when a new order " +
+            "is saved. Pick a lot on the left to edit it."
+          }
         />
       </div>
     </AdminShell>

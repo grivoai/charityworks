@@ -740,15 +740,38 @@ function ArrayField({
                 // Firefox will not start a drag without payload on the transfer.
                 event.dataTransfer.setData("text/plain", String(index));
               }}
+              /* Both of these are stopped from bubbling, and ONLY for a row
+                 being dragged within this list.
+
+                 Stopped, because the window guard in `drop-guard.ts` refuses
+                 drops everywhere outside an upload zone by cancelling
+                 `dragover` and setting `dropEffect = "none"`. It runs after
+                 this, so without the stop it overwrote the "move" set here —
+                 and a dragover left at `none` means the browser never
+                 dispatches `drop` at all. The row lifted, the cursor said no,
+                 the drop vanished, and reordering by drag did nothing. The
+                 upload zones have always stopped their own drops for exactly
+                 this reason; the rows did not.
+
+                 Only for a row drag, because the other thing dragged over a
+                 lot is a photograph aimed at the upload zone inside it and let
+                 go an inch short. That one MUST reach the guard: a file drop
+                 the page does not cancel navigates the tab to the JPEG and
+                 takes every unsaved edit with it. `dragIndex` is null unless
+                 this list started the drag, so the early return below is what
+                 keeps that case the guard's. */
               onDragOver={(event) => {
                 if (dragIndex === null) return;
                 event.preventDefault();
+                event.stopPropagation();
                 event.dataTransfer.dropEffect = "move";
                 if (overIndex !== index) setOverIndex(index);
               }}
               onDrop={(event) => {
+                if (dragIndex === null) return;
                 event.preventDefault();
-                if (dragIndex !== null) moveTo(dragIndex, index);
+                event.stopPropagation();
+                moveTo(dragIndex, index);
                 endDrag();
               }}
               onDragEnd={endDrag}
