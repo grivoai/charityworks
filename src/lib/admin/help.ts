@@ -313,6 +313,15 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       {
         p:
+          "That list is also where the lots are put in order. Drag a row by the " +
+          "handle on its left, or use the up and down arrows, and the number " +
+          "beside each row follows along; nothing changes on the site until you " +
+          "press Save the new order. Lots move within their own section. The " +
+          "page beside it reloads once saved, so you can check the order the way " +
+          "a visitor will see it.",
+      },
+      {
+        p:
           "Removing a lot from the form retires it rather than deleting it: it " +
           "leaves the site, but the record is kept, so an enquiry that named it " +
           "still makes sense.",

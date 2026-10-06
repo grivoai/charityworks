@@ -7,18 +7,19 @@ import type { $ZodIssue } from "zod/v4/core";
 import { auctionItemSchema } from "@/content/schema";
 import type { AuctionItem } from "@/content/types";
 import { requireAdmin } from "@/lib/auth";
-import { getServiceClient } from "@/lib/supabase";
 import { supabaseContentSource } from "@/lib/content-source-supabase";
 import { coerceToTree, deepEqual } from "@/lib/admin/coerce";
 import type { FieldErrors } from "@/lib/admin/field-node";
 import { locksForCategory } from "@/lib/admin/locks";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { CATALOG_TAG } from "@/lib/content-tags";
+import { applyCategoryPlan } from "@/lib/admin/catalog-apply";
 import {
   CategoryWriteError,
   planCategoryWrite,
   type CategoryWritePlan,
 } from "@/lib/admin/catalog-write";
+import { planLotOrder, readSubmittedOrder } from "@/lib/admin/lot-order";
 import {
   ensureBaseline,
   getRevision,
@@ -85,66 +86,6 @@ function toFieldErrors(issues: readonly $ZodIssue[]): FieldErrors {
 async function readCategory(slug: string): Promise<AuctionItem | undefined> {
   const categories = await supabaseContentSource.getAuctionCategories();
   return categories.find((category) => category.slug === slug);
-}
-
-/* ------------------------------------------------------------------ */
-/* Writing                                                             */
-/* ------------------------------------------------------------------ */
-
-/**
- * Performs a plan.
- *
- * Ordered so the recoverable failure is the one that can happen: archiving
- * first would take lots off the site before their replacements exist, and
- * deleting is never done at all. Each statement is checked — supabase-js has no
- * transaction, so a half-applied write has to be reported rather than assumed
- * away.
- */
-async function applyPlan(id: string, plan: CategoryWritePlan): Promise<void> {
-  const supabase = getServiceClient();
-
-  const category = await supabase
-    .from("catalog_categories")
-    .update({ ...plan.category, updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (category.error) {
-    throw new Error(`the category could not be saved: ${category.error.message}`);
-  }
-
-  /* Every column of the patch, taken as a whole rather than listed again here.
-     Listing them is how a field gets added to the plan and not to the write:
-     the save then succeeds, the history records the new value, and the site
-     shows the old one — a save that reports success and does nothing, which is
-     the worst shape this file can fail in. `id` is the key, not a column. */
-  for (const { id: groupId, ...columns } of plan.groups) {
-    const { error } = await supabase
-      .from("catalog_groups")
-      .update(columns)
-      .eq("id", groupId);
-    if (error) throw new Error(`a group could not be saved: ${error.message}`);
-  }
-
-  /* Upsert: an id already there is updated, a new one inserted. `published`
-     is set true so a lot that was archived and then re-added comes back. */
-  if (plan.items.length > 0) {
-    const { error } = await supabase
-      .from("catalog_items")
-      .upsert(
-        plan.items.map((item) => ({ ...item, published: true })),
-        { onConflict: "id" }
-      );
-    if (error) throw new Error(`the lots could not be saved: ${error.message}`);
-  }
-
-  if (plan.archive.length > 0) {
-    const { error } = await supabase
-      .from("catalog_items")
-      .update({ published: false })
-      .in("id", plan.archive);
-    if (error) {
-      throw new Error(`a removed lot could not be retired: ${error.message}`);
-    }
-  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -241,7 +182,7 @@ export async function saveCategory(
   }
 
   try {
-    await applyPlan(current.id, plan);
+    await applyCategoryPlan(current.id, plan);
   } catch (error) {
     return { message: (error as Error).message };
   }
@@ -272,6 +213,126 @@ export async function saveCategory(
     ...(plan.archive.length > 0 ? { archived: plan.archive.length } : {}),
     ...(warning ? { warning } : {}),
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Reordering, from the list page                                      */
+/* ------------------------------------------------------------------ */
+
+export interface LotOrderState {
+  ok?: true;
+  unchanged?: true;
+  savedAt?: string;
+  /** The stored document, for the preview column to re-fetch against. */
+  data?: unknown;
+  message?: string;
+  warning?: string;
+}
+
+/**
+ * Saves a new order for a category's lots, and nothing else.
+ *
+ * The form on the edit page can already do this — it saves the category whole,
+ * and the order of the lots in it is part of that. This exists because doing it
+ * there means scrolling a page tens of thousands of pixels tall to put two
+ * lots next to each other, which is not a thing anyone can do with a mouse.
+ *
+ * What makes it safe to have a second way to write is that it is not a second
+ * way to write: the submission is a PERMUTATION, not a document. Every id sent
+ * has to be one of the ids already in that section — same ids, same count —
+ * and anything else is refused outright rather than reconciled. So this path
+ * cannot create a lot, cannot retire one, cannot move one between sections and
+ * cannot change a single word of one. It can only answer the question "in what
+ * order?", which is the question the page asks.
+ *
+ * Everything after that is the existing save: `planCategoryWrite` works out the
+ * rows (position is the index in the list it is given), `applyCategoryPlan`
+ * writes them, and the move is recorded in the version history like any other
+ * edit —
+ * so a reorder can be rolled back the same way, and so the history does not
+ * have a silent hole in it where somebody rearranged the catalog.
+ */
+export async function saveLotOrder(
+  _previous: LotOrderState,
+  formData: FormData
+): Promise<LotOrderState> {
+  const admin = await requireAdmin();
+
+  const slug = formData.get("slug");
+  if (typeof slug !== "string" || !slug) {
+    return { message: "That category does not exist." };
+  }
+
+  const submitted = readSubmittedOrder(formData.get("order"));
+  if (!submitted) {
+    return {
+      message: "The new order could not be read. Please reload the page and try again.",
+    };
+  }
+
+  let current: AuctionItem | undefined;
+  try {
+    current = await readCategory(slug);
+  } catch (error) {
+    return { message: (error as Error).message };
+  }
+  if (!current) return { message: "That category is missing from the database." };
+
+  /* `in` rather than a destructure: the plan is one shape or the other, and
+     pulling the two apart loses which one arrived. */
+  const planned = planLotOrder(current, submitted);
+  if ("refusal" in planned) return { message: planned.refusal };
+  const next = planned.next;
+
+  if (deepEqual(current, next)) {
+    return { ok: true, unchanged: true, data: next, savedAt: new Date().toISOString() };
+  }
+
+  let plan: CategoryWritePlan;
+  try {
+    plan = planCategoryWrite(next, current);
+  } catch (error) {
+    if (error instanceof CategoryWriteError) return { message: error.message };
+    throw error;
+  }
+
+  try {
+    await ensureBaseline({
+      entity: "category",
+      entityId: current.id,
+      data: current,
+      adminId: admin.id,
+    });
+  } catch (error) {
+    return { message: (error as Error).message };
+  }
+
+  try {
+    await applyCategoryPlan(current.id, plan);
+  } catch (error) {
+    return { message: (error as Error).message };
+  }
+
+  const savedAt = new Date().toISOString();
+
+  let warning: string | undefined;
+  try {
+    await recordRevision({
+      entity: "category",
+      entityId: current.id,
+      data: next,
+      adminId: admin.id,
+      note: "Reordered the lots",
+    });
+  } catch {
+    warning =
+      "Saved and live — but this version could not be added to the history, " +
+      "so it cannot be rolled back to later.";
+  }
+
+  updateTag(CATALOG_TAG);
+
+  return { ok: true, savedAt, data: next, ...(warning ? { warning } : {}) };
 }
 
 /* ------------------------------------------------------------------ */
@@ -344,7 +405,7 @@ export async function restoreCategoryRevision(
   });
 
   try {
-    await applyPlan(current.id, plan);
+    await applyCategoryPlan(current.id, plan);
   } catch (error) {
     return { message: (error as Error).message };
   }

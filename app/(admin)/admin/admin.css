@@ -1703,6 +1703,63 @@ a.admin-card:hover {
   border-color: var(--gold);
 }
 
+/* ------------------------------------------------------------------ */
+/* Putting a category's lots in order                                  */
+/* ------------------------------------------------------------------ */
+
+.admin-rows-ordered { margin: 0; padding: 0; }
+.admin-order-row { list-style: none; }
+.admin-order-row + .admin-order-row { margin-top: 8px; }
+
+/* The row is no longer a link, so the hover that said "this opens" has to be
+   put back on the part that still does. */
+.admin-rows-ordered .admin-row { gap: 8px; cursor: default; }
+.admin-rows-ordered .admin-row:hover { border-color: var(--line); box-shadow: none; }
+.admin-rows-ordered .admin-row:has(.admin-order-open:hover) {
+  border-color: var(--green-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-order-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 0 6px 2px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 8px;
+}
+.admin-order-open:focus-visible {
+  outline: 2px solid rgba(184, 134, 11, 0.6);
+  outline-offset: 2px;
+}
+
+/* The number is the point of the exercise — without it a saved order is
+   something you have to count to check. Tabular so the column does not
+   shuffle between 9 and 10. */
+.admin-order-place {
+  min-width: 22px;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.admin-rows-ordered .admin-item-tools { gap: 4px; }
+
+.admin-order-row.is-dragging { opacity: 0.45; }
+.admin-order-row.is-drop-target .admin-row {
+  box-shadow: inset 0 3px 0 0 var(--gold);
+  border-color: var(--gold);
+}
+
+/* Room under the last row for the save bar, which is sticky and would
+   otherwise sit on top of it — and a control a sticky bar covers is one that
+   cannot be clicked at all. */
+.admin-order-form > section:last-of-type { margin-bottom: 86px; }
+
 @media (prefers-reduced-motion: reduce) {
   .admin-template { transition: none; }
   .admin-enquiry-head::before { transition: none; }

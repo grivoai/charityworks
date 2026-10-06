@@ -314,15 +314,15 @@ async function main(): Promise<void> {
 
   /* The group write, for the same reason one step earlier in the chain.
    *
-   * `plan.groups` carries every column a group has, and the save applies the
+   * `plan.groups` carries every column a group has, and the write applies the
    * patch WHOLE — `const { id, ...columns }` — rather than naming the columns
    * again. Naming them is how a field reaches the plan and not the database:
    * the save succeeds, the history records the new value, and the tile keeps
    * the old photograph. Nothing else here can see that, because the plan is
    * right and the row is simply never told. */
-  const save = readFileSync("src/lib/admin/catalog-actions.ts", "utf8");
-  const groupWrite = save
-    .slice(save.indexOf('.from("catalog_groups")') - 200)
+  const write = readFileSync("src/lib/admin/catalog-apply.ts", "utf8");
+  const groupWrite = write
+    .slice(write.indexOf('.from("catalog_groups")') - 200)
     .slice(0, 600);
   const spread = /const \{ id: \w+, \.\.\.(\w+) \} of plan\.groups/.exec(groupWrite);
   if (!spread || !groupWrite.includes(`.update(${spread[1]})`)) {
@@ -339,6 +339,68 @@ async function main(): Promise<void> {
     fail(
       "list entries are no longer draggable, so lots can only be reordered by " +
         "retyping them"
+    );
+  }
+
+  /* Draggable is not droppable, and the difference cost a client a fortnight.
+   *
+   * Every form with a photograph on it mounts the window drop guard, which
+   * refuses drops everywhere outside an upload zone by cancelling `dragover`
+   * and setting `dropEffect = "none"`. A row that lets its own dragover bubble
+   * into that guard has the effect overwritten — and a dragover left at `none`
+   * is one the browser never follows with a `drop`. The row lifts, the cursor
+   * says no, and the list does not move. It looks exactly like a drag that is
+   * simply not implemented, which is why nothing caught it.
+   *
+   * So both reorderable lists have to stop the event — and only for a row drag
+   * of their own, because a photograph let go an inch outside an upload zone
+   * must still reach the guard: a file drop nothing cancels navigates the tab
+   * to the file and takes every unsaved edit with it. */
+  for (const [file, source, bail] of [
+    ["SchemaFields.tsx", form, "if (dragIndex === null) return;"],
+    [
+      "LotOrder.tsx",
+      readFileSync("src/components/admin/LotOrder.tsx", "utf8"),
+      "if (!drag || drag.section !== section.id) return;",
+    ],
+  ] as const) {
+    for (const handler of ["onDragOver", "onDrop"]) {
+      const body = source.slice(source.indexOf(`${handler}={(event) => {`)).slice(0, 400);
+      if (!body.includes(bail)) {
+        fail(
+          `${file}: ${handler} no longer returns early when nothing of its own is ` +
+            `being dragged, so a dropped photograph is swallowed here instead of ` +
+            `being refused by the window guard — and the tab navigates away to it`
+        );
+      } else if (!body.includes("event.stopPropagation();")) {
+        fail(
+          `${file}: ${handler} no longer stops the event, so the window drop ` +
+            `guard overwrites the drop effect and the browser never fires a drop — ` +
+            `reordering by drag goes back to doing nothing at all`
+        );
+      }
+    }
+  }
+
+  /* The list page's write, which is narrow on purpose. */
+  const order = readFileSync("src/lib/admin/catalog-actions.ts", "utf8");
+  const orderAction = order.slice(order.indexOf("export async function saveLotOrder"));
+  if (!orderAction.includes("await requireAdmin()")) {
+    fail("saveLotOrder no longer proves who is asking before it writes the catalog");
+  }
+  if (!orderAction.includes("planLotOrder(current, submitted)")) {
+    fail(
+      "saveLotOrder no longer runs the submission through planLotOrder, so the " +
+        "ids it is handed are no longer checked against the ids already in the " +
+        "section — the one thing that keeps a reorder from being able to add, " +
+        "retire or move a lot"
+    );
+  }
+  const rows = readFileSync("app/(admin)/admin/catalog/[slug]/page.tsx", "utf8");
+  if (!/<LotOrder\b/.test(rows)) {
+    fail(
+      "the lot list no longer renders LotOrder, so a category can only be " +
+        "reordered in the form, where two lots are never on screen together"
     );
   }
 
