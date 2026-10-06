@@ -362,6 +362,70 @@ if (failures === 0) {
 }
 
 /* ------------------------------------------------------------------ */
+/* The save bar                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The bar floats over the foot of every editing screen, and the controls it
+ * floats over are real: the lot list puts its drag handle and arrows at the
+ * right-hand edge of the same column. When the bar was one full-width element
+ * it took every click in the bottom 66px — a client spent a fortnight unable
+ * to reorder her lots partly because of it, and the click was not swallowed
+ * silently either: on a dirty form the thing over the arrow is the live Save
+ * button, so aiming at an arrow published the category.
+ *
+ * None of that is visible in a type check and none of it has a test that would
+ * go red, so the shape is asserted from source: one component, a pill that does
+ * not span the column, and a strip that does not take the pointer.
+ */
+{
+  const bar = readFileSync("src/components/admin/SaveBar.tsx", "utf8");
+  const css = readFileSync("app/(admin)/admin/admin.css", "utf8");
+  const renderers = ["src/components/admin/DocumentEditor.tsx", "src/components/admin/LotOrder.tsx"];
+
+  const strip = css.slice(css.indexOf(".admin-savebar {")).slice(0, 400);
+  const pill = css.slice(css.indexOf(".admin-savebar-pill {")).slice(0, 500);
+
+  const wired = [
+    [
+      renderers.every((f) => !readFileSync(f, "utf8").includes('"admin-savebar"')) &&
+        bar.includes('className="admin-savebar"'),
+      "one component draws the bar for every editing screen",
+    ],
+    [
+      renderers.every((f) => readFileSync(f, "utf8").includes("<SaveBar")),
+      "the document editor and the lot list both use it",
+    ],
+    [
+      bar.includes('className="admin-savebar-pill"'),
+      "the pill is inside the strip, not the strip itself",
+    ],
+    [
+      /pointer-events:\s*none/.test(strip),
+      "the strip does not take the pointer, so a control behind it can still be clicked",
+    ],
+    [
+      /pointer-events:\s*auto/.test(pill),
+      "the pill does take the pointer, so its own buttons work",
+    ],
+    [
+      /width:\s*min\(\d+px,\s*100%\)/.test(pill),
+      "the pill is a fixed width: narrow enough to leave the column's right-hand " +
+        "edge clear, and steady enough that Save does not move as the status changes",
+    ],
+    [
+      /:root\s*\{\s*scroll-padding-bottom:/.test(css),
+      "scrolling something into view leaves room for the bar underneath it",
+    ],
+  ] as const;
+
+  for (const [okay, what] of wired) {
+    if (okay) console.log(`  ok    ${what}`);
+    else fail(what);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Image slots                                                         */
 /* ------------------------------------------------------------------ */
 

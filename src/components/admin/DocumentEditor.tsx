@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
 
 import { stableStringify } from "@/lib/admin/coerce";
 import type { FieldErrors, ObjectNode } from "@/lib/admin/field-node";
+import { SaveBar } from "@/components/admin/SaveBar";
 import { SchemaFields } from "@/components/admin/SchemaFields";
 
 /**
@@ -41,46 +41,6 @@ export interface EditorSaveState {
    * which `useActionState` does not accept cleanly anyway. Unused by pages.
    */
   archived?: number;
-}
-
-function SaveBar({
-  dirty,
-  status,
-  tone,
-  onReset,
-  saveLabel,
-}: {
-  dirty: boolean;
-  status: string;
-  tone: "idle" | "good" | "bad" | "busy";
-  onReset: () => void;
-  saveLabel: string;
-}) {
-  // From the form's own pending state, so it cannot drift from the request
-  // that is actually in flight.
-  const { pending } = useFormStatus();
-
-  return (
-    <div className="admin-savebar">
-      <span className={`admin-status is-${pending ? "busy" : tone}`}>
-        {pending ? "Saving…" : status}
-      </span>
-
-      {dirty && !pending && (
-        <button type="button" className="admin-btn admin-btn-quiet" onClick={onReset}>
-          Discard changes
-        </button>
-      )}
-
-      <button
-        type="submit"
-        className="admin-btn admin-btn-primary"
-        disabled={pending || !dirty}
-      >
-        {pending ? "Saving…" : saveLabel}
-      </button>
-    </div>
-  );
 }
 
 export function DocumentEditor({
