@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
 
 import { saveLotOrder, type LotOrderState } from "@/lib/admin/catalog-actions";
 import { useStrayDropGuard } from "@/components/admin/drop-guard";
+import { SaveBar } from "@/components/admin/SaveBar";
 
 /**
  * The running order of a category's lots, rearranged here and saved here.
@@ -46,50 +46,6 @@ interface Spot {
 
 const idsOf = (sections: LotSection[]) =>
   JSON.stringify(sections.map((section) => section.lots.map((lot) => lot.id)));
-
-function SaveBar({
-  dirty,
-  status,
-  tone,
-  onReset,
-}: {
-  dirty: boolean;
-  status: string;
-  tone: "idle" | "good" | "bad";
-  onReset: () => void;
-}) {
-  // The form's own pending state, so the bar cannot disagree with the request
-  // that is actually in flight.
-  const { pending } = useFormStatus();
-
-  return (
-    <div className="admin-savebar">
-      {/* Announced, because the arrows are the keyboard path through this list
-          and a keyboard user never sees the rows move. */}
-      <span
-        className={`admin-status is-${pending ? "busy" : tone}`}
-        role="status"
-        aria-live="polite"
-      >
-        {pending ? "Saving…" : status}
-      </span>
-
-      {dirty && !pending && (
-        <button type="button" className="admin-btn admin-btn-quiet" onClick={onReset}>
-          Discard the new order
-        </button>
-      )}
-
-      <button
-        type="submit"
-        className="admin-btn admin-btn-primary"
-        disabled={pending || !dirty}
-      >
-        {pending ? "Saving…" : "Save the new order"}
-      </button>
-    </div>
-  );
-}
 
 export function LotOrder({
   slug,
@@ -223,19 +179,19 @@ export function LotOrder({
     [sections]
   );
 
-  let status = "Drag a lot by its handle, or use the arrows.";
+  let status = "Nothing moved yet.";
   let tone: "idle" | "good" | "bad" = "idle";
   if (state.message) {
     status = state.message;
     tone = "bad";
   } else if (dirty) {
-    status = "Unsaved changes to the order";
+    status = "Unsaved changes";
     tone = "idle";
   } else if (state.unchanged) {
     status = "Nothing had changed.";
     tone = "good";
   } else if (state.ok) {
-    status = "Saved. The new order is live on the site.";
+    status = "Saved. The new order is live.";
     tone = "good";
   }
 
@@ -423,6 +379,12 @@ export function LotOrder({
         dirty={dirty}
         status={status}
         tone={tone}
+        saveLabel="Save the new order"
+        /* Short on purpose: the pill is a fixed width, and what the two
+           buttons leave is what the status has to fit in. "Discard the new
+           order" took 175px of it and wrapped "Unsaved changes" onto a
+           second line. The status beside it already says what is unsaved. */
+        discardLabel="Discard"
         onReset={() => {
           setSections(baseline);
           setHeld(false);

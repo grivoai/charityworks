@@ -559,14 +559,44 @@ a.admin-card:hover {
 .admin-history-link a { color: var(--green-soft); text-decoration: none; }
 .admin-history-link a:hover { text-decoration: underline; }
 
+/* The sticky strip, and the pill inside it.
+ *
+ * Two elements rather than one because the bar floats over the form, and the
+ * strip is as wide as the column: as one element it took every click in the
+ * bottom 66px of the screen, including the ones aimed at the row controls
+ * behind it, which sit at the column's right-hand edge — the same place a
+ * full-width bar puts its Save button. The strip is now transparent to the
+ * pointer; only the pill takes a click, and the pill is only as wide as it
+ * needs to be. Everything beside it can be reached.
+ *
+ * LEFT-ALIGNED, measured rather than chosen: the row tools begin 101px from
+ * the column's right edge, and a centred pill of this width ends within a
+ * pixel of them on a 1440px screen. */
 .admin-savebar {
   position: sticky;
   bottom: 14px;
   z-index: 5;
   display: flex;
+  margin-top: 22px;
+  pointer-events: none;
+}
+
+/* A FIXED width, not a fitted one. The status beside the buttons changes while
+   the pointer is over them — "Unsaved changes" becomes "Saving…" becomes
+   "Saved. This is live on the site." — and Discard leaves as soon as the
+   document is clean. Fitted, that walked the Save button 82px sideways between
+   one click and the next. Capped at the same figure so a long message wraps
+   onto a second line instead of widening the pill back across the gutter.
+
+   460px is what the longest everyday status needs on one line, and it is the
+   widest that still clears the row tools on the narrowest two-column layout
+   (a 1280px screen leaves 20px between them). */
+.admin-savebar-pill {
+  pointer-events: auto;
+  display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 22px;
+  width: min(460px, 100%);
   padding: 12px 14px 12px 18px;
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(8px);
@@ -575,8 +605,28 @@ a.admin-card:hover {
   box-shadow: var(--shadow-md);
 }
 .admin-savebar .admin-btn-quiet { margin-top: 0; }
+.admin-savebar .admin-btn { flex: 0 0 auto; }
 
-.admin-status { font-size: 13px; color: var(--muted); margin-right: auto; }
+/* Room at the bottom of every scroll the browser performs itself.
+ *
+ * Anything scrolled into view — a field focused from the preview column, a lot
+ * landed on from the list page, a jump to an anchor — would otherwise be put
+ * flush against the window's bottom edge, which is where the bar is floating.
+ * Sized from the tallest the pill gets rather than its resting height, or the
+ * padding is right until the day a save has something long to say.
+ *
+ * On :root because scroll padding belongs to the scrolling element, and this
+ * stylesheet is only ever loaded by the admin layout. */
+:root { scroll-padding-bottom: 100px; }
+
+/* Takes the room the buttons do not, and wraps inside it. `min-width: 0` is
+   what lets a flex item be narrower than its longest word's line. */
+.admin-status {
+  font-size: 13px;
+  color: var(--muted);
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .admin-status.is-good { color: #1f5c2b; font-weight: 500; }
 .admin-status.is-bad { color: #8d2018; font-weight: 500; }
 
@@ -670,8 +720,15 @@ a.admin-card:hover {
   .admin-revision { flex-wrap: wrap; }
   .admin-revision form { margin-left: 0; }
 
-  .admin-savebar { border-radius: 14px; padding: 12px 14px; flex-wrap: wrap; }
-  .admin-status { width: 100%; margin-right: 0; }
+  /* No gutter to protect at this width — the pill fills the column — so let it
+     wrap instead, status on its own line and the buttons under it, rather than
+     squeezing the status into the sliver the buttons leave. */
+  .admin-savebar-pill { border-radius: 14px; padding: 12px 14px; flex-wrap: wrap; }
+  .admin-status { flex-basis: 100%; }
+
+  /* The wrapped pill is half as tall again, and the longest message makes it
+     taller still. */
+  :root { scroll-padding-bottom: 150px; }
 }
 
 /* ============================================================
@@ -1755,10 +1812,11 @@ a.admin-card:hover {
   border-color: var(--gold);
 }
 
-/* Room under the last row for the save bar, which is sticky and would
-   otherwise sit on top of it — and a control a sticky bar covers is one that
-   cannot be clicked at all. */
-.admin-order-form > section:last-of-type { margin-bottom: 86px; }
+/* The save bar is in the flow after this, so the last row needs no spacer of
+   its own — and `scroll-padding-bottom` keeps anything scrolled to from
+   landing behind the pill. A little air, because a control pressed against
+   the bar reads as part of it. */
+.admin-order-form > section:last-of-type { margin-bottom: 16px; }
 
 @media (prefers-reduced-motion: reduce) {
   .admin-template { transition: none; }
