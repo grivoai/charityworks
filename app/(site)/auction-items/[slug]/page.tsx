@@ -13,6 +13,7 @@ import { siteUrl } from "@/lib/site-config";
 import { Cta } from "@/components/Section";
 import { CategoryJsonLd } from "@/components/JsonLd";
 import { Icon } from "@/components/Icon";
+import { TextBlock } from "@/components/TextBlock";
 import { at, editable } from "@/lib/editable";
 
 type Params = { slug: string };
@@ -134,9 +135,11 @@ export default async function AuctionCategoryRoute({
             <h2 className="section-title reveal" id="category-heading">
               What&rsquo;s in this category
             </h2>
-            <p className="section-lede reveal" {...editable("intro")}>
-              {category.intro}
-            </p>
+            <TextBlock
+              text={category.intro}
+              className="section-lede reveal"
+              mark={editable("intro")}
+            />
           </div>
 
           {/* ---------- SECTION PICKER ----------
@@ -193,7 +196,7 @@ export default async function AuctionCategoryRoute({
                       </div>
                       <div className="cat-section-body">
                         <h3>{group.title}</h3>
-                        {group.blurb && <p>{group.blurb}</p>}
+                        {group.blurb && <TextBlock text={group.blurb} inline />}
                         {/* The whole tile is the link, stretched from this
                             anchor by ::after — the same arrangement as the
                             bento tiles, so the accessible name stays the
@@ -243,7 +246,10 @@ export default async function AuctionCategoryRoute({
                 <div className="cat-group-head reveal">
                   <h3 {...editable(at_("title"))}>{group.title}</h3>
                   {group.blurb && (
-                    <p {...editable(at_("blurb"))}>{group.blurb}</p>
+                    <TextBlock
+                      text={group.blurb}
+                      mark={editable(at_("blurb"))}
+                    />
                   )}
                 </div>
               )}
@@ -295,9 +301,10 @@ export default async function AuctionCategoryRoute({
                         )}
                         {item.name}
                       </NameTag>
-                      <p {...editable(at(lot, "description"))}>
-                        {item.description}
-                      </p>
+                      <TextBlock
+                        text={item.description}
+                        mark={editable(at(lot, "description"))}
+                      />
 
                       {/* Rendered only when the client has supplied figures.
                           Nothing here is derived from the photograph or the
@@ -318,12 +325,11 @@ export default async function AuctionCategoryRoute({
                       )}
 
                       {item.note && (
-                        <p
+                        <TextBlock
+                          text={item.note}
                           className="cat-card-note"
-                          {...editable(at(lot, "note"))}
-                        >
-                          {item.note}
-                        </p>
+                          mark={editable(at(lot, "note"))}
+                        />
                       )}
 
                       {/* aria-label rather than the visible text alone: a page
