@@ -81,6 +81,48 @@ export interface CategoryWritePlan {
 
 export class CategoryWriteError extends Error {}
 
+/**
+ * The refusal when a new lot's id is already taken. Worded for the client:
+ * ids are never shown, so the only thing they can do about it is make the lot
+ * again, which mints a fresh one.
+ */
+export const REUSED_LOT_ID_MESSAGE =
+  "A new lot was given an identifier that is already in use. Remove the new " +
+  "lot and add or duplicate it again, then save.";
+
+/** Which of `ids` exist as lot rows, in any category, published or not. */
+export type LotRowLookup = (ids: string[]) => Promise<string[]>;
+
+/**
+ * The lots new in this save whose id already belongs to a lot row.
+ *
+ * `created` is the plan's: ids in the submission that are not among this
+ * category's live lots as stored. Editing an existing lot keeps its id, so it
+ * is never here, and a save that adds no lot never reaches the lookup.
+ *
+ * Why it matters: the write is an upsert on id, and a removed lot is archived
+ * rather than deleted. A new lot carrying a taken id would therefore overwrite
+ * that row — bringing a retired lot back as something else, with the old
+ * lot's enquiries now pointing at it, or taking over a lot in another
+ * category. The form mints ids that are free in the form; only the database
+ * knows about the archived ones, so this is asked of the database.
+ *
+ * Only the form's save asks it. History restore legitimately brings an
+ * archived lot back by its own id, and the lot-order save cannot add a lot.
+ *
+ * The lookup is passed in so `check:catalog` can run this against a fake.
+ * A lookup that throws is left to throw: the caller refuses the save rather
+ * than writing unchecked.
+ */
+export async function findReusedLotIds(
+  created: string[],
+  lookup: LotRowLookup
+): Promise<string[]> {
+  if (created.length === 0) return [];
+  const existing = new Set(await lookup(created));
+  return created.filter((id) => existing.has(id));
+}
+
 /** Every item id in an assembled category, in order. */
 function itemIds(category: AuctionItem): string[] {
   return category.groups.flatMap((group) => group.items.map((item) => item.id));

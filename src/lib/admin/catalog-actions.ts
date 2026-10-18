@@ -13,9 +13,11 @@ import type { FieldErrors } from "@/lib/admin/field-node";
 import { locksForCategory } from "@/lib/admin/locks";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { CATALOG_TAG } from "@/lib/content-tags";
-import { applyCategoryPlan } from "@/lib/admin/catalog-apply";
+import { applyCategoryPlan, existingLotIds } from "@/lib/admin/catalog-apply";
 import {
   CategoryWriteError,
+  REUSED_LOT_ID_MESSAGE,
+  findReusedLotIds,
   planCategoryWrite,
   type CategoryWritePlan,
 } from "@/lib/admin/catalog-write";
@@ -169,6 +171,27 @@ export async function saveCategory(
     if (error instanceof CategoryWriteError) return { message: error.message };
     throw error;
   }
+
+  /**
+   * A new lot must not land on an id that is already a lot row — archived,
+   * or in another category. Asked here, before the baseline below, because
+   * that is this save's first write: a refusal leaves the database exactly as
+   * it was. Only this action asks it; see `findReusedLotIds`.
+   *
+   * Refused rather than repaired. The returned state carries no `ok` and no
+   * `data`, so the editor keeps the form as the client left it, unsaved
+   * edits and all, and shows the message.
+   */
+  let reused: string[];
+  try {
+    reused = await findReusedLotIds(plan.created, existingLotIds);
+  } catch {
+    return {
+      message:
+        "The new lots could not be checked, so nothing was saved. Please try again.",
+    };
+  }
+  if (reused.length > 0) return { message: REUSED_LOT_ID_MESSAGE };
 
   try {
     await ensureBaseline({

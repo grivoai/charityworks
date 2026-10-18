@@ -132,7 +132,7 @@ export default async function EditCategoryRoute({
         <p className="admin-banner is-warn">
           {retired.count} lot{retired.count === 1 ? " is" : "s are"} retired from
           this category — off the site, but kept so older enquiry links still
-          resolve. Re-adding a lot with the same identifier brings it back.
+          resolve. Restoring an older version from Version history brings it back.
         </p>
       ) : null}
 
