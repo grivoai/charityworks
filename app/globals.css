@@ -2543,3 +2543,11 @@ body.nav-open .nav {
   }
   .block-columns { gap: 30px; }
 }
+
+/* A plain-text field the client broke into paragraphs (TextBlock.tsx).
+   The class that styled the field's <p> is on the wrapper now, so the
+   paragraphs inside take its size and colour rather than their context's
+   generic "p" rule — the note keeps its small italic, the lede its size.
+   Last in the file so it wins those ties on order. */
+.text-block > p { font: inherit; color: inherit; }
+.text-block > p + p { margin-top: 0.75em; }
