@@ -39,13 +39,60 @@ export function idPrefix(path: string): string {
  * and reusing the id would invite the old shape's stored values to be matched
  * onto the new one.
  */
-export function withFreshId<T>(template: T, path: string): T {
+export function withFreshId<T>(
+  template: T,
+  path: string,
+  taken: ReadonlySet<string> = new Set()
+): T {
   const copy = JSON.parse(JSON.stringify(template ?? null)) as unknown;
-  return freshen(copy, idPrefix(path)) as T;
+  return freshen(copy, idPrefix(path), uniqueMint(taken)) as T;
 }
 
 const mint = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
+
+/**
+ * `mint`, retried until the id is not one already in the form.
+ *
+ * Six random characters almost never repeat, but "almost" is not the promise:
+ * an id is how an enquiry is traced back to a lot, and two entries sharing one
+ * is a save refused on a field the client cannot see. `taken` is every id in
+ * the document as it stands (`collectIds`), and the ids minted during this
+ * one copy are added as they go, so a template with several nested ids cannot
+ * hand the same one out twice either.
+ *
+ * Only the form's ids. A lot removed in an earlier save is archived, not
+ * deleted, and its id is not in the form any more — refusing those is the
+ * server's job, not this one's.
+ */
+function uniqueMint(taken: ReadonlySet<string>): (prefix: string) => string {
+  const used = new Set(taken);
+  return (prefix) => {
+    let id = mint(prefix);
+    while (used.has(id)) id = mint(prefix);
+    used.add(id);
+    return id;
+  };
+}
+
+/**
+ * Every `id` in a document, at any depth.
+ *
+ * The whole document rather than the one list being added to: a category's
+ * lots sit in several groups but share one id space, and the save refuses two
+ * lots with the same id wherever they are.
+ */
+export function collectIds(value: unknown, into = new Set<string>()): Set<string> {
+  if (Array.isArray(value)) {
+    for (const entry of value) collectIds(entry, into);
+  } else if (value && typeof value === "object") {
+    for (const [key, child] of Object.entries(value)) {
+      if (key === "id" && typeof child === "string" && child) into.add(child);
+      else collectIds(child, into);
+    }
+  }
+  return into;
+}
 
 /** "columns" → "column", so a nested entry's id reads like its neighbours'. */
 const singular = (key: string) => (key.endsWith("s") ? key.slice(0, -1) : key);
@@ -64,19 +111,23 @@ const singular = (key: string) => (key.endsWith("s") ? key.slice(0, -1) : key);
  * are — `column-x7k2mq` inside `columns`, `cta-9fq4lr` inside `cta`. Values
  * with no `id` field, such as an image reference, are walked and left alone.
  */
-function freshen(value: unknown, prefix: string): unknown {
+function freshen(
+  value: unknown,
+  prefix: string,
+  next: (prefix: string) => string
+): unknown {
   if (Array.isArray(value)) {
-    return value.map((entry) => freshen(entry, prefix));
+    return value.map((entry) => freshen(entry, prefix, next));
   }
 
   if (!value || typeof value !== "object") return value;
 
   const record = value as Record<string, unknown>;
-  if ("id" in record) record.id = mint(prefix);
+  if ("id" in record) record.id = next(prefix);
 
   for (const [key, child] of Object.entries(record)) {
     if (key === "id" || !child || typeof child !== "object") continue;
-    record[key] = freshen(child, singular(key));
+    record[key] = freshen(child, singular(key), next);
   }
 
   return record;

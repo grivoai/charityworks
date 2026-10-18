@@ -13,6 +13,7 @@ import { getAuctionCategories, getAuctionCategory } from "@/lib/content";
 import { getServiceClient } from "@/lib/supabase";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { locksForCategory } from "@/lib/admin/locks";
+import { LOT_DUPLICATE, allowDuplicate } from "@/lib/admin/duplicate";
 import { countRevisions } from "@/lib/admin/revisions";
 import { formatWhen } from "@/lib/admin/page-meta";
 
@@ -69,7 +70,12 @@ export default async function EditCategoryRoute({
     getAuctionCategories(),
   ]);
 
-  const tree = buildFieldTree(auctionItemSchema, locksForCategory());
+  // Lots get a Duplicate button; no other list in the form does.
+  const tree = allowDuplicate(
+    buildFieldTree(auctionItemSchema, locksForCategory()),
+    "groups.*.items",
+    LOT_DUPLICATE
+  );
 
   const updatedLabel = meta.data?.updated_at
     ? `Last edited ${formatWhen(meta.data.updated_at)}`

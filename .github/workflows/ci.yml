@@ -81,6 +81,9 @@ jobs:
       - name: Line breaks in plain-text fields
         run: npm run check:line-breaks
 
+      - name: Duplicating a lot
+        run: npm run check:duplicate
+
       # Without Supabase configured this builds from the seed modules in
       # src/content, which still exercises every route, every component and the
       # schemas the seed is parsed through. What it cannot see is the live

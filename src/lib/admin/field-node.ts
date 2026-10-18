@@ -1,3 +1,5 @@
+import type { DuplicateRule } from "@/lib/admin/duplicate";
+
 /**
  * The serializable description of one editable field.
  *
@@ -94,6 +96,11 @@ export interface ArrayNode extends NodeBase {
    * remove. "Fixed length" could not express that.
    */
   protect?: { key: string; values: string[]; reason: string };
+  /**
+   * Set when each entry has a Duplicate button — only the catalog's lots.
+   * Put there by `allowDuplicate`; see `duplicate.ts`.
+   */
+  duplicate?: DuplicateRule;
 }
 
 /**

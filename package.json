@@ -19,6 +19,7 @@
     "check:build-key": "tsx --conditions=react-server scripts/check-build-key.ts",
     "check:help": "tsx --conditions=react-server scripts/check-help.ts",
     "check:line-breaks": "tsx scripts/check-line-breaks.ts",
+    "check:duplicate": "tsx --conditions=react-server scripts/check-duplicate.ts",
     "mfa": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/mfa-reset.ts",
     "check:uploads": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-uploads.ts",
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",

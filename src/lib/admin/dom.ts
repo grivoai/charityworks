@@ -21,3 +21,30 @@ export function domId(path: string): string {
  */
 export const MARK_ATTR = "data-cw";
 export const FIELD_PATH_ATTR = "data-cw-path";
+
+/**
+ * Puts a list entry on screen with the cursor in one of its fields.
+ *
+ * `path` is the field's, because only fields carry a path marker; the entry
+ * around it is found from there. Scrolled to the top, flashed with the halo
+ * the preview uses for a field it found, and focused without a second scroll.
+ * Used for the lot picked on the list page and for a lot just duplicated.
+ */
+export function focusEntryField(path: string): void {
+  const field = document.querySelector<HTMLElement>(
+    `[${FIELD_PATH_ATTR}="${CSS.escape(path)}"]`
+  );
+  if (!field) return;
+
+  const entry = field.closest<HTMLElement>(".admin-item") ?? field;
+  entry.scrollIntoView({ block: "start", behavior: "auto" });
+  // Removed first so a second copy of the same lot flashes again.
+  entry.classList.remove("is-found");
+  void entry.offsetWidth;
+  entry.classList.add("is-found");
+
+  const input = field.querySelector<HTMLElement>(
+    "input:not([type=hidden]), textarea"
+  );
+  input?.focus({ preventScroll: true });
+}
