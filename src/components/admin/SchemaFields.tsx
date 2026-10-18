@@ -1,6 +1,13 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import type {
   ArrayNode,
   FieldErrors,
@@ -9,8 +16,9 @@ import type {
   ObjectNode,
   VariantNode,
 } from "@/lib/admin/field-node";
-import { FIELD_PATH_ATTR, domId } from "@/lib/admin/dom";
-import { withFreshId } from "@/lib/admin/entry-id";
+import { FIELD_PATH_ATTR, domId, focusEntryField } from "@/lib/admin/dom";
+import { collectIds, withFreshId } from "@/lib/admin/entry-id";
+import { duplicateEntry } from "@/lib/admin/duplicate";
 import { putFile } from "@/components/admin/upload-transfer";
 import { useStrayDropGuard } from "@/components/admin/drop-guard";
 import { ImagePicker } from "@/components/admin/ImagePicker";
@@ -96,9 +104,15 @@ function summarize(value: unknown, fallback: string): string {
    pulling React in. See the note there for why an empty id is the worst kind
    of invalid: it is the one required field the form never draws. */
 
-function newEntry(template: unknown, path: string): unknown {
-  return withFreshId(template, path);
+function newEntry(template: unknown, path: string, form: unknown): unknown {
+  return withFreshId(template, path, collectIds(form));
 }
+
+/**
+ * The whole document being edited, for the few things a field needs to see
+ * beyond its own value: minting an id that no other entry in the form has.
+ */
+const DocumentValue = createContext<unknown>(undefined);
 
 /**
  * Content first, housekeeping last.
@@ -641,6 +655,45 @@ function ArrayField({
 }: FieldProps & { node: ArrayNode }) {
   const items = Array.isArray(value) ? value : [];
   const editable = !node.fixedLength;
+  const form = useContext(DocumentValue);
+
+  /**
+   * Copies made in this visit, by id, so each can carry the rule's notice.
+   *
+   * Kept here rather than in the document: the notice is about this sitting —
+   * "you just made this, check it" — and has no business being saved. It
+   * stays after a Save until the form is left, which is when it stops being
+   * news; a Discard removes the copy and so the notice with it.
+   */
+  const [copies, setCopies] = useState<ReadonlySet<string>>(new Set());
+  /** The copy to bring on screen once it has rendered. */
+  const [landing, setLanding] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!landing) return;
+    const at = items.findIndex(
+      (item) =>
+        item && typeof item === "object" &&
+        (item as Record<string, unknown>).id === landing
+    );
+    if (at < 0) return;
+    setLanding(null);
+    focusEntryField(`${path}.${at}.${node.duplicate?.nameKey ?? "name"}`);
+  }, [landing, items, path, node.duplicate]);
+
+  const duplicate = (index: number) => {
+    if (!node.duplicate) return;
+    const made = duplicateEntry(
+      items,
+      index,
+      path,
+      node.duplicate,
+      collectIds(form)
+    );
+    setCopies((held) => new Set(held).add(made.id));
+    setLanding(made.id);
+    onChange(made.items);
+  };
 
   /**
    * Which entries cannot be removed.
@@ -815,6 +868,17 @@ function ArrayField({
                     >
                       ↓
                     </button>
+                    {editable && node.duplicate && (
+                      <button
+                        type="button"
+                        className="admin-icon"
+                        title="Duplicate"
+                        aria-label={`Duplicate ${summarize(item, `entry ${index + 1}`)}`}
+                        onClick={() => duplicate(index)}
+                      >
+                        ⧉
+                      </button>
+                    )}
                     {editable && !protectedEntry(item) && (
                       <button
                         type="button"
@@ -842,6 +906,9 @@ function ArrayField({
               )}
 
               <div className="admin-item-body">
+                {node.duplicate && copies.has(key) && (
+                  <p className="admin-copy-note">{node.duplicate.notice}</p>
+                )}
                 <Field
                   node={node.element}
                   value={item}
@@ -870,7 +937,9 @@ function ArrayField({
         <button
           type="button"
           className="admin-btn admin-btn-quiet"
-          onClick={() => onChange([...items, newEntry(node.template, path)])}
+          onClick={() =>
+            onChange([...items, newEntry(node.template, path, form)])
+          }
         >
           Add {node.label.toLowerCase().replace(/s$/, "")}
         </button>
@@ -904,6 +973,7 @@ function VariantField({
   errors,
   depth,
 }: FieldProps & { node: VariantNode }) {
+  const form = useContext(DocumentValue);
   const current =
     value && typeof value === "object"
       ? String((value as Record<string, unknown>)[node.discriminator] ?? "")
@@ -936,7 +1006,7 @@ function VariantField({
              * a row's type picker keep showing the previous shape's name while
              * the fields under it were already the new one's.
              */
-            if (next) onChange(newEntry(next.template, path));
+            if (next) onChange(newEntry(next.template, path, form));
           }}
         >
           {node.options.map((o) => (
@@ -1058,6 +1128,7 @@ export function SchemaFields({
   const scope = useId();
 
   return (
+    <DocumentValue.Provider value={value}>
     <div className="admin-form-body" data-scope={scope}>
       {orderFields(tree.fields).map(({ key, node }) => {
         if (node.kind === "hidden" || node.hideInForm) return null;
@@ -1084,5 +1155,6 @@ export function SchemaFields({
         );
       })}
     </div>
+    </DocumentValue.Provider>
   );
 }

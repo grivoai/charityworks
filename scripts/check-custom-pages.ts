@@ -851,7 +851,9 @@ for (const type of ["callToAction", "enquiryForm"]) {
     .replace(/^\s*\/\/.*$/gm, "");
 
   check(
-    /onChange\(\s*newEntry\(\s*next\.template\s*,\s*path\s*\)\s*\)/.test(form),
+    // The third argument is the whole form, so the id minted is not one
+    // another entry already has.
+    /onChange\(\s*newEntry\(\s*next\.template\s*,\s*path\s*,\s*form\s*\)\s*\)/.test(form),
     "the type picker mints an id for the shape it switches to"
   );
   check(

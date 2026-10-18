@@ -393,6 +393,17 @@ a.admin-card:hover {
   max-width: 68ch;
 }
 .admin-help-lock { color: #8a6d18; }
+/* On a lot just made with Duplicate: one line, in the warning colours the
+   banners use, above the fields it is about. */
+.admin-copy-note {
+  margin: 0 0 12px;
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: #fdf5e3;
+  border: 1px solid #ecd7a4;
+  color: #7a5c11;
+  font-size: 0.86rem;
+}
 
 .admin-f-error {
   font-size: 12.5px;

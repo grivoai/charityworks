@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-import { FIELD_PATH_ATTR } from "@/lib/admin/dom";
+import { focusEntryField } from "@/lib/admin/dom";
 
 /**
  * Lands the category form on the lot picked from the list page.
@@ -17,17 +17,7 @@ import { FIELD_PATH_ATTR } from "@/lib/admin/dom";
  */
 export function LotFocus({ path }: { path: string }) {
   useEffect(() => {
-    const field = document.querySelector<HTMLElement>(
-      `[${FIELD_PATH_ATTR}="${CSS.escape(path)}"]`
-    );
-    if (!field) return;
-
-    const entry = field.closest<HTMLElement>(".admin-item") ?? field;
-    entry.scrollIntoView({ block: "start", behavior: "auto" });
-    entry.classList.add("is-found");
-
-    const input = field.querySelector<HTMLElement>("input:not([type=hidden]), textarea");
-    input?.focus({ preventScroll: true });
+    focusEntryField(path);
   }, [path]);
 
   return null;
