@@ -50,7 +50,8 @@ export async function applyCategoryPlan(
   }
 
   /* Upsert: an id already there is updated, a new one inserted. `published`
-     is set true so a lot that was archived and then re-added comes back. */
+     is set true so a lot that was archived and then restored from Version
+     history comes back. */
   if (plan.items.length > 0) {
     const { error } = await supabase
       .from("catalog_items")
@@ -70,4 +71,24 @@ export async function applyCategoryPlan(
       throw new Error(`a removed lot could not be retired: ${error.message}`);
     }
   }
+}
+
+/**
+ * Which of `ids` are already lot rows — any category, published or not.
+ *
+ * The real lookup behind `findReusedLotIds`. No `published` filter on
+ * purpose: an archived row is exactly the one a new lot must not land on.
+ * Throws when the read fails, so the save is refused rather than made blind.
+ */
+export async function existingLotIds(ids: string[]): Promise<string[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await getServiceClient()
+    .from("catalog_items")
+    .select("id")
+    .in("id", ids)
+    .returns<Array<{ id: string }>>();
+  if (error || !data) {
+    throw new Error(`the lot ids could not be checked: ${error?.message ?? "no rows"}`);
+  }
+  return data.map((row) => row.id);
 }

@@ -34,6 +34,8 @@ import { supabaseContentSource } from "@/lib/content-source-supabase";
 import { getServiceClient } from "@/lib/supabase";
 import {
   CategoryWriteError,
+  REUSED_LOT_ID_MESSAGE,
+  findReusedLotIds,
   planCategoryWrite,
 } from "@/lib/admin/catalog-write";
 
@@ -404,6 +406,14 @@ async function main(): Promise<void> {
     );
   }
 
+  /* 4. A NEW LOT NEVER TAKES AN ID THAT IS ALREADY A ROW.
+   *
+   * Against a fake database, so every case can be staged — an archived lot,
+   * a lot in another category — without touching the real one. The fake is
+   * the set of lot rows that exist, published or not; the lookup answers the
+   * question `existingLotIds` asks of the real table. */
+  await checkReusedLotIds(categories);
+
   /* The locks that protect the ids must actually be in place. */
   for (const expected of ["slug", "seo.path", "groups (fixed length)"]) {
     if (!out.locked.includes(expected)) {
@@ -423,3 +433,139 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+/**
+ * The refusal in `saveCategory`, the planner it is fed by, and the two writes
+ * that must not get it.
+ */
+async function checkReusedLotIds(categories: AuctionItem[]): Promise<void> {
+  const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+  const [first, second] = categories;
+  if (!first || !second || first.groups[0].items.length < 2 || second.groups[0].items.length < 1) {
+    fail("reused ids: need two categories with lots to stage the cases");
+    return;
+  }
+
+  /* The stored version of `first` has had one lot removed — archived, so its
+     row is still in the fake table. */
+  const archivedLot = first.groups[0].items[0];
+  const stored = clone(first);
+  stored.groups[0].items.splice(0, 1);
+
+  const rows = new Set<string>([
+    ...categories.flatMap((c) => itemIds(c)),
+    archivedLot.id,
+  ]);
+  let lookups = 0;
+  const fakeLookup = async (ids: string[]) => {
+    lookups += 1;
+    return ids.filter((id) => rows.has(id));
+  };
+
+  /** `stored` plus a new lot, as the form would submit it after Add/Duplicate. */
+  const withNewLot = (id: string) => {
+    const next = clone(stored);
+    next.groups[0].items.splice(1, 0, {
+      ...clone(next.groups[0].items[0]),
+      id,
+      name: `Copy of ${next.groups[0].items[0].name}`,
+    });
+    return next;
+  };
+  const refusedFor = async (next: AuctionItem) =>
+    findReusedLotIds(planCategoryWrite(next, stored).created, fakeLookup);
+
+  let passed = 0;
+  const expect = (condition: boolean, message: string) => {
+    if (condition) passed += 1;
+    else fail(`reused ids: ${message}`);
+  };
+
+  expect(
+    (await refusedFor(withNewLot(archivedLot.id))).join() === archivedLot.id,
+    "a new lot carrying a DELETED lot's id is not refused"
+  );
+  const otherLive = second.groups[0].items[0].id;
+  expect(
+    (await refusedFor(withNewLot(otherLive))).join() === otherLive,
+    "a new lot carrying a live lot's id from another category is not refused"
+  );
+  let fresh = "item-fresh0";
+  while (rows.has(fresh)) fresh += "0";
+  expect(
+    (await refusedFor(withNewLot(fresh))).length === 0,
+    "a new lot with an unused id is refused"
+  );
+
+  /* Editing every existing lot: nothing is new, so nothing is looked up. */
+  const edited = clone(stored);
+  for (const group of edited.groups) {
+    for (const item of group.items) item.description = `${item.description} (edited)`;
+  }
+  lookups = 0;
+  expect(
+    (await refusedFor(edited)).length === 0 && lookups === 0,
+    "editing existing lots reached the lookup or was refused"
+  );
+
+  /* A lookup that fails is not a pass. */
+  let threw = false;
+  try {
+    await findReusedLotIds([fresh], async () => {
+      throw new Error("database unavailable");
+    });
+  } catch {
+    threw = true;
+  }
+  expect(threw, "a failed lookup was swallowed instead of reaching the caller");
+
+  /* History restore of a version that still had the deleted lot: the planner
+     brings it back by its own id and archives nothing. */
+  const restorePlan = planCategoryWrite(clone(first), stored);
+  expect(
+    restorePlan.created.join() === archivedLot.id && restorePlan.archive.length === 0,
+    "restoring a version with a deleted lot no longer plans to bring it back"
+  );
+
+  /* The action source: the check is in the form's save, ahead of its first
+     write, and in neither of the others. */
+  const actions = readFileSync("src/lib/admin/catalog-actions.ts", "utf8");
+  const body = (name: string) => {
+    const start = actions.indexOf(`export async function ${name}(`);
+    const end = actions.indexOf("export async function", start + 1);
+    return actions.slice(start, end < 0 ? undefined : end);
+  };
+  const save = body("saveCategory");
+  const check = save.indexOf("findReusedLotIds(plan.created, existingLotIds)");
+  expect(check > 0, "saveCategory no longer checks new lot ids against the table");
+  expect(
+    check > save.indexOf("planCategoryWrite(next, current)") &&
+      check < save.indexOf("ensureBaseline(") &&
+      check < save.indexOf("applyCategoryPlan("),
+    "saveCategory checks new lot ids after something has already been written"
+  );
+  expect(
+    save.includes("return { message: REUSED_LOT_ID_MESSAGE }") &&
+      /catch \{\s*return \{\s*message:/.test(save.slice(check - 200, check + 300)),
+    "saveCategory no longer refuses (with a message and nothing else) on a clash or a failed check"
+  );
+  expect(
+    !body("restoreCategoryRevision").includes("findReusedLotIds") &&
+      !body("saveLotOrder").includes("findReusedLotIds"),
+    "restore or the lot-order save now refuses reused ids — restore must be able to bring a lot back"
+  );
+  expect(
+    REUSED_LOT_ID_MESSAGE ===
+      "A new lot was given an identifier that is already in use. Remove the new lot and add or duplicate it again, then save.",
+    "the refusal's wording changed"
+  );
+
+  const apply = readFileSync("src/lib/admin/catalog-apply.ts", "utf8");
+  const lookupSrc = apply.slice(apply.indexOf("export async function existingLotIds"));
+  expect(
+    lookupSrc.includes('.from("catalog_items")') && !lookupSrc.includes("published"),
+    "existingLotIds filters by published, so archived lots would slip through"
+  );
+
+  console.log(`  ok    reused lot ids: ${passed} checks against a fake table`);
+}
