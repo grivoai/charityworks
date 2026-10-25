@@ -84,6 +84,9 @@ jobs:
       - name: Duplicating a lot
         run: npm run check:duplicate
 
+      - name: Wording moved out of the page code
+        run: npm run check:default-wording
+
       # Without Supabase configured this builds from the seed modules in
       # src/content, which still exercises every route, every component and the
       # schemas the seed is parsed through. What it cannot see is the live

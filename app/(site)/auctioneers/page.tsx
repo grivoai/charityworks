@@ -5,7 +5,7 @@ import { getPage } from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
 import { AuctioneerBio } from "@/components/AuctioneerBio";
-import { at, editable } from "@/lib/editable";
+import { at, editable, fixed } from "@/lib/editable";
 import { AuctioneersJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { Icon } from "@/components/Icon";
 
@@ -188,6 +188,7 @@ export default async function AuctioneersRoute() {
                     className="auc-request"
                     href={requestHref(auctioneer.id)}
                     aria-label={`Request ${auctioneer.name} for your event`}
+                    {...fixed()}
                   >
                     Request this auctioneer
                     <span aria-hidden="true"> →</span>
@@ -263,6 +264,7 @@ export default async function AuctioneersRoute() {
                     className="auc-request"
                     href={requestHref(partner.id)}
                     aria-label={`Ask about working with ${partner.name}`}
+                    {...fixed()}
                   >
                     Ask about this partner
                     <span aria-hidden="true"> →</span>

@@ -390,6 +390,14 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       {
         p:
+          "It also holds the two notes that appear on every category page: the " +
+          "line beside the gold star, and the availability note at the foot. " +
+          "The preview here shows only the header and footer, so open a " +
+          "category page to see them. Clearing either note puts its original " +
+          "wording back.",
+      },
+      {
+        p:
           "The preview beside this form is the one in the panel that shows " +
           "unsaved work as you type, because there is no draft to check " +
           "otherwise — saving here is publishing.",

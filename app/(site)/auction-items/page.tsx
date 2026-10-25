@@ -45,12 +45,11 @@ export default async function AuctionItemsRoute() {
               exactly the point at which "where do I even start" sets in. */}
           <div className="planner-promo reveal">
             <p>
-              <strong>Not sure where to start?</strong>
-              Answer five questions and we&rsquo;ll point you at the categories
-              that suit your event.
+              <strong {...editable("planner.lead")}>{page.planner.lead}</strong>
+              <span {...editable("planner.text")}>{page.planner.text}</span>
             </p>
             <Link href="/auction-planner">
-              Find what&rsquo;s best for your auction
+              <span {...editable("planner.link")}>{page.planner.link}</span>
               <span aria-hidden="true"> →</span>
             </Link>
           </div>

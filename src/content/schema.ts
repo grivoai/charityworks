@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 import { embedProblem, isAllowedEmbed, toEmbedUrl } from "@/lib/embeds";
+import {
+  DEFAULT_AFFORDABLE_NOTE,
+  DEFAULT_AUCTION_INFO_CLOSING,
+  DEFAULT_AVAILABILITY_NOTE,
+  DEFAULT_PLANNER_PROMO,
+} from "@/content/default-wording";
 
 /**
  * Runtime schema for the CharityWorks content model.
@@ -47,6 +53,19 @@ const optionalText = z
   .trim()
   .transform((value) => (value === "" ? undefined : value))
   .optional();
+
+/**
+ * Wording that was written into the page code until the client needed to
+ * change it. Required, but with today's wording as the default: a record saved
+ * before the field existed parses with it filled in, so nothing on the live
+ * site moves until someone edits it, and clearing the input puts it back
+ * (an empty optional input is coerced to "not set", and "not set" is the
+ * default). See default-wording.ts.
+ */
+const defaultedText = (wording: string, help: string) =>
+  text
+    .default(wording)
+    .describe(`${help} Clear it to go back to the original wording.`);
 
 export const pageSlugSchema = z.enum([
   "home",
@@ -416,6 +435,24 @@ export const siteContentSchema = z.object({
           "line — Terms & Conditions, for instance. Not the main menu."
       ),
   }),
+  /**
+   * The two notes on the category pages. Here rather than on each category
+   * because each says the same thing on every one of them: written per
+   * category, it would be nine copies to keep in step.
+   */
+  catalogNotes: z
+    .object({
+      affordableLots: defaultedText(
+        DEFAULT_AFFORDABLE_NOTE,
+        "Follows the gold star above any section of a category page that has " +
+          "a starred lot. Starts lower-case because it reads on from the star."
+      ),
+      availability: defaultedText(
+        DEFAULT_AVAILABILITY_NOTE,
+        'The note at the foot of every category page, after "Availability:".'
+      ),
+    })
+    .prefault({}),
 });
 
 /* ------------------------------------------------------------------ */
@@ -589,6 +626,23 @@ export const auctionInfoPageSchema = z.object({
    * event-day tactic, so it follows the formats rather than the pricing.
    */
   video: videoBlockSchema,
+  /**
+   * The heading and line above the closing button. `prefault` rather than
+   * `default` so the record parses through the field defaults below when it
+   * has no `closing` at all.
+   */
+  closing: z
+    .object({
+      heading: defaultedText(
+        DEFAULT_AUCTION_INFO_CLOSING.heading,
+        "The heading of the closing band, above the button."
+      ),
+      lede: defaultedText(
+        DEFAULT_AUCTION_INFO_CLOSING.lede,
+        "The line under that heading."
+      ),
+    })
+    .prefault({}),
   cta: ctaRefSchema,
 });
 
@@ -597,6 +651,23 @@ export const auctionItemsPageSchema = z.object({
   ...basePage,
   slug: z.literal("auction-items"),
   intro: sectionHeaderSchema,
+  /** The box above the category tiles that leads to the auction planner. */
+  planner: z
+    .object({
+      lead: defaultedText(
+        DEFAULT_PLANNER_PROMO.lead,
+        "The bold question that opens the box."
+      ),
+      text: defaultedText(
+        DEFAULT_PLANNER_PROMO.text,
+        "The sentence after it."
+      ),
+      link: defaultedText(
+        DEFAULT_PLANNER_PROMO.link,
+        "The words on the link to the auction planner."
+      ),
+    })
+    .prefault({}),
   note: text,
   cta: ctaRefSchema,
 });

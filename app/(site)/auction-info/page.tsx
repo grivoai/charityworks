@@ -198,13 +198,15 @@ export default async function AuctionInfoRoute() {
       {/* ---------- CLOSING CTA ---------- */}
       <section className="pad cta-band" aria-labelledby="auction-info-cta">
         <div className="wrap">
-          {/* Hard-coded, not page content — deliberately unmarked. */}
-          <h2 className="section-title reveal" id="auction-info-cta">
-            Ready to Supercharge Your Next Fundraiser?
+          <h2
+            className="section-title reveal"
+            id="auction-info-cta"
+            {...editable("closing.heading")}
+          >
+            {page.closing.heading}
           </h2>
-          <p className="section-lede reveal">
-            Tell us about your event and we&apos;ll build a risk-free plan to help
-            you raise more than ever.
+          <p className="section-lede reveal" {...editable("closing.lede")}>
+            {page.closing.lede}
           </p>
           <Cta cta={page.cta} path="cta" />
         </div>

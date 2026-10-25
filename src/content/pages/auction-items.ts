@@ -1,4 +1,5 @@
 import type { AuctionItemsPage } from "../types";
+import { DEFAULT_PLANNER_PROMO } from "../default-wording";
 
 export const auctionItemsPage: AuctionItemsPage = {
   slug: "auction-items",
@@ -21,6 +22,8 @@ export const auctionItemsPage: AuctionItemsPage = {
     title: "Dozens of Items to Choose From",
     lede: "A curated catalog built to thrill every audience — and drive bids sky-high.",
   },
+
+  planner: { ...DEFAULT_PLANNER_PROMO },
 
   note: "Every item is offered on consignment. Feature what you like at your event, return whatever does not sell, and pay only for the items that find a bidder.",
 

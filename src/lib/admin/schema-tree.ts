@@ -133,7 +133,7 @@ interface Unwrapped {
 }
 
 /**
- * Peels optional/default/pipe wrappers off to reach the schema that describes
+ * Peels optional/default/prefault/pipe wrappers off to reach the schema that describes
  * the shape.
  *
  * `optionalText` in the content schema is
@@ -148,7 +148,12 @@ function unwrap(schema: Internal): Unwrapped {
 
   for (let guard = 0; guard < 12; guard += 1) {
     const type = current?.def?.type;
-    if (type === "optional" || type === "nullable" || type === "default") {
+    if (
+      type === "optional" ||
+      type === "nullable" ||
+      type === "default" ||
+      type === "prefault"
+    ) {
       optional = true;
       current = current.def.innerType;
     } else if (type === "pipe") {

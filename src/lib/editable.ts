@@ -23,6 +23,24 @@
  * that editing it changes all of them.
  */
 
+/** What `fixed()` spreads onto an element. */
+export type FixedMark = { "data-cw-fixed": "" };
+
+/**
+ * Marks wording that is written into the page code and so has no field: the
+ * buttons' labels, the planner's questions. Without it a click on one in the
+ * admin preview did nothing at all, which reads as broken; with it the preview
+ * says the wording is built in.
+ *
+ * Only on an element ALL of whose text is fixed. Something that mixes fixed
+ * words with a field ("View {group title}") is left unmarked rather than
+ * claimed as fixed. Never on a button: in the preview a click on a control also
+ * operates it, and a notice on top of that is noise.
+ */
+export function fixed(): FixedMark {
+  return { "data-cw-fixed": "" };
+}
+
 /** What `editable()` spreads onto an element. Empty when there is no path. */
 export type EditableMark = { "data-cw"?: string };
 

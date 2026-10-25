@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { CtaRef, SectionHeader as SectionHeaderData } from "@/content/types";
-import { at, editable } from "@/lib/editable";
+import { at, editable, fixed as fixedMark } from "@/lib/editable";
 
 /** Maps a content-layer button variant onto the stylesheet's button classes. */
 export function ctaClassName(variant: CtaRef["variant"], onDark = true): string {
@@ -23,6 +23,7 @@ export function Cta({
   cta,
   onDark = true,
   path,
+  fixed = false,
 }: {
   cta: CtaRef;
   onDark?: boolean;
@@ -32,7 +33,14 @@ export function Cta({
    * case nothing is marked and it is not clickable in the admin preview.
    */
   path?: string;
+  /**
+   * For a button whose label is written into the page code rather than taken
+   * from a field. The preview then says it is built in instead of doing
+   * nothing. Ignored when there is a `path`.
+   */
+  fixed?: boolean;
 }) {
+  const mark = path ? editable(at(path, "label")) : fixed ? fixedMark() : {};
   const label = (
     <>
       {cta.label}
@@ -60,7 +68,7 @@ export function Cta({
         className={ctaClassName(cta.variant, onDark)}
         target="_blank"
         rel="noopener"
-        {...editable(at(path, "label"))}
+        {...mark}
       >
         {label}
       </a>
@@ -73,7 +81,7 @@ export function Cta({
       className={ctaClassName(cta.variant, onDark)}
       // The label, not the whole CTA: `href` and `variant` are not visible as
       // text, so they stay in the form and are listed in visual-map.ts.
-      {...editable(at(path, "label"))}
+      {...mark}
     >
       {label}
     </Link>

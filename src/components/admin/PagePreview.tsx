@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { FIELD_PATH_ATTR, MARK_ATTR } from "@/lib/admin/dom";
+import { FIELD_PATH_ATTR, FIXED_ATTR, MARK_ATTR } from "@/lib/admin/dom";
+
+/** Anything a click in the preview has something to say about. */
+const CLICKABLE = `[${MARK_ATTR}], [${FIXED_ATTR}]`;
 import { PREVIEW_CHANNEL, type PreviewMessage } from "@/lib/admin/preview-channel";
 
 /**
@@ -316,7 +319,9 @@ export function PagePreview({
         left: r.left * k + offsetX,
         width: r.width * k,
         height: r.height * k,
-        label: (el.getAttribute(MARK_ATTR) ?? "").split(":").pop() ?? "",
+        label: el.hasAttribute(MARK_ATTR)
+          ? ((el.getAttribute(MARK_ATTR) ?? "").split(":").pop() ?? "")
+          : "built in",
       };
     };
 
@@ -472,7 +477,7 @@ export function PagePreview({
 
     const onMove = (event: MouseEvent) => {
       const el = hit(event);
-      hoverEl.current = el?.closest(`[${MARK_ATTR}]`) ?? null;
+      hoverEl.current = el?.closest(CLICKABLE) ?? null;
       remeasure();
     };
 
@@ -492,11 +497,21 @@ export function PagePreview({
         (control as HTMLElement).click();
       }
 
-      const marked = el.closest(`[${MARK_ATTR}]`);
+      // The nearest of the two, so a field inside fixed wording still wins.
+      const marked = el.closest(CLICKABLE);
       if (!marked) return;
 
       selectedEl.current = marked;
       remeasure();
+      if (!marked.hasAttribute(MARK_ATTR)) {
+        setNotice(
+          <>
+            <strong>This wording is built into the site.</strong> It has no
+            field here — ask your developer if it needs to change.
+          </>
+        );
+        return;
+      }
       openField(marked.getAttribute(MARK_ATTR) ?? "");
     };
 

@@ -24,11 +24,11 @@
  *   npm run check:visual
  */
 
-import { auctionItemSchema, pageSchemas } from "@/content/schema";
+import { auctionItemSchema, pageSchemas, siteContentSchema } from "@/content/schema";
 import type { PageSlug } from "@/content/types";
 import type { FieldNode } from "@/lib/admin/field-node";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
-import { locksForCategory, locksForPage } from "@/lib/admin/locks";
+import { locksForCategory, locksForPage, locksForSite } from "@/lib/admin/locks";
 import { PAGE_ORDER, PAGE_PATHS } from "@/lib/admin/page-meta";
 import {
   MARKED_UP,
@@ -42,6 +42,7 @@ import {
 import { supabaseContentSource } from "@/lib/content-source-supabase";
 import { isDatabaseConfigured } from "@/lib/content-source";
 import { seedContentSource } from "@/lib/content-source-seed";
+import { readFileSync } from "node:fs";
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
 
@@ -158,6 +159,47 @@ async function checkFraming(): Promise<void> {
   }
   if (failures === before) {
     console.log("  Framing: the site may frame itself, and nothing else may");
+  }
+}
+
+/**
+ * Wording written into the code carries `data-cw-fixed`, so a click on it in
+ * the preview says it is built in rather than doing nothing. Checked on the
+ * served pages for where it may go — never on a button, which a preview click
+ * also operates, and never on an element that is a field as well — and that
+ * the preview reads it.
+ */
+async function checkFixed(categorySlug: string | undefined): Promise<void> {
+  const expected: Array<[string, number]> = [
+    ["/auctioneers", 1],
+    ...(categorySlug ? [[`/auction-items/${categorySlug}`, 5] as [string, number]] : []),
+  ];
+  for (const [path, minimum] of expected) {
+    let html: string;
+    try {
+      html = await fetchPage(path);
+    } catch (error) {
+      fail(`fixed: could not read ${path} — ${(error as Error).message}`);
+      continue;
+    }
+    const tags = [...html.matchAll(/<([a-z0-9]+)\b[^>]*\bdata-cw-fixed=""[^>]*>/g)];
+    const onButton = tags.filter(([, name]) => name === "button");
+    const alsoField = tags.filter(([tag]) => /\sdata-cw="/.test(tag));
+    if (tags.length < minimum) fail(`fixed: ${path} has ${tags.length} built-in markers, expected at least ${minimum}`);
+    if (onButton.length) fail(`fixed: ${path} marks a <button> as built in`);
+    if (alsoField.length) fail(`fixed: ${path} has an element marked both built in and as a field`);
+    if (tags.length >= minimum && !onButton.length && !alsoField.length) {
+      console.log(`  ok    ${path.padEnd(32)} ${tags.length} built-in markers, none on a button or a field`);
+    }
+  }
+
+  const planner = readFileSync("src/components/AuctionPlanner.tsx", "utf8");
+  if (!/className="planner-heading"[\s\S]{0,120}\{\.\.\.fixed\(\)\}/.test(planner)) {
+    fail("fixed: the planner's questions are not marked as built in");
+  }
+  const preview = readFileSync("src/components/admin/PagePreview.tsx", "utf8");
+  if (!preview.includes("[${FIXED_ATTR}]") || !preview.includes("built into the site")) {
+    fail("fixed: the preview does not answer a click on built-in wording");
   }
 }
 
@@ -312,13 +354,26 @@ async function main(): Promise<void> {
       );
     }
 
+    /**
+     * The one record a category page borrows from is Site details, for the
+     * star key and the availability note. Those markers are checked against
+     * the site's own fields, and the category preview lists Site details so a
+     * click on one of them links there.
+     */
+    const siteTree = buildFieldTree(siteContentSchema, locksForSite());
+    const siteMarked = new Set<string>();
+
     for (const mark of new Set(catalogMarks)) {
       const { record, path } = parseMark(mark);
-      if (record) {
-        fail(`catalog: marker "${mark}" borrows from another record, which the catalog does not do`);
+      if (record && record !== "site") {
+        fail(`catalog: marker "${mark}" borrows from "${record}"; the only record a category page borrows from is Site details`);
         continue;
       }
-      const found = nodeAt(catalogTree, normalizeIndices(path).split("."));
+      if (record === "site") siteMarked.add(normalizeIndices(path));
+      const found = nodeAt(
+        record === "site" ? siteTree : catalogTree,
+        normalizeIndices(path).split(".")
+      );
       if (!found) {
         fail(`catalog: marker "${mark}" does not match any field in a category`);
       } else if (found.kind === "object" || found.kind === "array") {
@@ -326,6 +381,12 @@ async function main(): Promise<void> {
           `catalog: marker "${mark}" points at a whole ${found.kind}, not a ` +
             `single field — mark the innermost element instead`
         );
+      }
+    }
+
+    for (const field of ["catalogNotes.affordableLots", "catalogNotes.availability"]) {
+      if (!siteMarked.has(field)) {
+        fail(`catalog: the Site details field "${field}" is not marked on any category page`);
       }
     }
 
@@ -350,6 +411,7 @@ async function main(): Promise<void> {
 
   console.log(`\n  ${totalMarked} fields clickable on the live site`);
 
+  await checkFixed(categories[0]?.slug);
   await checkFraming();
 
   if (failures > 0) {

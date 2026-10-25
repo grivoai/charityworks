@@ -1,6 +1,7 @@
 import type { AuctionInfoPage } from "../types";
 import { steps } from "../collections/steps";
 import { pricingPoints, eventFormats } from "../collections/value-props";
+import { DEFAULT_AUCTION_INFO_CLOSING } from "../default-wording";
 
 export const auctionInfoPage: AuctionInfoPage = {
   slug: "auction-info",
@@ -62,6 +63,8 @@ export const auctionInfoPage: AuctionInfoPage = {
     lede: "A short walkthrough of matching gifts, and how they lift what a paddle raise brings in.",
     embedUrl: "https://www.youtube-nocookie.com/embed/ptbstdMqcRM",
   },
+
+  closing: { ...DEFAULT_AUCTION_INFO_CLOSING },
 
   cta: {
     id: "cta-auction-info",
