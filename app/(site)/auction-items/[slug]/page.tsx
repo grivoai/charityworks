@@ -14,7 +14,7 @@ import { Cta } from "@/components/Section";
 import { CategoryJsonLd } from "@/components/JsonLd";
 import { Icon } from "@/components/Icon";
 import { TextBlock } from "@/components/TextBlock";
-import { at, editable } from "@/lib/editable";
+import { at, editable, fixed } from "@/lib/editable";
 
 type Params = { slug: string };
 
@@ -139,7 +139,11 @@ export default async function AuctionCategoryRoute({
                 a smaller catalog is the last thing to advertise, and the
                 figure told a visitor nothing they could not see by scrolling.
                 Both kinds of category now use the same wording. */}
-            <h2 className="section-title reveal" id="category-heading">
+            <h2
+              className="section-title reveal"
+              id="category-heading"
+              {...fixed()}
+            >
               What&rsquo;s in this category
             </h2>
             <TextBlock
@@ -358,6 +362,7 @@ export default async function AuctionCategoryRoute({
                           aria-label={`${
                             category.generalOnly ? "Ask about" : "Request"
                           } ${item.name}`}
+                          {...fixed()}
                         >
                           {category.generalOnly
                             ? "Ask about these"
@@ -379,6 +384,7 @@ export default async function AuctionCategoryRoute({
                               target="_blank"
                               rel="noopener"
                               aria-label={`Print or download the ${item.name} brochure (PDF, opens in a new tab)`}
+                              {...fixed()}
                             >
                               <span className="inline-ico" aria-hidden="true">
                                 <Icon name="receipt" />
@@ -397,7 +403,7 @@ export default async function AuctionCategoryRoute({
           })}
 
           <p className="cat-notice reveal">
-            <strong>Availability:</strong>{" "}
+            <strong {...fixed()}>Availability:</strong>{" "}
             {/* The general-only wording stays in the code: no category is
                 general-only, so it is drawn nowhere a click could reach. */}
             {category.generalOnly ? (
@@ -428,9 +434,12 @@ export default async function AuctionCategoryRoute({
                 variant: "primary",
               }}
               onDark={false}
+              fixed
             />
             <p className="cat-back">
-              <Link href="/auction-items">← Back to all auction items</Link>
+              <Link href="/auction-items" {...fixed()}>
+                ← Back to all auction items
+              </Link>
             </p>
           </div>
         </div>

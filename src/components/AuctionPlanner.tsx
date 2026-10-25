@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { editable } from "@/lib/editable";
+import { editable, fixed } from "@/lib/editable";
 import Image from "next/image";
 import Link from "next/link";
 import { plannerQuestions } from "@/content/collections/planner-rules";
@@ -203,10 +203,22 @@ export function AuctionPlanner({
         <fieldset className="planner-fieldset">
           {/* The legend is the heading for this screen, so it takes focus on
               every step change. */}
-          <legend className="planner-heading" tabIndex={-1} ref={setHeading}>
+          {/* The questions, their help and their options live in
+              planner-rules.ts beside the scoring that reads them, so they are
+              marked as built in rather than as fields. */}
+          <legend
+            className="planner-heading"
+            tabIndex={-1}
+            ref={setHeading}
+            {...fixed()}
+          >
             {question.prompt}
           </legend>
-          {question.help && <p className="planner-help">{question.help}</p>}
+          {question.help && (
+            <p className="planner-help" {...fixed()}>
+              {question.help}
+            </p>
+          )}
 
           <div className="planner-options">
             {question.options.map((option) => {
@@ -224,7 +236,7 @@ export function AuctionPlanner({
                     checked={selected}
                     onChange={() => choose(option)}
                   />
-                  <span>{option.label}</span>
+                  <span {...fixed()}>{option.label}</span>
                 </label>
               );
             })}
@@ -320,6 +332,7 @@ export function AuctionPlanner({
                 href={pick.path}
                 className="planner-pick-link"
                 aria-label={`View ${pick.title}`}
+                {...fixed()}
               >
                 View these items
                 <span aria-hidden="true"> →</span>
@@ -348,12 +361,16 @@ export function AuctionPlanner({
         <Link href={contactHref} className="btn btn-gold" {...editable("cta.label")}>
           {page.cta.label}
         </Link>
-        <p className="planner-cta-note">Your answers come with you.</p>
+        <p className="planner-cta-note" {...fixed()}>
+          Your answers come with you.
+        </p>
         <div className="planner-cta-alt">
           <button type="button" className="planner-back" onClick={restart}>
             <span {...editable("results.restart")}>{page.results.restart}</span>
           </button>
-          <Link href="/auction-items">Browse all items</Link>
+          <Link href="/auction-items" {...fixed()}>
+            Browse all items
+          </Link>
         </div>
       </div>
     </div>

@@ -23,6 +23,13 @@ export const MARK_ATTR = "data-cw";
 export const FIELD_PATH_ATTR = "data-cw-path";
 
 /**
+ * On wording written into the page code rather than any field (see `fixed()`
+ * in lib/editable.ts). A separate attribute, not a reserved `data-cw` value, so
+ * nothing that resolves a `data-cw` to a field ever meets one.
+ */
+export const FIXED_ATTR = "data-cw-fixed";
+
+/**
  * Puts a list entry on screen with the cursor in one of its fields.
  *
  * `path` is the field's, because only fields carry a path marker; the entry

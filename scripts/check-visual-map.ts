@@ -42,6 +42,7 @@ import {
 import { supabaseContentSource } from "@/lib/content-source-supabase";
 import { isDatabaseConfigured } from "@/lib/content-source";
 import { seedContentSource } from "@/lib/content-source-seed";
+import { readFileSync } from "node:fs";
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
 
@@ -158,6 +159,47 @@ async function checkFraming(): Promise<void> {
   }
   if (failures === before) {
     console.log("  Framing: the site may frame itself, and nothing else may");
+  }
+}
+
+/**
+ * Wording written into the code carries `data-cw-fixed`, so a click on it in
+ * the preview says it is built in rather than doing nothing. Checked on the
+ * served pages for where it may go — never on a button, which a preview click
+ * also operates, and never on an element that is a field as well — and that
+ * the preview reads it.
+ */
+async function checkFixed(categorySlug: string | undefined): Promise<void> {
+  const expected: Array<[string, number]> = [
+    ["/auctioneers", 1],
+    ...(categorySlug ? [[`/auction-items/${categorySlug}`, 5] as [string, number]] : []),
+  ];
+  for (const [path, minimum] of expected) {
+    let html: string;
+    try {
+      html = await fetchPage(path);
+    } catch (error) {
+      fail(`fixed: could not read ${path} — ${(error as Error).message}`);
+      continue;
+    }
+    const tags = [...html.matchAll(/<([a-z0-9]+)\b[^>]*\bdata-cw-fixed=""[^>]*>/g)];
+    const onButton = tags.filter(([, name]) => name === "button");
+    const alsoField = tags.filter(([tag]) => /\sdata-cw="/.test(tag));
+    if (tags.length < minimum) fail(`fixed: ${path} has ${tags.length} built-in markers, expected at least ${minimum}`);
+    if (onButton.length) fail(`fixed: ${path} marks a <button> as built in`);
+    if (alsoField.length) fail(`fixed: ${path} has an element marked both built in and as a field`);
+    if (tags.length >= minimum && !onButton.length && !alsoField.length) {
+      console.log(`  ok    ${path.padEnd(32)} ${tags.length} built-in markers, none on a button or a field`);
+    }
+  }
+
+  const planner = readFileSync("src/components/AuctionPlanner.tsx", "utf8");
+  if (!/className="planner-heading"[\s\S]{0,120}\{\.\.\.fixed\(\)\}/.test(planner)) {
+    fail("fixed: the planner's questions are not marked as built in");
+  }
+  const preview = readFileSync("src/components/admin/PagePreview.tsx", "utf8");
+  if (!preview.includes("[${FIXED_ATTR}]") || !preview.includes("built into the site")) {
+    fail("fixed: the preview does not answer a click on built-in wording");
   }
 }
 
@@ -369,6 +411,7 @@ async function main(): Promise<void> {
 
   console.log(`\n  ${totalMarked} fields clickable on the live site`);
 
+  await checkFixed(categories[0]?.slug);
   await checkFraming();
 
   if (failures > 0) {
