@@ -196,12 +196,14 @@ section { position: relative; }
 .hero p.sub { font-size: clamp(1.05rem, 1.8vw, 1.28rem); color: rgba(255,255,255,0.82); max-width: 540px; margin-bottom: 36px; }
 .hero-btns { display: flex; gap: 16px; row-gap: 10px; flex-wrap: wrap; }
 
-/* The experience credential, sitting with the copy rather than in a card.
-   Deliberately quieter than .hero-pill above it: same glass family, smaller
-   type, no pulsing dot, so the eye reads pill -> headline -> buttons -> this
-   rather than being met by two competing pills. */
+/* The experience credential, sitting with the copy rather than in a card, on
+   its own line above .hero-pill. Deliberately quieter than the pill: same
+   glass family, smaller type, no pulsing dot, so the two read as a credential
+   and a tagline rather than two competing pills. `flex` with a
+   fit-content width rather than `inline-flex`, so the pill, which is inline,
+   cannot ride up beside it on a wide screen. */
 .hero-badge {
-  display: inline-flex; align-items: center; gap: 8px; margin-top: 18px;
+  display: flex; width: fit-content; align-items: center; gap: 8px; margin-bottom: 12px;
   padding: 7px 14px; border-radius: 100px;
   background: rgba(255,255,255,0.06); border: 1px solid rgba(224,168,46,0.34);
   font-size: 0.8rem; color: rgba(255,255,255,0.82); line-height: 1;
@@ -336,12 +338,12 @@ section { position: relative; }
 [data-home-intro="play"] .hero p.sub { animation: intro-rise 0.85s var(--ease) 0.95s both; }
 [data-home-intro="play"] .hero-btns { animation: intro-rise 0.85s var(--ease) 1.25s both; }
 
-/* Slots into the sequence in DOM order — buttons (1.25s), offer, badge — so
-   the eye follows the column down rather than watching the badge arrive above
-   a gap the offer fills a moment later. The badge shifts back to keep its
-   place behind it; the whole run still ends well inside INTRO_CLEAR_MS. */
+/* Slots into the sequence in DOM order — buttons (1.25s), then the offer — so
+   the eye follows the column down. The badge is first in the column, so it
+   leads the pill (0.1s) rather than arriving last; the whole run still ends
+   well inside INTRO_CLEAR_MS. */
+[data-home-intro="play"] .hero-badge { animation: intro-rise 0.8s var(--ease) 0s both; }
 [data-home-intro="play"] .hero-offer { animation: intro-rise 0.85s var(--ease) 1.45s both; }
-[data-home-intro="play"] .hero-badge { animation: intro-rise 0.85s var(--ease) 1.62s both; }
 
 /* Hero tiles keep their resting float — the intro only fades them in, staggered.
    Two comma-separated animation-delays: the first staggers the fade, the second
@@ -1851,6 +1853,7 @@ main.is-transitioning {
      does not know the unit. */
   .hero { min-height: 100vh; min-height: 100svh; }
   .hero .wrap { gap: 28px; }
+  .hero-badge { margin-bottom: 10px; }
   .hero-pill { margin-bottom: 14px; }
   .hero h1 { margin-bottom: 14px; }
   .hero p.sub { margin-bottom: 22px; }

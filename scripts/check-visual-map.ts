@@ -203,6 +203,44 @@ async function checkFixed(categorySlug: string | undefined): Promise<void> {
   }
 }
 
+/**
+ * The years-in-business chip sits above the pill at the top of the hero copy,
+ * where the client asked for it. One fixed place rather than a setting, so the
+ * check is on the served page: it is the column's first element, it comes
+ * before the pill, it is there once, and its stylesheet keeps it on a line of
+ * its own and brings it in first.
+ */
+async function checkHeroBadge(): Promise<void> {
+  let html: string;
+  try {
+    html = await fetchPage("/");
+  } catch (error) {
+    fail(`hero badge: could not read / — ${(error as Error).message}`);
+    return;
+  }
+  const column = html.match(/<div class="hero-content">\s*<(\w+)[^>]*class="([^"]*)"/);
+  const badge = html.indexOf('class="hero-badge"');
+  const pill = html.indexOf('class="hero-pill"');
+  const count = html.split('class="hero-badge"').length - 1;
+  const css = readFileSync("app/globals.css", "utf8");
+  const rule = css.match(/\.hero-badge \{([^}]*)\}/)?.[1] ?? "";
+  const intro = css.match(/\[data-home-intro="play"\] \.hero-badge \{[^}]*?(\d*\.?\d+)s both/)?.[1];
+  const pillIntro = css.match(/\[data-home-intro="play"\] \.hero-pill \{[^}]*?(\d*\.?\d+)s both/)?.[1];
+
+  const problems: string[] = [];
+  if (column?.[2] !== "hero-badge") problems.push(`the hero copy starts with .${column?.[2] ?? "?"}, not the badge`);
+  if (count !== 1) problems.push(`the badge is drawn ${count} times`);
+  if (!(badge >= 0 && pill > badge)) problems.push("the badge is not before the pill");
+  if (!/display: flex;/.test(rule) || !/width: fit-content;/.test(rule) || /margin-top/.test(rule)) {
+    problems.push("the badge's rule no longer keeps it on its own line above the pill");
+  }
+  if (intro === undefined || pillIntro === undefined || Number(intro) > Number(pillIntro)) {
+    problems.push("the first-load intro brings the badge in after the pill");
+  }
+  if (problems.length) problems.forEach((p) => fail(`hero badge: ${p}`));
+  else console.log(`  ok    ${"/".padEnd(32)} years badge first in the hero, above the pill`);
+}
+
 async function main(): Promise<void> {
   console.log(`Checking the preview's element-to-field map against ${BASE}\n`);
 
@@ -412,6 +450,7 @@ async function main(): Promise<void> {
   console.log(`\n  ${totalMarked} fields clickable on the live site`);
 
   await checkFixed(categories[0]?.slug);
+  await checkHeroBadge();
   await checkFraming();
 
   if (failures > 0) {
