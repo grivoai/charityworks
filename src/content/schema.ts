@@ -32,6 +32,15 @@ import { embedProblem, isAllowedEmbed, toEmbedUrl } from "@/lib/embeds";
 /** Non-empty after trimming. Most content fields are required to say something. */
 const text = z.string().trim().min(1);
 
+/**
+ * The hint under every field drawn through TextBlock, the one place a line
+ * starting "- " becomes a bullet. Fields drawn as a plain string do not get it,
+ * because there it would be a promise the page does not keep.
+ */
+export const BULLET_HINT = 'Start a line with "- " to make it a bullet point.';
+const withBullets = (help?: string) =>
+  help ? `${help} ${BULLET_HINT}` : BULLET_HINT;
+
 /** Optional free text. Empty strings normalise to undefined so "" and unset agree. */
 const optionalText = z
   .string()
@@ -139,10 +148,12 @@ export const itemDetailSchema = z.object({
 export const categoryItemSchema = z.object({
   id: text,
   name: text,
-  description: text,
+  description: text.describe(withBullets()),
   image: imageRefSchema.optional(),
   note: optionalText.describe(
-    "A disclaimer shown under this lot only, e.g. required availability wording."
+    withBullets(
+      "A disclaimer shown under this lot only, e.g. required availability wording."
+    )
   ),
   details: z
     .array(itemDetailSchema)
@@ -182,7 +193,7 @@ export const categoryItemSchema = z.object({
 export const categoryGroupSchema = z.object({
   id: text,
   title: optionalText,
-  blurb: optionalText,
+  blurb: optionalText.describe(withBullets()),
   /**
    * The photograph on this group's tile in the section picker.
    *
@@ -217,7 +228,9 @@ export const auctionItemSchema = z.object({
   image: imageRefSchema,
   span: z.enum(["wide", "tall"]).optional(),
   heading: text.describe("The main heading on this category's own page."),
-  intro: text.describe("The longer introduction on this category's own page."),
+  intro: text.describe(
+    withBullets("The longer introduction on this category's own page.")
+  ),
   seo: seoMetaSchema,
   groups: z.array(categoryGroupSchema),
   generalOnly: z
@@ -643,7 +656,7 @@ export const faqsPageSchema = z.object({
       eyebrow: optionalText.describe("Small label above the heading."),
       heading: text,
       body: text.describe(
-        "The explanation. Blank lines start a new paragraph."
+        withBullets("The explanation. Blank lines start a new paragraph.")
       ),
       image: imageRefSchema,
       /**
