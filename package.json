@@ -40,6 +40,7 @@
     "order:newsletters": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/order-newsletters.ts",
     "migrate:booking-channel": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/add-booking-channel.ts",
     "migrate:years": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/update-years-in-business.ts",
+    "migrate:free-vacation-bullets": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/bullet-free-vacation-lines.ts",
     "create:terms": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/create-terms-page.ts",
     "seed:jewelry-handbags": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/seed-jewelry-handbags.ts",
     "migrate:jewelry-sections": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/add-jewelry-costume-group.ts"
