@@ -5,6 +5,7 @@ import { buildMetadata } from "@/lib/seo";
 import { Cta } from "@/components/Section";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { BreadcrumbJsonLd, FaqJsonLd } from "@/components/JsonLd";
+import { TextBlock } from "@/components/TextBlock";
 import { editable } from "@/lib/editable";
 import { isAllowedEmbed } from "@/lib/embeds";
 
@@ -117,15 +118,12 @@ export default async function FaqsRoute() {
                 />
               </div>
 
-              <div className="faq-incentive-body" {...editable("incentive.body")}>
-                {page.incentive.body
-                  .split(/\n\s*\n/)
-                  .map((part) => part.trim())
-                  .filter(Boolean)
-                  .map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
-                  ))}
-              </div>
+              <TextBlock
+                text={page.incentive.body}
+                className="faq-incentive-body"
+                mark={editable("incentive.body")}
+                block
+              />
 
               {page.incentive.cta && (
                 <div className="faq-incentive-cta">
