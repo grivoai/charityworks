@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAuctionCategories, getAuctionCategory } from "@/lib/content";
-import { getDocumentSlugs } from "@/lib/documents";
 import {
-  affordableTierNotice,
-  availabilityNotice,
-  generalCategoryNotice,
-} from "@/content/collections/auction-items";
+  getAuctionCategories,
+  getAuctionCategory,
+  getSite,
+} from "@/lib/content";
+import { getDocumentSlugs } from "@/lib/documents";
+import { generalCategoryNotice } from "@/content/collections/auction-items";
 import { siteUrl } from "@/lib/site-config";
 import { Cta } from "@/components/Section";
 import { CategoryJsonLd } from "@/components/JsonLd";
@@ -84,6 +84,13 @@ export default async function AuctionCategoryRoute({
    * is no database, which is the fallback build.
    */
   const documents = await getDocumentSlugs();
+
+  /**
+   * The star key and the availability note are site-wide wording, edited in
+   * Site details. Their markers name that record, so a click in the category
+   * preview says where they are edited instead of finding no field here.
+   */
+  const { catalogNotes } = await getSite();
 
   /**
    * Requests go to the one contact form, carrying only the lot's id. The label
@@ -257,14 +264,17 @@ export default async function AuctionCategoryRoute({
               {groupHasAffordable && (
                 <p className="cat-legend reveal">
                   {/* Unmarked, unlike the stars on the cards. This one is the
-                      key to the symbol rather than any lot's setting, and the
-                      sentence beside it is a constant in the content module,
-                      not a field. Decorative for the same reason: the sentence
-                      it introduces already says what the star means, and a
-                      hidden "Affordable tier." in front of it would be read
-                      out twice over. */}
+                      key to the symbol rather than any lot's setting.
+                      Decorative because the sentence it introduces already
+                      says what the star means, and a hidden "Affordable
+                      tier." in front of it would be read out twice over.
+                      The sentence is Site details wording, and marked as
+                      such; a span changes nothing in a flex row, where the
+                      bare text was already a box of its own. */}
                   <Star decorative />
-                  {affordableTierNotice}
+                  <span {...editable("site:catalogNotes.affordableLots")}>
+                    {catalogNotes.affordableLots}
+                  </span>
                 </p>
               )}
 
@@ -388,7 +398,15 @@ export default async function AuctionCategoryRoute({
 
           <p className="cat-notice reveal">
             <strong>Availability:</strong>{" "}
-            {category.generalOnly ? generalCategoryNotice : availabilityNotice}
+            {/* The general-only wording stays in the code: no category is
+                general-only, so it is drawn nowhere a click could reach. */}
+            {category.generalOnly ? (
+              generalCategoryNotice
+            ) : (
+              <span {...editable("site:catalogNotes.availability")}>
+                {catalogNotes.availability}
+              </span>
+            )}
           </p>
 
           <div className="center section-cta" style={{ "--cta-gap": "52px" } as React.CSSProperties}>

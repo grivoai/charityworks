@@ -92,8 +92,9 @@ export default async function SiteSettingsRoute({
         <h1>Site details</h1>
         <p>
           The parts that are the same on every page: the name in the header, the
-          navigation, your phone number and email addresses, the booking link
-          and the footer. Saving updates the whole site, not one page. Every
+          navigation, your phone number and email addresses, the booking link,
+          the footer, and the two notes on every category page. Saving updates
+          the whole site, not one page. Every
           save is kept, so anything here can be put back the way it was.
         </p>
       </div>

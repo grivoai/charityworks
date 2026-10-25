@@ -28,28 +28,9 @@ import {
  * `generalOnly` stays in the schema for any future category that needs it.
  */
 
-/** Shown on every category page. Inventory turns over constantly. */
-export const availabilityNotice =
-  "Inventory changes constantly — contact us to confirm current availability for your event date.";
-
 /** Shown instead on categories the client lists without named lots. */
 export const generalCategoryNotice =
   "Specific pieces vary by event. Contact us to confirm current availability and see what is in stock for your date.";
-
-/**
- * The key for the gold star, shown at the top of any GROUP that has a starred
- * lot in it and left off entirely where nothing is starred.
- *
- * Per group rather than once per page: the travel category runs to 27 lots
- * under three headings, and a key at the top of that is off screen long before
- * anyone reaches the stars further down.
- *
- * It says what the star means and nothing more. The site quotes no figure for
- * any individual lot, so the star marks a tier and the opening bid stays a
- * conversation — which is also what makes the mark durable as costs move.
- */
-export const affordableTierNotice =
-  "marks our more affordable lots — ask us for the opening bid on any of them.";
 
 export const auctionItems: AuctionItem[] = [
   /**

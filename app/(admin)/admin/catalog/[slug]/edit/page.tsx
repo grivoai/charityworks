@@ -157,12 +157,23 @@ export default async function EditCategoryRoute({
           slug={category.slug}
           path={categoryPath}
           label={category.title}
-          pages={siblings.map((c) => ({
-            slug: c.slug,
-            label: c.title,
-            path: `/auction-items/${c.slug}`,
-            editorHref: `/admin/catalog/${c.slug}/edit`,
-          }))}
+          pages={[
+            ...siblings.map((c) => ({
+              slug: c.slug,
+              label: c.title,
+              path: `/auction-items/${c.slug}`,
+              editorHref: `/admin/catalog/${c.slug}/edit`,
+            })),
+            /* The star key and the availability note are Site details
+               wording, marked "site:…" on every category page. Listed so a
+               click on either says where it is edited and links there. */
+            {
+              slug: "site",
+              label: "Site details",
+              path: "/",
+              editorHref: "/admin/site",
+            },
+          ]}
         />
       </div>
 

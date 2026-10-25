@@ -24,11 +24,11 @@
  *   npm run check:visual
  */
 
-import { auctionItemSchema, pageSchemas } from "@/content/schema";
+import { auctionItemSchema, pageSchemas, siteContentSchema } from "@/content/schema";
 import type { PageSlug } from "@/content/types";
 import type { FieldNode } from "@/lib/admin/field-node";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
-import { locksForCategory, locksForPage } from "@/lib/admin/locks";
+import { locksForCategory, locksForPage, locksForSite } from "@/lib/admin/locks";
 import { PAGE_ORDER, PAGE_PATHS } from "@/lib/admin/page-meta";
 import {
   MARKED_UP,
@@ -312,13 +312,26 @@ async function main(): Promise<void> {
       );
     }
 
+    /**
+     * The one record a category page borrows from is Site details, for the
+     * star key and the availability note. Those markers are checked against
+     * the site's own fields, and the category preview lists Site details so a
+     * click on one of them links there.
+     */
+    const siteTree = buildFieldTree(siteContentSchema, locksForSite());
+    const siteMarked = new Set<string>();
+
     for (const mark of new Set(catalogMarks)) {
       const { record, path } = parseMark(mark);
-      if (record) {
-        fail(`catalog: marker "${mark}" borrows from another record, which the catalog does not do`);
+      if (record && record !== "site") {
+        fail(`catalog: marker "${mark}" borrows from "${record}"; the only record a category page borrows from is Site details`);
         continue;
       }
-      const found = nodeAt(catalogTree, normalizeIndices(path).split("."));
+      if (record === "site") siteMarked.add(normalizeIndices(path));
+      const found = nodeAt(
+        record === "site" ? siteTree : catalogTree,
+        normalizeIndices(path).split(".")
+      );
       if (!found) {
         fail(`catalog: marker "${mark}" does not match any field in a category`);
       } else if (found.kind === "object" || found.kind === "array") {
@@ -326,6 +339,12 @@ async function main(): Promise<void> {
           `catalog: marker "${mark}" points at a whole ${found.kind}, not a ` +
             `single field — mark the innermost element instead`
         );
+      }
+    }
+
+    for (const field of ["catalogNotes.affordableLots", "catalogNotes.availability"]) {
+      if (!siteMarked.has(field)) {
+        fail(`catalog: the Site details field "${field}" is not marked on any category page`);
       }
     }
 

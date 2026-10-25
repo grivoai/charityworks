@@ -1,4 +1,8 @@
 import type { SiteContent } from "./types";
+import {
+  DEFAULT_AFFORDABLE_NOTE,
+  DEFAULT_AVAILABILITY_NOTE,
+} from "./default-wording";
 
 /**
  * Global site content — brand, navigation, contact details, footer.
@@ -118,5 +122,9 @@ export const site: SiteContent = {
         href: "/terms-and-conditions",
       },
     ],
+  },
+  catalogNotes: {
+    affordableLots: DEFAULT_AFFORDABLE_NOTE,
+    availability: DEFAULT_AVAILABILITY_NOTE,
   },
 };
