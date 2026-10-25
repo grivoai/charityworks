@@ -89,6 +89,21 @@ export default async function HomePage() {
         <div className="hero-grid" />
         <div className="wrap">
           <div className="hero-content">
+            {/* The experience figure, as a credential above the pill rather
+                than in a card. It is the one number here that is about the
+                company rather than about something the visitor can go and look
+                at, so it stays small, but the client wants it read first
+                rather than under the offer at the foot of the column. Fixed
+                here on purpose; there is no position field. */}
+            <p className="hero-badge">
+              <span className="hero-badge-ico" aria-hidden="true">
+                <Icon name="shield-check" />
+              </span>
+              <strong {...editable("hero.badge.value")}>
+                {hero.badge.value}
+              </strong>{" "}
+              <span {...editable("hero.badge.label")}>{hero.badge.label}</span>
+            </p>
             <div className="hero-pill">
               <span className="dot" aria-hidden="true" />
               {/* A span so the pill's own text can be pointed at without
@@ -159,21 +174,6 @@ export default async function HomePage() {
                 )}
               </Link>
             )}
-
-            {/* The experience figure, demoted out of the card treatment beside
-                it. It is the one number here that is about the company rather
-                than about something the visitor can go and look at, so it sits
-                with the copy as a credential rather than competing with three
-                cards that lead somewhere. */}
-            <p className="hero-badge">
-              <span className="hero-badge-ico" aria-hidden="true">
-                <Icon name="shield-check" />
-              </span>
-              <strong {...editable("hero.badge.value")}>
-                {hero.badge.value}
-              </strong>{" "}
-              <span {...editable("hero.badge.label")}>{hero.badge.label}</span>
-            </p>
           </div>
 
           {/* Doors, not statistics. These were four floating counters; the two
