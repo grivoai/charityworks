@@ -255,14 +255,19 @@ silently de-index a live site — it has to be switched on deliberately.
 
 ### Cutover order
 
-1. Point the DNS at Vercel. Two records change, and nothing else:
-   - **A** record for `charityworks.net` (shown as `@` at some registrars) →
-     `76.76.21.21`
-   - **CNAME** record for `www` → `cname.vercel-dns.com`
+1. Point the DNS at Vercel, in Cloudflare. Two records change, and nothing else:
+   - `@` (`charityworks.net`): delete the **A** record (`66.235.200.26`, the
+     legacy host) and add a **CNAME** → `db8e4a8d772cbb75.vercel-dns-017.com`.
+     A CNAME at the apex is fine here: Cloudflare flattens it.
+   - `www`: replace its **A** record (same legacy IP) with a **CNAME** →
+     `db8e4a8d772cbb75.vercel-dns-017.com`.
+   - **Proxy off** (grey cloud) on both, or Vercel cannot issue the certificate.
 
    Both hostnames are already on the Vercel project, with the apex set primary
    so `www` redirects rather than serving the site twice. Leave the nameservers
-   and the MX/email records alone.
+   and every other record alone: the MX, SPF and DMARC records, and the
+   `mx.`, `mail.`, `webmail.` and `autodiscover.` hosts, which carry email and
+   do not depend on `@`.
 2. Confirm the domain serves this app (`/auctioneers` should return 200, not 404).
    A 404 here is far more likely to be the framework preset than DNS — see
    "The framework preset must stay Next.js" above.
