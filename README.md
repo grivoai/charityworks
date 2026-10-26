@@ -214,11 +214,12 @@ curl -s -o /dev/null -w '%{http_code}\n' https://charityworks-pearl.vercel.app/a
 
 ## 🚨 Launch checklist
 
-**The site is currently set to `noindex`. This must be turned off when the
-domain cuts over, or the site will never appear in search results.**
+**Done: the domain cut over in October 2026 and `.env.production` now sets
+`SITE_NOINDEX=false`.** The rest of this section is kept as the record of how
+the flag works and how the cutover ran.
 
-`.env.production` sets `SITE_NOINDEX=true`. Change that one line to `false`
-(or set `SITE_NOINDEX=false` in the Vercel project settings) and redeploy.
+`SITE_NOINDEX` lives in `.env.production` (a value set in the Vercel project
+settings would override it) and needs a redeploy to change.
 `NEXT_PUBLIC_` and build-time variables are inlined at build, so this needs a
 **rebuild**, not just a restart.
 
@@ -233,7 +234,7 @@ wrong thing. The flag exists to hold indexing until DNS and canonicals agree.
 
 ### What the flag does
 
-| | `SITE_NOINDEX=true` (now) | `false` (at launch) |
+| | `SITE_NOINDEX=true` (pre-launch) | `false` (now) |
 | --- | --- | --- |
 | `<meta name="robots">` | `noindex, nofollow, nocache` | `index, follow` |
 | `X-Robots-Tag` header | `noindex, nofollow, noarchive` | absent |
