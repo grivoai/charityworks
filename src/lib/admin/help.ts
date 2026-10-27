@@ -292,6 +292,29 @@ export const HELP_TOPICS: HelpTopic[] = [
     ],
   },
   {
+    id: "planner-questions",
+    title: "Rewording the auction planner's questions",
+    routes: ["/admin/pages/"],
+    body: [
+      {
+        steps: [
+          "Open Page text, then Auction planner, and scroll to Questions.",
+          "Open a question to change its wording, its help line (the smaller line under it — clear it to have none) and each answer's label. Summary label is the short form of an answer, shown on the results screen.",
+          "Save. The new wording is live straight away; in the preview, press Start the planner to see it.",
+        ],
+      },
+      {
+        p:
+          "Only the words can change here. Which questions are asked, their " +
+          "order and their answers are tied to how the quiz decides what to " +
+          "recommend, so adding, removing or reordering one is a change for " +
+          "whoever set up the site. Rewording an answer never changes what it " +
+          "recommends.",
+      },
+    ],
+    link: { href: "/admin/pages", label: "Page text" },
+  },
+  {
     id: "catalog",
     title: "Changing the auction items",
     routes: ["/admin/catalog", "/admin/catalog/"],

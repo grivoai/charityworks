@@ -80,6 +80,8 @@ const LABELS: Record<string, string> = {
   generalOnly: "No named lots",
   maxChoices: "Maximum choices",
   summaryLabel: "Summary label",
+  prompt: "Question",
+  help: "Help line",
 };
 
 /** `headingAccent` becomes "Heading accent"; known keys use the table above. */
@@ -310,6 +312,7 @@ function toNode(schema: Internal, ctx: Context): FieldNode {
         locks: ctx.locks,
       });
       const fixedLength = findLock(ctx.shapePath, "fixed-length", ctx.locks);
+      const fixedOrder = findLock(ctx.shapePath, "fixed-order", ctx.locks);
       const protectRule = findRule(ctx.shapePath, "protected-entries", ctx.locks);
       const protect =
         protectRule?.key && protectRule.values
@@ -327,6 +330,7 @@ function toNode(schema: Internal, ctx: Context): FieldNode {
         template: blankFor(element),
         ...(min ? { minLength: min } : {}),
         ...(fixedLength ? { fixedLength } : {}),
+        ...(fixedOrder ? { fixedOrder } : {}),
         ...(protect ? { protect } : {}),
       };
       return node;

@@ -75,6 +75,8 @@ export interface ArrayNode extends NodeBase {
   template: unknown;
   /** Set when items may be edited but not added or removed, holding the reason. */
   fixedLength?: string;
+  /** Set when items may not be moved, holding the reason. No drag, no arrows. */
+  fixedOrder?: string;
   /**
    * How many entries the schema insists on, when it insists on any.
    *

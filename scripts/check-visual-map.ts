@@ -193,9 +193,22 @@ async function checkFixed(categorySlug: string | undefined): Promise<void> {
     }
   }
 
+  /* The planner's questions used to be built in and are fields now — the
+     opposite claim, so the opposite test: every piece of a question is marked
+     as its field, and none of it as built in. */
   const planner = readFileSync("src/components/AuctionPlanner.tsx", "utf8");
-  if (!/className="planner-heading"[\s\S]{0,120}\{\.\.\.fixed\(\)\}/.test(planner)) {
-    fail("fixed: the planner's questions are not marked as built in");
+  for (const field of [
+    "questions.${step}.prompt",
+    "questions.${step}.help",
+    "questions.${step}.options.${optionIndex}.label",
+    "questions.${qIndex}.options.${at}.summaryLabel",
+  ]) {
+    if (!planner.includes(`editable(\`${field}\`)`)) {
+      fail(`planner: ${field} is not marked as its field`);
+    }
+  }
+  if (/className="planner-heading"[\s\S]{0,120}\{\.\.\.fixed\(\)\}/.test(planner)) {
+    fail("planner: a question is still marked as built in");
   }
   const preview = readFileSync("src/components/admin/PagePreview.tsx", "utf8");
   if (!preview.includes("[${FIXED_ATTR}]") || !preview.includes("built into the site")) {

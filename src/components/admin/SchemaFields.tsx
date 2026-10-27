@@ -82,6 +82,7 @@ function summarize(value: unknown, fallback: string): string {
   for (const key of [
     "title",
     "question",
+    "prompt",
     "name",
     "label",
     "heading",
@@ -760,6 +761,11 @@ function ArrayField({
       {node.fixedLength && (
         <p className="admin-help admin-help-lock">{node.fixedLength}</p>
       )}
+      {/* Once for a list locked both ways with one reason, as the planner's
+          are: the same sentence twice reads as two problems. */}
+      {node.fixedOrder && node.fixedOrder !== node.fixedLength && (
+        <p className="admin-help admin-help-lock">{node.fixedOrder}</p>
+      )}
       {node.protect && (
         <p className="admin-help admin-help-lock">{node.protect.reason}</p>
       )}
@@ -838,36 +844,41 @@ function ArrayField({
                     {/* Pointer-only, and hidden from assistive technology on
                         purpose: the two arrows beside it already do this job
                         from the keyboard, and announcing a control that cannot
-                        be operated without a pointer is worse than silence. */}
-                    <span
-                      className="admin-drag"
-                      title="Drag to reorder"
-                      aria-hidden="true"
-                      onPointerDown={() => setArmed(index)}
-                      onPointerUp={() => setArmed(null)}
-                    >
-                      ⠿
-                    </span>
-                    <button
-                      type="button"
-                      className="admin-icon"
-                      title="Move up"
-                      aria-label={`Move ${summarize(item, `entry ${index + 1}`)} up`}
-                      disabled={index === 0}
-                      onClick={() => move(index, -1)}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="admin-icon"
-                      title="Move down"
-                      aria-label={`Move ${summarize(item, `entry ${index + 1}`)} down`}
-                      disabled={index === items.length - 1}
-                      onClick={() => move(index, 1)}
-                    >
-                      ↓
-                    </button>
+                        be operated without a pointer is worse than silence.
+                        None of the three on a list whose order is fixed. */}
+                    {!node.fixedOrder && (
+                      <>
+                        <span
+                          className="admin-drag"
+                          title="Drag to reorder"
+                          aria-hidden="true"
+                          onPointerDown={() => setArmed(index)}
+                          onPointerUp={() => setArmed(null)}
+                        >
+                          ⠿
+                        </span>
+                        <button
+                          type="button"
+                          className="admin-icon"
+                          title="Move up"
+                          aria-label={`Move ${summarize(item, `entry ${index + 1}`)} up`}
+                          disabled={index === 0}
+                          onClick={() => move(index, -1)}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon"
+                          title="Move down"
+                          aria-label={`Move ${summarize(item, `entry ${index + 1}`)} down`}
+                          disabled={index === items.length - 1}
+                          onClick={() => move(index, 1)}
+                        >
+                          ↓
+                        </button>
+                      </>
+                    )}
                     {editable && node.duplicate && (
                       <button
                         type="button"

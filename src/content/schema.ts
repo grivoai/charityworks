@@ -6,7 +6,9 @@ import {
   DEFAULT_AUCTION_INFO_CLOSING,
   DEFAULT_AVAILABILITY_NOTE,
   DEFAULT_PLANNER_PROMO,
+  DEFAULT_PLANNER_QUESTIONS,
 } from "@/content/default-wording";
+import { plannerRules } from "@/content/collections/planner-rules";
 
 /**
  * Runtime schema for the CharityWorks content model.
@@ -785,10 +787,13 @@ export const plannerQuestionIdSchema = z.enum([
   "interests",
 ]);
 
-export const plannerOptionSchema = z.object({
+/**
+ * The planner's scoring: which answers exist and what each adds to each
+ * category. Written in code (`collections/planner-rules.ts`), not stored —
+ * the wording that goes with it is the page's `questions` field below.
+ */
+export const plannerRuleOptionSchema = z.object({
   id: text,
-  label: text,
-  summaryLabel: text.describe("Echoed back as a chip on the results screen."),
   weights: z
     .record(z.string(), z.number())
     .optional()
@@ -807,18 +812,65 @@ export const plannerOptionSchema = z.object({
     ),
 });
 
-export const plannerQuestionSchema = z.object({
+export const plannerRuleSchema = z.object({
   id: plannerQuestionIdSchema,
-  prompt: text,
-  help: optionalText,
   maxChoices: z
     .number()
     .int()
     .positive()
     .optional()
     .describe("Set only on multi-select questions. Absent means pick exactly one."),
+  options: z.array(plannerRuleOptionSchema),
+});
+
+/** The words for one answer. Its id ties it to the scoring and never changes. */
+export const plannerOptionSchema = z.object({
+  id: text,
+  label: text.describe("The answer as the visitor sees it on the question."),
+  summaryLabel: text.describe(
+    "The same answer, short, echoed back as a chip on the results screen."
+  ),
+});
+
+/** The words for one question. */
+export const plannerQuestionSchema = z.object({
+  id: plannerQuestionIdSchema,
+  prompt: text.describe("The question itself."),
+  help: optionalText.describe("An optional line under the question."),
   options: z.array(plannerOptionSchema),
 });
+
+/**
+ * Wording that does not line up with the scoring is refused, on save and on
+ * read. The quiz looks an answer's weights up by its id, so a renamed,
+ * missing, extra or reordered question or answer would silently score
+ * nothing or show answers in a different order from the one they are
+ * numbered in. The admin locks all of that; this is the backstop.
+ */
+const plannerWordingSchema = z
+  .array(plannerQuestionSchema)
+  .superRefine((questions, ctx) => {
+    const expected = plannerRules.map((q) => q.id).join(", ");
+    const got = questions.map((q) => q.id).join(", ");
+    if (got !== expected) {
+      ctx.addIssue({
+        code: "custom",
+        message: `The questions must be ${expected}, in that order — got ${got || "none"}.`,
+      });
+      return;
+    }
+    questions.forEach((question, index) => {
+      const want = plannerRules[index].options.map((o) => o.id).join(", ");
+      const have = question.options.map((o) => o.id).join(", ");
+      if (have !== want) {
+        ctx.addIssue({
+          code: "custom",
+          path: [index, "options"],
+          message: `"${question.id}" must have the answers ${want}, in that order — got ${have || "none"}.`,
+        });
+      }
+    });
+  });
 
 export const auctionPlannerPageSchema = z.object({
   ...basePage,
@@ -849,6 +901,13 @@ export const auctionPlannerPageSchema = z.object({
     linkLabel: text,
     href: text,
   }),
+  /**
+   * The questions and answers, in words. Defaults to the wording the quiz has
+   * always used, so a record saved before this field existed reads the same.
+   */
+  questions: plannerWordingSchema.prefault(() =>
+    structuredClone(DEFAULT_PLANNER_QUESTIONS)
+  ),
   cta: ctaRefSchema,
 });
 
@@ -1347,6 +1406,8 @@ export type AnyPage = z.infer<typeof anyPageSchema>;
 export type PlannerQuestionId = z.infer<typeof plannerQuestionIdSchema>;
 export type PlannerOption = z.infer<typeof plannerOptionSchema>;
 export type PlannerQuestion = z.infer<typeof plannerQuestionSchema>;
+export type PlannerRuleOption = z.infer<typeof plannerRuleOptionSchema>;
+export type PlannerRule = z.infer<typeof plannerRuleSchema>;
 
 /** Maps each slug to its concrete page type, so `getPage('home')` returns `HomePage`. */
 export interface PageMap {

@@ -19,7 +19,7 @@ import {
   auctioneerSchema,
   faqItemSchema,
   partnerSchema,
-  plannerQuestionSchema,
+  plannerRuleSchema,
   siteContentSchema,
   stepSchema,
   testimonialSchema,
@@ -43,7 +43,7 @@ import { faqs } from "../src/content/collections/faqs";
 import { steps } from "../src/content/collections/steps";
 import { testimonials } from "../src/content/collections/testimonials";
 import { valueProps } from "../src/content/collections/value-props";
-import { plannerQuestions } from "../src/content/collections/planner-rules";
+import { plannerRules } from "../src/content/collections/planner-rules";
 
 let failures = 0;
 let checked = 0;
@@ -99,7 +99,7 @@ checkEach("faq", faqItemSchema, faqs);
 checkEach("step", stepSchema, steps);
 checkEach("testimonial", testimonialSchema, testimonials);
 checkEach("valueProp", valuePropSchema, valueProps);
-checkEach("plannerQuestion", plannerQuestionSchema, plannerQuestions);
+checkEach("plannerRule", plannerRuleSchema, plannerRules);
 
 /* The catalog is the deep one: categories hold groups hold items hold details.
    The category parse above covers it, but count the leaves so the output says

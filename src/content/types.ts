@@ -67,5 +67,7 @@ export type {
   PlannerQuestionId,
   PlannerOption,
   PlannerQuestion,
+  PlannerRuleOption,
+  PlannerRule,
   AuctionPlannerPage,
 } from "./schema";

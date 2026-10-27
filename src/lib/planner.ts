@@ -1,9 +1,15 @@
 import {
   PLANNER_PICK_COUNT,
   PLANNER_TIE_BREAK,
-  plannerQuestions,
+  plannerRules,
 } from "@/content/collections/planner-rules";
-import type { PlannerQuestionId } from "@/content/types";
+import type {
+  PlannerOption,
+  PlannerQuestion,
+  PlannerQuestionId,
+  PlannerRule,
+  PlannerRuleOption,
+} from "@/content/types";
 
 /**
  * The auction planner's scoring.
@@ -11,7 +17,8 @@ import type { PlannerQuestionId } from "@/content/types";
  * Deliberately dull: it adds up the weights in `planner-rules.ts` and sorts.
  * All the judgement lives in that table as data, so what the tool recommends
  * can be reviewed and changed without reading any logic — and the same answers
- * always produce the same result.
+ * always produce the same result. The page's wording plays no part in the
+ * score; `plannerSteps` joins it on by id, for display only.
  *
  * Client-safe. It reads the rules and nothing else, so the wizard can score in
  * the browser and show results with no round trip.
@@ -19,6 +26,41 @@ import type { PlannerQuestionId } from "@/content/types";
 
 /** Selected option ids, keyed by question. Multi-select questions hold several. */
 export type PlannerAnswers = Partial<Record<PlannerQuestionId, string[]>>;
+
+/** One question as the wizard draws it: the page's wording on the scoring's rule. */
+export type PlannerStep = Omit<PlannerRule, "options"> &
+  Pick<PlannerQuestion, "prompt" | "help"> & {
+    options: Array<PlannerRuleOption & PlannerOption>;
+  };
+
+/**
+ * Puts the page's wording onto the scoring, question by question and answer by
+ * answer, in the scoring's order.
+ *
+ * Matched by id. The schema has already refused wording that does not line up
+ * with the rules, so a miss here means a document that skipped validation —
+ * worth failing on rather than drawing a question with no words.
+ */
+export function plannerSteps(wording: PlannerQuestion[]): PlannerStep[] {
+  return plannerRules.map((rule) => {
+    const words = wording.find((q) => q.id === rule.id);
+    if (!words) throw new Error(`Auction planner: no wording for question "${rule.id}".`);
+    return {
+      ...rule,
+      prompt: words.prompt,
+      help: words.help,
+      options: rule.options.map((option) => {
+        const label = words.options.find((o) => o.id === option.id);
+        if (!label) {
+          throw new Error(
+            `Auction planner: no wording for answer "${option.id}" of "${rule.id}".`
+          );
+        }
+        return { ...option, ...label };
+      }),
+    };
+  });
+}
 
 /**
  * Rank every scoring category, best first.
@@ -31,7 +73,7 @@ export function rankCategories(answers: PlannerAnswers): string[] {
   const scores = new Map<string, number>();
   for (const id of PLANNER_TIE_BREAK) scores.set(id, 0);
 
-  for (const question of plannerQuestions) {
+  for (const question of plannerRules) {
     const chosen = answers[question.id] ?? [];
     for (const optionId of chosen) {
       const option = question.options.find((o) => o.id === optionId);

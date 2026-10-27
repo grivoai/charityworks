@@ -1,4 +1,5 @@
 import type { AuctionPlannerPage } from "../types";
+import { DEFAULT_PLANNER_QUESTIONS } from "../default-wording";
 
 export const auctionPlannerPage: AuctionPlannerPage = {
   slug: "auction-planner",
@@ -43,6 +44,8 @@ export const auctionPlannerPage: AuctionPlannerPage = {
     linkLabel: "Meet the auctioneers",
     href: "/auctioneers",
   },
+
+  questions: structuredClone(DEFAULT_PLANNER_QUESTIONS),
 
   cta: {
     id: "cta-planner-results",
