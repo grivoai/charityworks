@@ -14,8 +14,10 @@ import { useEffect, useRef } from "react";
  * FaqAccordion, which styles its open state from aria-expanded for this reason.
  *
  * Re-runs on navigation because each route renders a fresh set of elements.
- * A <noscript> rule in the layout forces `.reveal` visible when JavaScript is
- * unavailable, so content is never hidden from a client that cannot run this.
+ * `.reveal` is only hidden while <html> has `reveal-js`, which the inline
+ * script in the root layout sets when this browser can run the bundle, and
+ * removes again unless this component marks <html> `reveal-live` soon after
+ * load. So content is never hidden from a client that cannot run this.
  *
  * After a client-side navigation the section swipe in AnimatedLayout is the
  * entrance animation. Anything already in the viewport is therefore revealed
@@ -30,6 +32,7 @@ export function RevealObserver() {
   useEffect(() => {
     const isFirstRun = firstRun.current;
     firstRun.current = false;
+    document.documentElement.classList.add("reveal-live");
 
     const targets = Array.from(
       document.querySelectorAll<HTMLElement>(".reveal:not(.in)")
