@@ -214,11 +214,12 @@ curl -s -o /dev/null -w '%{http_code}\n' https://charityworks-pearl.vercel.app/a
 
 ## 🚨 Launch checklist
 
-**The site is currently set to `noindex`. This must be turned off when the
-domain cuts over, or the site will never appear in search results.**
+**Done: the domain cut over in October 2026 and `.env.production` now sets
+`SITE_NOINDEX=false`.** The rest of this section is kept as the record of how
+the flag works and how the cutover ran.
 
-`.env.production` sets `SITE_NOINDEX=true`. Change that one line to `false`
-(or set `SITE_NOINDEX=false` in the Vercel project settings) and redeploy.
+`SITE_NOINDEX` lives in `.env.production` (a value set in the Vercel project
+settings would override it) and needs a redeploy to change.
 `NEXT_PUBLIC_` and build-time variables are inlined at build, so this needs a
 **rebuild**, not just a restart.
 
@@ -233,7 +234,7 @@ wrong thing. The flag exists to hold indexing until DNS and canonicals agree.
 
 ### What the flag does
 
-| | `SITE_NOINDEX=true` (now) | `false` (at launch) |
+| | `SITE_NOINDEX=true` (pre-launch) | `false` (now) |
 | --- | --- | --- |
 | `<meta name="robots">` | `noindex, nofollow, nocache` | `index, follow` |
 | `X-Robots-Tag` header | `noindex, nofollow, noarchive` | absent |
@@ -255,14 +256,19 @@ silently de-index a live site — it has to be switched on deliberately.
 
 ### Cutover order
 
-1. Point the DNS at Vercel. Two records change, and nothing else:
-   - **A** record for `charityworks.net` (shown as `@` at some registrars) →
-     `76.76.21.21`
-   - **CNAME** record for `www` → `cname.vercel-dns.com`
+1. Point the DNS at Vercel, in Cloudflare. Two records change, and nothing else:
+   - `@` (`charityworks.net`): delete the **A** record (`66.235.200.26`, the
+     legacy host) and add a **CNAME** → `db8e4a8d772cbb75.vercel-dns-017.com`.
+     A CNAME at the apex is fine here: Cloudflare flattens it.
+   - `www`: replace its **A** record (same legacy IP) with a **CNAME** →
+     `db8e4a8d772cbb75.vercel-dns-017.com`.
+   - **Proxy off** (grey cloud) on both, or Vercel cannot issue the certificate.
 
    Both hostnames are already on the Vercel project, with the apex set primary
    so `www` redirects rather than serving the site twice. Leave the nameservers
-   and the MX/email records alone.
+   and every other record alone: the MX, SPF and DMARC records, and the
+   `mx.`, `mail.`, `webmail.` and `autodiscover.` hosts, which carry email and
+   do not depend on `@`.
 2. Confirm the domain serves this app (`/auctioneers` should return 200, not 404).
    A 404 here is far more likely to be the framework preset than DNS — see
    "The framework preset must stay Next.js" above.
