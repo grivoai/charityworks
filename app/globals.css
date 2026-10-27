@@ -302,15 +302,17 @@ section { position: relative; }
 .hero-tile-sub { display: block; font-size: 0.82rem; color: rgba(255,255,255,0.76); margin-top: 5px; }
 .hero-tile-cue { display: block; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.04em; color: var(--gold-bright); margin-top: 12px; opacity: 0.85; transition: opacity 0.3s var(--ease); }
 .hero-tile:hover .hero-tile-cue { opacity: 1; }
-/* Staggered across the column rather than down it. The float only ever travels
-   upward, so a card can close at most 18px of the 26px gap above it — 8px of
-   clearance at the worst point of the cycle, whatever the cards grow to hold. */
-.t1 { align-self: flex-start; animation-delay: 0s; }
-.t2 { align-self: flex-end; animation-delay: -2s; }
-.t3 { align-self: flex-start; margin-left: 26px; animation-delay: -4s; }
-/* Back to the right edge, in line with .t2, so the lower three read right,
-   left, right. Float phase -2s like .t2: the card above it is .t3 at -4s. */
-.t4 { align-self: flex-end; animation-delay: -2s; }
+/* Staggered across the column rather than down it, by position so it holds for
+   any number of cards: odd cards left, even cards right, and every left card
+   after the first indented 26px so the left edge is not one straight line.
+   Float phase comes from --float-delay, set per card in page.tsx.
+   The float only ever travels upward, so a card can close at most 18px of the
+   26px gap above it — 8px of clearance at the worst point of the cycle,
+   whatever the cards grow to hold. */
+.hero-tile { animation-delay: var(--float-delay, 0s); }
+.hero-tile:nth-child(odd) { align-self: flex-start; }
+.hero-tile:nth-child(even) { align-self: flex-end; }
+.hero-tile:nth-child(2n+3) { margin-left: 26px; }
 @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-18px);} }
 
 /* ============ HOME FIRST-LOAD INTRO ============
@@ -349,15 +351,13 @@ section { position: relative; }
 [data-home-intro="play"] .hero-offer { animation: intro-rise 0.85s var(--ease) 1.45s both; }
 
 /* Hero tiles keep their resting float — the intro only fades them in, staggered.
-   Two comma-separated animation-delays: the first staggers the fade, the second
-   restores each card's original float desync. */
+   Two comma-separated animation-delays: the first staggers the fade 0.22s per
+   card, the second restores each card's float desync. The stagger is capped
+   at 3.4s so a long stack still finishes (3.4 + 0.9s) inside INTRO_CLEAR_MS. */
 [data-home-intro="play"] .hero-tiles .hero-tile {
   animation: intro-fade 0.9s var(--ease) both, float 6s ease-in-out infinite;
+  animation-delay: min(calc(1.5s + var(--i, 0) * 0.22s), 3.4s), var(--float-delay, 0s);
 }
-[data-home-intro="play"] .hero-tile.t1 { animation-delay: 1.5s, 0s; }
-[data-home-intro="play"] .hero-tile.t2 { animation-delay: 1.72s, -2s; }
-[data-home-intro="play"] .hero-tile.t3 { animation-delay: 1.94s, -4s; }
-[data-home-intro="play"] .hero-tile.t4 { animation-delay: 2.16s, -2s; }
 
 /* ============ REVEAL ============ */
 /* Paced to match the hero intro above — a 0.08s stagger read as everything
@@ -2296,7 +2296,7 @@ body.nav-open .nav {
      `align-self` would still pull each card to one edge of its own row, and the
      indent would push the third out of its column. Clear both so the grid is
      the only thing placing. */
-  .t1, .t2, .t3, .t4 { align-self: auto; margin-left: 0; }
+  .hero-tile:nth-child(n) { align-self: auto; margin-left: 0; }
   .hero-tile-name { font-size: 1.12rem; }
   .hero-tile-sub { font-size: 0.78rem; margin-top: 4px; }
   .hero-tile-cue { margin-top: 9px; }

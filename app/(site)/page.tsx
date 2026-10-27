@@ -35,6 +35,23 @@ const INTRO_CLEAR_MS = 4500;
 
 const HOME_INTRO_SCRIPT = `try{if(!sessionStorage.getItem('cw:home-intro')&&!matchMedia('(prefers-reduced-motion:reduce)').matches){sessionStorage.setItem('cw:home-intro','1');var r=document.documentElement;r.dataset.homeIntro='play';setTimeout(function(){r.removeAttribute('data-home-intro')},${INTRO_CLEAR_MS})}}catch(e){}`;
 
+/**
+ * Per-card timing for the hero tiles, from the card's position alone, so a
+ * card added in the admin needs no stylesheet change. The left/right stagger
+ * is pure CSS (nth-child); only what has to be a number is set here.
+ *
+ * `--i` drives the intro fade stagger. `--float-delay` desyncs the float: a
+ * triangle wave over 0, -2, -4, -2s, so neighbours are always 2s apart and the
+ * first four cards keep the phases they had when each had its own rule.
+ */
+function tileTiming(index: number): React.CSSProperties {
+  const step = 2 - Math.abs(2 - (index % 4));
+  return {
+    "--i": index,
+    "--float-delay": `${-2 * step}s`,
+  } as React.CSSProperties;
+}
+
 /** Wraps each word of the headline so the intro can stagger them in. */
 function heroWords(text: string, startIndex: number) {
   let index = startIndex;
@@ -185,7 +202,8 @@ export default async function HomePage() {
               <Link
                 key={tile.id}
                 href={tile.href}
-                className={`hero-tile t${index + 1}`}
+                className="hero-tile"
+                style={tileTiming(index)}
               >
                 <span
                   className="hero-tile-ico"
