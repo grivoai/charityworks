@@ -87,6 +87,9 @@ jobs:
       - name: Wording moved out of the page code
         run: npm run check:default-wording
 
+      - name: Planner wording matches its scoring
+        run: npm run check:planner
+
       # Without Supabase configured this builds from the seed modules in
       # src/content, which still exercises every route, every component and the
       # schemas the seed is parsed through. What it cannot see is the live
@@ -154,7 +157,7 @@ jobs:
           fi
           echo "Both credentials are present; the checks below will read the live database."
 
-      - name: Site details, catalog and uploads
+      - name: Site details, catalog, uploads and planner wording
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -162,6 +165,7 @@ jobs:
           npm run check:site
           npm run check:catalog
           npm run check:uploads
+          npm run check:planner
 
       # The only check that needs the site actually running: it reads each
       # rendered page and confirms every editable field is marked up, so there

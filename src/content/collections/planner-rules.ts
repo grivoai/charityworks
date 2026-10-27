@@ -1,7 +1,16 @@
-import type { PlannerQuestion } from "../types";
+import type { PlannerRule } from "../types";
 
 /**
- * The auction planner's questions and its scoring table.
+ * The auction planner's scoring table: which questions and answers exist, and
+ * what each answer adds to each category.
+ *
+ * Only the scoring. The words — each question, its help line and its answer
+ * labels — are content, edited on the Auction planner page in the admin and
+ * defaulting to `DEFAULT_PLANNER_QUESTIONS` in default-wording.ts. They are
+ * matched to this table by question and answer id, and the schema refuses
+ * wording whose questions or answers differ from it in count, id or order.
+ * So adding, removing or reordering a question or an answer is a change here
+ * and to the wording together; rewording one is not a code change at all.
  *
  * Every weight lives here as data, so the recommendation is deterministic and
  * auditable: the same answers always produce the same three categories, and
@@ -76,7 +85,7 @@ export const PLANNER_TIE_BREAK = [
 /** How many categories the results screen shows. */
 export const PLANNER_PICK_COUNT = 3;
 
-export const plannerQuestions: PlannerQuestion[] = [
+export const plannerRules: PlannerRule[] = [
   /**
    * Scores nothing, deliberately. Every option here carries no weights.
    *
@@ -102,32 +111,20 @@ export const plannerQuestions: PlannerQuestion[] = [
    */
   {
     id: "eventType",
-    prompt: "What kind of event are you running?",
     options: [
-      { id: "gala", label: "Gala or dinner", summaryLabel: "Gala or dinner" },
-      { id: "golf", label: "Golf tournament", summaryLabel: "Golf tournament" },
-      {
-        id: "faith",
-        label: "Faith-based fundraiser",
-        summaryLabel: "Faith-based fundraiser",
-      },
-      {
-        id: "school-university",
-        label: "School or university",
-        summaryLabel: "School or university",
-      },
-      { id: "other", label: "Something else", summaryLabel: "Other event" },
+      { id: "gala" },
+      { id: "golf" },
+      { id: "faith" },
+      { id: "school-university" },
+      { id: "other" },
     ],
   },
 
   {
     id: "attendance",
-    prompt: "About how many guests do you expect?",
     options: [
       {
         id: "under-100",
-        label: "Under 100",
-        summaryLabel: "Under 100 guests",
         weights: {
           "item-jewelry": 1,
           "item-handbags": 1,
@@ -136,14 +133,10 @@ export const plannerQuestions: PlannerQuestion[] = [
       },
       {
         id: "100-250",
-        label: "100 – 250",
-        summaryLabel: "100–250 guests",
         weights: { "item-vacations": 1, "item-memorabilia": 1 },
       },
       {
         id: "250-500",
-        label: "250 – 500",
-        summaryLabel: "250–500 guests",
         weights: {
           "item-vacations": 1,
           "item-signed-guitars": 1,
@@ -151,26 +144,20 @@ export const plannerQuestions: PlannerQuestion[] = [
       },
       {
         id: "500-plus",
-        label: "500+",
-        summaryLabel: "500+ guests",
         weights: {
           "item-vacations": 2,
           "item-signed-guitars": 1,
         },
       },
-      { id: "unsure", label: "Not sure yet", summaryLabel: "Guest count TBC" },
+      { id: "unsure" },
     ],
   },
 
   {
     id: "format",
-    prompt: "How will the auction run?",
-    help: "A live auction needs a few headline lots. A silent auction needs breadth.",
     options: [
       {
         id: "live",
-        label: "Live auction",
-        summaryLabel: "Live auction",
         weights: {
           // 3 because the headline travel lots and the celebrity access that
           // earned this are inside this category now, not because getaways as
@@ -187,8 +174,6 @@ export const plannerQuestions: PlannerQuestion[] = [
       },
       {
         id: "silent",
-        label: "Silent auction",
-        summaryLabel: "Silent auction",
         weights: {
           "item-jewelry": 3,
           "item-handbags": 3,
@@ -199,8 +184,6 @@ export const plannerQuestions: PlannerQuestion[] = [
       },
       {
         id: "both",
-        label: "Both",
-        summaryLabel: "Live and silent",
         /**
          * Between the two rather than a mechanical halving of them. Halving and
          * rounding down put every category on exactly one point, which is the
@@ -216,23 +199,15 @@ export const plannerQuestions: PlannerQuestion[] = [
           "item-gold-albums": 1,
         },
       },
-      {
-        id: "undecided",
-        label: "Not decided yet",
-        summaryLabel: "Format TBC",
-      },
+      { id: "undecided" },
     ],
   },
 
   {
     id: "priceBand",
-    prompt: "What do your top auction items usually sell for?",
-    help: "Your own past results — it tells us where to pitch the recommendation.",
     options: [
       {
         id: "under-500",
-        label: "Under $500",
-        summaryLabel: "Top lots under $500",
         weights: {
           "item-jewelry": 3,
           "item-memorabilia": 2,
@@ -243,8 +218,6 @@ export const plannerQuestions: PlannerQuestion[] = [
       },
       {
         id: "500-1500",
-        label: "$500 – $1,500",
-        summaryLabel: "Top lots $500–1,500",
         weights: {
           "item-vacations": 3,
           "item-memorabilia": 3,
@@ -256,8 +229,6 @@ export const plannerQuestions: PlannerQuestion[] = [
       },
       {
         id: "1500-5000",
-        label: "$1,500 – $5,000",
-        summaryLabel: "Top lots $1,500–5,000",
         weights: {
           "item-signed-guitars": 3,
           "item-vacations": 2,
@@ -268,8 +239,6 @@ export const plannerQuestions: PlannerQuestion[] = [
       },
       {
         id: "5000-plus",
-        label: "$5,000+",
-        summaryLabel: "Top lots $5,000+",
         weights: {
           "item-vacations": 3,
           "item-signed-guitars": 2,
@@ -279,8 +248,6 @@ export const plannerQuestions: PlannerQuestion[] = [
       },
       {
         id: "unsure",
-        label: "Not sure",
-        summaryLabel: "Past results TBC",
         /* Flat across every category: it moves nothing, so an honest "not sure"
            neither helps nor hurts a category's chances. */
         weights: {
@@ -297,38 +264,26 @@ export const plannerQuestions: PlannerQuestion[] = [
 
   {
     id: "interests",
-    prompt: "What does your crowd respond to?",
-    help: "Pick up to three.",
     maxChoices: 3,
     options: [
       {
         id: "travel",
-        label: "Travel & experiences",
-        summaryLabel: "Travel & experiences",
         weights: { "item-vacations": 3 },
       },
       {
         id: "music",
-        label: "Music & memorabilia",
-        summaryLabel: "Music & memorabilia",
         weights: { "item-signed-guitars": 3, "item-gold-albums": 3 },
       },
       {
         id: "sports",
-        label: "Sports",
-        summaryLabel: "Sports",
         weights: { "item-memorabilia": 3 },
       },
       {
         id: "jewelry",
-        label: "Jewelry & accessories",
-        summaryLabel: "Jewelry & accessories",
         weights: { "item-jewelry": 3, "item-handbags": 3 },
       },
       {
         id: "celebrity",
-        label: "Celebrity access",
-        summaryLabel: "Celebrity access",
         // Meet & Greets is a group inside the travel category now, so
         // celebrity access scores it. The recommendation card will say
         // "Travel & Experiences" for an answer about celebrities, which is
@@ -337,8 +292,6 @@ export const plannerQuestions: PlannerQuestion[] = [
       },
       {
         id: "unsure",
-        label: "Not sure",
-        summaryLabel: "Open to anything",
         exclusive: true,
       },
     ],

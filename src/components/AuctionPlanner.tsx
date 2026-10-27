@@ -4,10 +4,9 @@ import { useMemo, useRef, useState } from "react";
 import { editable, fixed } from "@/lib/editable";
 import Image from "next/image";
 import Link from "next/link";
-import { plannerQuestions } from "@/content/collections/planner-rules";
-import { buildContactQuery, recommendCategories } from "@/lib/planner";
-import type { PlannerAnswers } from "@/lib/planner";
-import type { AuctionPlannerPage, PlannerOption } from "@/content/types";
+import { buildContactQuery, plannerSteps, recommendCategories } from "@/lib/planner";
+import type { PlannerAnswers, PlannerStep } from "@/lib/planner";
+import type { AuctionPlannerPage } from "@/content/types";
 
 /**
  * The auction planner wizard.
@@ -15,7 +14,8 @@ import type { AuctionPlannerPage, PlannerOption } from "@/content/types";
  * Ungated by design: no email, no gate, results the moment the last question is
  * answered. Scoring happens in the browser from the table in
  * `planner-rules.ts`, so there is no round trip and no lead is required to see
- * the answer. The contact CTA on the results screen is an offer, not a toll.
+ * the answer. The words on each question come from the page (`questions`),
+ * joined onto that table by id. The contact CTA on the results screen is an offer, not a toll.
  *
  * Nothing in here carries `.reveal`. RevealObserver snapshots
  * `.reveal:not(.in)` once per navigation, and every screen below the first
@@ -62,7 +62,8 @@ export function AuctionPlanner({
     requestAnimationFrame(() => headingRef.current?.focus());
   };
 
-  const question = plannerQuestions[step];
+  const steps = useMemo(() => plannerSteps(page.questions), [page.questions]);
+  const question = steps[step];
   const chosen = (question && answers[question.id]) ?? [];
   const isMulti = Boolean(question?.maxChoices);
 
@@ -75,7 +76,7 @@ export function AuctionPlanner({
     .map((id) => categories.find((c) => c.id === id))
     .filter((c): c is PlannerCategoryCard => Boolean(c));
 
-  function choose(option: PlannerOption) {
+  function choose(option: PlannerStep["options"][number]) {
     if (!question) return;
 
     if (!isMulti) {
@@ -113,7 +114,7 @@ export function AuctionPlanner({
   }
 
   function advance() {
-    if (step + 1 < plannerQuestions.length) {
+    if (step + 1 < steps.length) {
       setStep(step + 1);
     } else {
       setScreen("results");
@@ -178,7 +179,7 @@ export function AuctionPlanner({
   /* Questions                                                           */
   /* ------------------------------------------------------------------ */
   if (screen === "questions" && question) {
-    const total = plannerQuestions.length;
+    const total = steps.length;
     const canContinue = chosen.length > 0;
 
     return (
@@ -202,26 +203,24 @@ export function AuctionPlanner({
 
         <fieldset className="planner-fieldset">
           {/* The legend is the heading for this screen, so it takes focus on
-              every step change. */}
-          {/* The questions, their help and their options live in
-              planner-rules.ts beside the scoring that reads them, so they are
-              marked as built in rather than as fields. */}
+              every step change. The paths index `page.questions` by step: the
+              schema holds that list in the same order as the scoring. */}
           <legend
             className="planner-heading"
             tabIndex={-1}
             ref={setHeading}
-            {...fixed()}
+            {...editable(`questions.${step}.prompt`)}
           >
             {question.prompt}
           </legend>
           {question.help && (
-            <p className="planner-help" {...fixed()}>
+            <p className="planner-help" {...editable(`questions.${step}.help`)}>
               {question.help}
             </p>
           )}
 
           <div className="planner-options">
-            {question.options.map((option) => {
+            {question.options.map((option, optionIndex) => {
               const selected = chosen.includes(option.id);
               return (
                 <label
@@ -236,7 +235,11 @@ export function AuctionPlanner({
                     checked={selected}
                     onChange={() => choose(option)}
                   />
-                  <span {...fixed()}>{option.label}</span>
+                  <span
+                    {...editable(`questions.${step}.options.${optionIndex}.label`)}
+                  >
+                    {option.label}
+                  </span>
                 </label>
               );
             })}
@@ -292,12 +295,17 @@ export function AuctionPlanner({
       <div className="planner-answers">
         <h3 {...editable("results.answersLabel")}>{page.results.answersLabel}</h3>
         <ul>
-          {plannerQuestions.map((q) => {
+          {steps.map((q, qIndex) => {
             const selected = answers[q.id] ?? [];
             return selected.map((id) => {
-              const option = q.options.find((o) => o.id === id);
-              return option ? (
-                <li key={`${q.id}-${id}`}>{option.summaryLabel}</li>
+              const at = q.options.findIndex((o) => o.id === id);
+              return at >= 0 ? (
+                <li
+                  key={`${q.id}-${id}`}
+                  {...editable(`questions.${qIndex}.options.${at}.summaryLabel`)}
+                >
+                  {q.options[at].summaryLabel}
+                </li>
               ) : null;
             });
           })}

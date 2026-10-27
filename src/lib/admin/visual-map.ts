@@ -327,6 +327,13 @@ export const PAGE_DEFERRED: Partial<Record<PageSlug, NotVisibleRule[]>> = {
   ],
   "auction-planner": [
     {
+      pattern: "questions.**",
+      reason:
+        "Each question, its help line and its answers appear one at a time " +
+        "once the planner is started; the short answer labels appear on the " +
+        "results screen. Press Start in the preview to reach them.",
+    },
+    {
       pattern: "results.**",
       reason: "The results screen, which appears once the five questions are answered.",
     },

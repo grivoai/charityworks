@@ -14,7 +14,7 @@ import type { PageSlug } from "@/content/types";
 export interface LockRule {
   /** Dotted path, with `*` matching any array index. */
   pattern: string;
-  mode: "readonly" | "fixed-length" | "protected-entries";
+  mode: "readonly" | "fixed-length" | "fixed-order" | "protected-entries";
   reason: string;
   /**
    * For `protected-entries`: an entry whose `key` field holds one of `values`
@@ -51,6 +51,12 @@ export const COMMON_LOCKS: LockRule[] = [
       "would only make the sitemap disagree with reality.",
   },
 ];
+
+/** Shown on the planner's question and answer lists. */
+const PLANNER_SHAPE_REASON =
+  "Reword any question, help line or answer here. Which questions are asked, " +
+  "their order and their answers are tied to how the quiz scores, so adding, " +
+  "removing or reordering them is a change for whoever set up the site.";
 
 export const PAGE_LOCKS: Partial<Record<PageSlug, LockRule[]>> = {
   /**
@@ -151,6 +157,36 @@ export const PAGE_LOCKS: Partial<Record<PageSlug, LockRule[]>> = {
       reason:
         "These six questions are the ones the enquiry system expects, so they " +
         "cannot be removed. Reword them freely, and add your own below.",
+    },
+  ],
+
+  /**
+   * The quiz's questions and answers: the words are hers, the shape is not.
+   *
+   * Each answer's scoring lives in planner-rules.ts and is found by the
+   * answer's id, so the count, the order and every id are fixed here — an
+   * added answer would score nothing, a removed one would leave its weights
+   * unreachable, and a reordered question would be numbered out of turn. The
+   * schema refuses all of that on save as well; these locks keep the form from
+   * offering it in the first place.
+   */
+  "auction-planner": [
+    ...(["questions", "questions.*.options"] as const).flatMap((pattern) =>
+      (["fixed-length", "fixed-order"] as const).map((mode) => ({
+        pattern,
+        mode,
+        reason: PLANNER_SHAPE_REASON,
+      }))
+    ),
+    {
+      pattern: "questions.*.id",
+      mode: "readonly",
+      reason: "Internal name for this question. The scoring finds it by this.",
+    },
+    {
+      pattern: "questions.*.options.*.id",
+      mode: "readonly",
+      reason: "Internal name for this answer. The scoring finds it by this.",
     },
   ],
 };
