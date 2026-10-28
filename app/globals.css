@@ -1416,13 +1416,19 @@ main.is-transitioning {
    photograph and five lots read as one long strip. A short gold rule in the
    gap says where one lot ends. Only in one column: at any width with two
    cards to a row the rule would sit above every card but the first, which
-   is a pattern rather than a divider. 540px is below the width at which two
-   250px cards fit the wrap (2 × 250 + 26, inside 24px gutters).
+   is a pattern rather than a divider. 700px is where the cards go full
+   width (`.cat-card { flex-basis: 100% }`, a little further down), so it is the same
+   breakpoint: the two must move together, or a band of one-column widths
+   is left without a rule.
 
    The card gives up `overflow: hidden` here so the rule can sit outside it;
-   the media box takes over clipping the photograph's corners. */
-@media (max-width: 540px) {
-  .cat-grid { row-gap: 46px; }
+   the media box takes over clipping the photograph's corners.
+
+   The gap is what the rule sits in (`top` is about half of it), so it has to
+   win over the phone compaction's `.cat-grid { gap: 16px }` further down —
+   hence the extra class, which does not depend on the order of the file. */
+@media (max-width: 700px) {
+  .cat-group .cat-grid { row-gap: 46px; }
   .cat-card { position: relative; overflow: visible; }
   .cat-card-media {
     overflow: hidden;
