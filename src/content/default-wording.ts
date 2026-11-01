@@ -12,7 +12,7 @@
  * into the admin's form code.
  */
 
-import type { PlannerQuestion } from "./types";
+import type { FormField, PlannerQuestion } from "./types";
 
 /**
  * The key for the gold star, shown above any section of a category that has a
@@ -112,3 +112,60 @@ export const DEFAULT_PLANNER_QUESTIONS: PlannerQuestion[] = [
     ],
   },
 ];
+
+/**
+ * The guest-count question's key, and the column it lands in.
+ *
+ * Named after the field the Facebook lead form already sends, so the n8n
+ * workflow can write web and Facebook leads to the same spreadsheet column
+ * without a rename step in between. Deliberately not `custom_`-prefixed: it is
+ * one of the pipeline's own questions (see `CORE_FORM_FIELDS` in
+ * lib/admin/locks.ts), sent flat at the top level of the payload rather than
+ * nested inside `custom`.
+ */
+export const GUESTS_FIELD_NAME = "approximate_number_of_attendees";
+
+/**
+ * The guest-count question as the form first asks it. Optional, and plain text
+ * rather than a number box: "about 200" and "150-200" are honest answers to an
+ * approximate question, and a number input would refuse both.
+ */
+export const DEFAULT_GUESTS_FIELD: FormField = {
+  id: "field-guests",
+  name: GUESTS_FIELD_NAME,
+  label: "Approximate number of guests",
+  type: "text",
+  placeholder: "e.g. 150",
+  required: false,
+  width: "full",
+};
+
+/**
+ * The contact form's fields with any missing built-in question put back.
+ *
+ * The stored contact page predates the guest-count question. Rather than a
+ * migration that rewrites the live record, the question is added here on read:
+ * the site's forms show it, the admin's editor shows it, and the first save of
+ * the Contact page stores it like any other field. After that the stored copy
+ * is the one used, wording and all, and this changes nothing.
+ *
+ * Placed straight after the event date, where it reads as part of "tell us
+ * about the event" — or at the end, if the date has been moved off somewhere
+ * this would read oddly next to.
+ *
+ * Generic over the element type so the admin's save can run it over a stored
+ * document it has not parsed (see `applyContactFormRules`). It only ever adds:
+ * an existing entry under this key, whatever its wording, is left untouched.
+ */
+export function withBuiltInFormFields<T extends { name?: unknown }>(
+  fields: T[]
+): (T | FormField)[] {
+  if (fields.some((field) => field?.name === GUESTS_FIELD_NAME)) return fields;
+  const after = fields.findIndex((field) => field?.name === "date");
+  const at = after === -1 ? fields.length : after + 1;
+  return [
+    ...fields.slice(0, at),
+    structuredClone(DEFAULT_GUESTS_FIELD),
+    ...fields.slice(at),
+  ];
+}

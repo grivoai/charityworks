@@ -210,7 +210,8 @@ export async function POST(request: Request) {
    * spreadsheet, and a stable column set matters more than a compact payload.
    *
    * Split in two, and the split is the whole reason the form can be edited at
-   * all. The six core answers stay flat and keep their exact keys, because the
+   * all. The core answers (`CORE_FORM_FIELDS` — the launch six plus
+   * `approximate_number_of_attendees`) stay flat and keep their exact keys, because the
    * n8n workflow writes them to fixed columns. A question the client added goes
    * inside `custom` — nested, so a question worded into the key `source` or
    * `interestId` cannot land on top of the context added below, which is a

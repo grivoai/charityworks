@@ -1,4 +1,7 @@
 import type { PageSlug } from "@/content/types";
+import { GUESTS_FIELD_NAME } from "@/content/default-wording";
+
+export { GUESTS_FIELD_NAME };
 
 /**
  * Fields that are shown but must not be edited here.
@@ -26,11 +29,16 @@ export interface LockRule {
 }
 
 /**
- * The six questions the enquiry pipeline reads, by the key each is filed under.
+ * The questions the enquiry pipeline reads, by the key each is filed under.
  *
  * The one list, imported by the lock below, by the save that refuses to lose
  * one, and by the endpoint that separates these answers from the client's own.
- * Three copies of six strings is how they come to disagree.
+ * Three copies of these strings is how they come to disagree.
+ *
+ * The first six date from launch. The guest count was added in October 2026;
+ * a stored contact page written before then does not have it, and the schema
+ * fills it in on read (see `withBuiltInFormFields` in default-wording.ts), so
+ * it appears on the live forms without a content migration.
  */
 export const CORE_FORM_FIELDS = [
   "name",
@@ -39,6 +47,7 @@ export const CORE_FORM_FIELDS = [
   "phone",
   "date",
   "message",
+  GUESTS_FIELD_NAME,
 ] as const;
 
 /** Applies to every page. */
@@ -143,9 +152,9 @@ export const PAGE_LOCKS: Partial<Record<PageSlug, LockRule[]>> = {
     },
     {
       /**
-       * The list grows; six of its entries do not go away.
+       * The list grows; the pipeline's own entries do not go away.
        *
-       * Those six are the enquiry pipeline's contract — n8n writes them to
+       * Those are the enquiry pipeline's contract — n8n writes them to
        * fixed spreadsheet columns and `email` is how anyone gets replied to.
        * Everything else about them is editable: wording, placeholder, whether
        * an answer is required, and where they sit.
@@ -155,7 +164,7 @@ export const PAGE_LOCKS: Partial<Record<PageSlug, LockRule[]>> = {
       key: "name",
       values: [...CORE_FORM_FIELDS],
       reason:
-        "These six questions are the ones the enquiry system expects, so they " +
+        "These questions are the ones the enquiry system expects, so they " +
         "cannot be removed. Reword them freely, and add your own below.",
     },
   ],

@@ -93,7 +93,7 @@ export interface ArrayNode extends NodeBase {
    * browser — a function cannot cross that boundary. An entry whose `key` field
    * holds one of `values` keeps its remove button hidden and shows the reason.
    *
-   * The contact form is what this exists for: the six questions the enquiry
+   * The contact form is what this exists for: the questions the enquiry
    * pipeline reads are fixed, and any question the client adds is theirs to
    * remove. "Fixed length" could not express that.
    */
