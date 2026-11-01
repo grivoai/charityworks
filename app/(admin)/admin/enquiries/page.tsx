@@ -5,6 +5,7 @@ import { RetryAll, RetryOne } from "@/components/admin/RetryDelivery";
 import { requireAdmin } from "@/lib/auth";
 import { getPage } from "@/lib/content";
 import { isCoreField } from "@/lib/admin/form-write";
+import { GUESTS_FIELD_NAME } from "@/lib/admin/locks";
 import { getServiceClient } from "@/lib/supabase";
 import { formatWhen, formatExact } from "@/lib/admin/page-meta";
 
@@ -31,6 +32,13 @@ interface SubmissionRow {
   context_summary: string | null;
   webhook_status: "pending" | "sent" | "failed" | "not-configured";
   webhook_last_error: string | null;
+  /**
+   * The guest count. No column of its own — adding one would be a schema
+   * change the insert depends on, deployed in lockstep — so it is read out of
+   * `raw`, the exact payload that was posted. Null on enquiries sent before
+   * the question existed.
+   */
+  attendees: string | null;
   /** Answers to questions the client added. Keyed by the field's own name. */
   custom: Record<string, string> | null;
 }
@@ -97,7 +105,8 @@ export default async function EnquiriesRoute() {
     .select(
       "id, lead_id, submitted_at, name, org, email, phone, event_date, message, " +
         "source, interest_label, interest_category, context_summary, " +
-        "webhook_status, webhook_last_error, custom"
+        "webhook_status, webhook_last_error, custom, " +
+        `attendees:raw->>${GUESTS_FIELD_NAME}`
     )
     .order("submitted_at", { ascending: false })
     .limit(100)
@@ -173,6 +182,7 @@ export default async function EnquiriesRoute() {
                     {row.email && <a href={`mailto:${row.email}`}>{row.email}</a>}
                     {row.phone && <a href={`tel:${row.phone}`}>{row.phone}</a>}
                     {row.event_date && <span>Event: {row.event_date}</span>}
+                    {row.attendees && <span>Guests: {row.attendees}</span>}
                   </div>
 
                   {row.message && <p className="admin-enquiry-message">{row.message}</p>}

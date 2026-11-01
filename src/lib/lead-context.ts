@@ -3,7 +3,7 @@
  *
  * Every enquiry on the site — the plain contact form, a request for a specific
  * lot, a request for an auctioneer, and the auction planner quiz — posts the
- * same six visible fields to the same `/api/contact`. What differs is the
+ * same visible fields to the same `/api/contact`. What differs is the
  * *context* travelling alongside them: where the lead came from and what it is
  * about. Keeping that as additive metadata rather than separate forms or
  * endpoints is what lets one downstream automation handle every lead shape.

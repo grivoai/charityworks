@@ -1,4 +1,5 @@
 import { CORE_FORM_FIELDS } from "@/lib/admin/locks";
+import { withBuiltInFormFields } from "@/content/default-wording";
 
 /**
  * The rules a saved contact form has to satisfy, as a pure function.
@@ -10,7 +11,7 @@ import { CORE_FORM_FIELDS } from "@/lib/admin/locks";
  *
  * There are two, and they pull in opposite directions.
  *
- * THE SIX CORE QUESTIONS MUST SURVIVE. `app/api/contact/route.ts` submits their
+ * THE CORE QUESTIONS MUST SURVIVE. `app/api/contact/route.ts` submits their
  * keys and the n8n workflow writes them to fixed spreadsheet columns; `email` is
  * how anyone ever gets replied to. The lock hides their remove buttons, and this
  * is what makes that a rule rather than a rendering.
@@ -73,7 +74,7 @@ function fieldsOf(document: unknown): LooseField[] | null {
 
 /**
  * Fills in the key for any newly added question, and refuses a form that has
- * lost one of the six.
+ * lost one of the core questions.
  *
  * Runs between coercion and validation, because a question the client just
  * added has no key yet — and an empty required string would otherwise fail
@@ -87,22 +88,37 @@ export function applyContactFormRules(next: unknown, current: unknown): unknown 
   // Not the shape this is about. Zod is about to say so, in its own words.
   if (!fields) return next;
 
-  const storedIds = new Set(
-    (fieldsOf(current) ?? []).map((field) => String(field.id ?? ""))
-  );
-
-  const taken = new Set<string>();
-  for (const field of fields) {
+  /**
+   * The stored fields as the editor was shown them: with any built-in question
+   * the stored record predates filled in, exactly as the schema does on read.
+   *
+   * Without this the guest-count question, on the first save after it was
+   * added, would look like a question the client had just typed in — it has
+   * no stored entry — and be given a `custom_` key from its label. The schema
+   * would then add the real one back on top of it, and the form would carry
+   * the question twice.
+   */
+  const storedFields = withBuiltInFormFields(fieldsOf(current) ?? []);
+  const storedNames = new Map<string, string>();
+  for (const field of storedFields) {
     if (typeof field.name === "string" && field.name !== "") {
-      if (storedIds.has(String(field.id ?? ""))) taken.add(field.name);
+      storedNames.set(String(field.id ?? ""), field.name);
     }
   }
 
-  const resolved = fields.map((field) => {
-    const known = storedIds.has(String(field.id ?? ""));
-    const name = typeof field.name === "string" ? field.name : "";
+  const taken = new Set<string>();
+  for (const field of fields) {
+    const stored = storedNames.get(String(field.id ?? ""));
+    if (stored) taken.add(stored);
+  }
 
-    if (known && name !== "") return field;
+  const resolved = fields.map((field) => {
+    /* A question that already exists keeps its stored key. Coercion has
+       already put it back for anything actually in the record (the key is a
+       locked field); this covers the built-in ones that are not yet, whose
+       key would otherwise be whatever the request claimed. */
+    const stored = storedNames.get(String(field.id ?? ""));
+    if (stored) return { ...field, name: stored };
 
     const label = typeof field.label === "string" ? field.label : "";
     const key = unique(keyFromLabel(label), taken);

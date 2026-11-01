@@ -7,6 +7,7 @@ import {
   DEFAULT_AVAILABILITY_NOTE,
   DEFAULT_PLANNER_PROMO,
   DEFAULT_PLANNER_QUESTIONS,
+  withBuiltInFormFields,
 } from "@/content/default-wording";
 import { plannerRules } from "@/content/collections/planner-rules";
 
@@ -757,7 +758,13 @@ export const contactPageSchema = z.object({
   slug: z.literal("contact"),
   intro: sectionHeaderSchema,
   form: z.object({
-    fields: z.array(formFieldSchema),
+    /**
+     * A stored page written before a built-in question existed parses with
+     * that question filled in — today, the guest count. See
+     * `withBuiltInFormFields`; the admin save runs the same function over the
+     * stored document, so the question keeps its pipeline key on first save.
+     */
+    fields: z.array(formFieldSchema).transform(withBuiltInFormFields),
     submitLabel: text,
     /**
      * Optional, so a stored document written before this field existed still

@@ -1,4 +1,5 @@
 import type { ContactPage } from "../types";
+import { DEFAULT_GUESTS_FIELD } from "../default-wording";
 
 export const contactPage: ContactPage = {
   slug: "contact",
@@ -73,6 +74,12 @@ export const contactPage: ContactPage = {
         required: false,
         width: "full",
       },
+      /**
+       * One of the pipeline's own questions, sent to n8n flat under the
+       * Facebook form's column name. The live record predates it and gets it
+       * from the schema on read; written out here so the seed agrees.
+       */
+      { ...DEFAULT_GUESTS_FIELD },
       {
         id: "field-message",
         name: "message",
@@ -83,7 +90,7 @@ export const contactPage: ContactPage = {
         width: "full",
       },
       /**
-       * Not one of the six the pipeline reads, so it is filed under `custom`
+       * Not one of the questions the pipeline reads, so it is filed under `custom`
        * like any question the client adds in the admin — its key carries the
        * `custom_` prefix for exactly that reason. The answers show up on the
        * enquiry in the admin; n8n's fixed columns are untouched.

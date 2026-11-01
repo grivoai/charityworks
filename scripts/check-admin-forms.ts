@@ -22,7 +22,12 @@ import { auctionItemSchema, customPageSchema, pageSchemas } from "@/content/sche
 import type { PageSlug } from "@/content/types";
 import type { FieldNode } from "@/lib/admin/field-node";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
-import { CORE_FORM_FIELDS, locksForPage, matchesPattern } from "@/lib/admin/locks";
+import {
+  CORE_FORM_FIELDS,
+  GUESTS_FIELD_NAME,
+  locksForPage,
+  matchesPattern,
+} from "@/lib/admin/locks";
 import { SLOT_PATTERNS, slotFor } from "@/lib/admin/image-slots";
 import {
   FormWriteError,
@@ -276,7 +281,7 @@ if (new Set(keys).size !== keys.length) {
   fail(`two questions ended up under one key: ${keys.join(", ")}`);
 }
 
-/* Losing one of the six must be refused outright. */
+/* Losing a core question must be refused outright. */
 for (const core of CORE_FORM_FIELDS) {
   const without = clone();
   without.form.fields = without.form.fields.filter((f) => f.name !== core);
@@ -292,8 +297,80 @@ for (const core of CORE_FORM_FIELDS) {
 }
 if (failures === 0) {
   console.log(
-    "  ok    a question can be added, and the six core ones cannot be lost"
+    "  ok    a question can be added, and the core ones cannot be lost"
   );
+}
+
+/* 6b. The guest-count question, which the live record predates.
+ *
+ * It reaches the live forms through the schema rather than a migration, so the
+ * two moments that matter are reading a record without it and the first save
+ * of one. Either going wrong is quiet: a form missing the question, or one
+ * asking it twice with half the answers filed under a `custom_` key n8n never
+ * reads. */
+{
+  const before = failures;
+  const contactSchema = pageSchemas.contact;
+  const stored = clone();
+  stored.form.fields = stored.form.fields.filter((f) => f.name !== GUESTS_FIELD_NAME);
+  const guestsIn = (doc: typeof contactNow) =>
+    doc.form.fields.filter((f) => f.name === GUESTS_FIELD_NAME);
+
+  if (!isCoreField(GUESTS_FIELD_NAME)) {
+    fail("the guest count is not a core field, so it would be nested under `custom`");
+  }
+  if (guestsIn(contactNow).length !== 1) {
+    fail("the seed contact page does not ask the guest count exactly once");
+  }
+
+  /* Reading a record that predates it: added once, straight after the date. */
+  const read = contactSchema.parse(stored) as unknown as typeof contactNow;
+  const names = read.form.fields.map((f) => f.name);
+  if (guestsIn(read).length !== 1) {
+    fail("a stored page without the guest count does not gain it exactly once on read");
+  } else if (names.indexOf(GUESTS_FIELD_NAME) !== names.indexOf("date") + 1) {
+    fail(`the guest count was placed at ${names.join(", ")} rather than after the date`);
+  }
+  /* Reading one that already has it changes nothing — and keeps her wording. */
+  const reworded = clone();
+  guestsIn(reworded)[0].label = "Roughly how many people?";
+  const rereadNames = (contactSchema.parse(reworded) as unknown as typeof contactNow)
+    .form.fields;
+  if (
+    rereadNames.filter((f) => f.name === GUESTS_FIELD_NAME).length !== 1 ||
+    rereadNames.find((f) => f.name === GUESTS_FIELD_NAME)?.label !==
+      "Roughly how many people?"
+  ) {
+    fail("reading a page that already asks the guest count changed that question");
+  }
+
+  /* The first save: the editor was shown the parsed page, the stored row does
+     not have the question, and the request names it something else. */
+  const submitted = JSON.parse(JSON.stringify(read)) as typeof contactNow;
+  guestsIn(submitted)[0].label = "Guests expected";
+  submitted.form.fields.find((f) => f.name === GUESTS_FIELD_NAME)!.name = "email";
+  const contactTree = buildFieldTree(contactSchema, locksForPage("contact"));
+  const saved = contactSchema.parse(
+    applyContactFormRules(coerceToTree(submitted, contactTree, stored), stored)
+  ) as unknown as typeof contactNow;
+  const savedGuests = guestsIn(saved);
+  if (savedGuests.length !== 1) {
+    fail(`the first save left ${savedGuests.length} guest-count questions`);
+  } else if (savedGuests[0].label !== "Guests expected") {
+    fail("the first save lost the wording typed into the guest-count question");
+  }
+  if (saved.form.fields.some((f) => f.name.startsWith("custom_approximate"))) {
+    fail("the first save filed the guest count under a custom_ key");
+  }
+  if (saved.form.fields.filter((f) => f.name === "email").length !== 1) {
+    fail("the first save let a request rename the guest count to another key");
+  }
+
+  if (failures === before) {
+    console.log(
+      "  ok    the guest count is added on read, once, and keeps its key on first save"
+    );
+  }
 }
 
 /* ------------------------------------------------------------------ */
