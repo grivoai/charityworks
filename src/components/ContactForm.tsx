@@ -35,6 +35,7 @@ type Status = "idle" | "submitting" | "success" | "error";
 export function ContactForm({
   form,
   booking,
+  phone,
   idPrefix = "",
   source = "contact-page",
   interests,
@@ -48,6 +49,8 @@ export function ContactForm({
    * widget off and the success state falls back to the message alone.
    */
   booking: SiteContent["booking"];
+  /** Site details' number, given in the message shown to someone rate limited. */
+  phone: SiteContent["contact"]["phone"];
   /**
    * Namespaces the generated field ids. The form renders on both / and
    * /contact, and duplicate ids would break every label's `for` association if
@@ -354,7 +357,7 @@ export function ContactForm({
                  limit still needs to reach the client. */
               <span>
                 We have had several enquiries from this connection recently.
-                Please try again shortly, or call us on (925) 250-6968.
+                Please try again shortly, or call us on {phone}.
               </span>
             ) : captchaNeeded && !captchaToken ? (
               <span>Complete the check above, then send again.</span>

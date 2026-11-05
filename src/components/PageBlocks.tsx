@@ -213,11 +213,13 @@ export function PageBlocks({
   blocks,
   form,
   booking,
+  phone,
   categories,
 }: {
   blocks: PageBlock[];
   form: ContactPage["form"];
   booking: SiteContent["booking"];
+  phone: SiteContent["contact"]["phone"];
   categories: AuctionItem[];
 }) {
   const shade = shades(blocks);
@@ -324,6 +326,7 @@ export function PageBlocks({
                   <ContactForm
                     form={form}
                     booking={booking}
+                    phone={phone}
                     idPrefix={`block-${block.id}`}
                     source="custom-page"
                   />

@@ -1,11 +1,11 @@
 /**
  * Keeps the wording that moved out of the page code saying what it said.
  *
- * Four pieces of text were written into the pages until the client needed to
- * change them: the gold-star key and the availability note on the category
- * pages (now Site details), the closing band on Auction Info, and the planner
- * box on Auction Items. Each is a field now, with the old wording as its
- * default. What this proves:
+ * Text was written into the pages until the client needed to change it: the
+ * wording shared by the category pages (now Site details), the closing band on
+ * Auction Info, the planner box on Auction Items, and three small lines on the
+ * home page. Each is a field now, with the old wording as its default. What
+ * this proves:
  *
  *   - the defaults are, word for word, what the pages said before
  *   - a record saved before the fields existed parses with them filled in, so
@@ -15,6 +15,8 @@
  *     leaving a gap, and a field that was edited keeps the edit
  *   - the pages read the fields and no longer carry the old sentences
  *   - a click on a category note in the preview has somewhere to go
+ *   - the home page's testimonial strip and the rate-limit message's phone
+ *     number read the records that own them
  *
  *   npm run check:default-wording
  * (the react-server condition lets the database client's `server-only` load.)
@@ -25,12 +27,15 @@ import {
   DEFAULT_AFFORDABLE_NOTE,
   DEFAULT_AUCTION_INFO_CLOSING,
   DEFAULT_AVAILABILITY_NOTE,
+  DEFAULT_CATALOG_WORDING,
+  DEFAULT_HOME_WORDING,
   DEFAULT_PLANNER_PROMO,
 } from "@/content/default-wording";
 import { pageSchemas, siteContentSchema } from "@/content/schema";
 import { site } from "@/content/site";
 import { auctionInfoPage } from "@/content/pages/auction-info";
 import { auctionItemsPage } from "@/content/pages/auction-items";
+import { homePage } from "@/content/pages/home";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { locksForPage, locksForSite } from "@/lib/admin/locks";
 import { coerceToTree } from "@/lib/admin/coerce";
@@ -68,6 +73,24 @@ const BEFORE = {
     text: "Answer five questions and we’ll point you at the categories that suit your event.",
     link: "Find what’s best for your auction",
   },
+  catalog: {
+    topLabel: "Auction Items",
+    introHeading: "What’s in this category",
+    requestLink: "Request this item",
+    availabilityLabel: "Availability:",
+    availabilityButton: "Check Availability for Your Event",
+  },
+  home: {
+    tileCue: "Browse →",
+    plannerLink: {
+      lead: "Or",
+      link: "answer five questions and we’ll suggest a starting point",
+    },
+    contactAlt: {
+      lead: "Prefer the full page?",
+      link: "Go to our contact page →",
+    },
+  },
 };
 
 console.log("\nThe defaults are the old wording");
@@ -81,6 +104,14 @@ check(
   JSON.stringify(DEFAULT_PLANNER_PROMO) === JSON.stringify(BEFORE.planner),
   "the Auction Items planner box"
 );
+check(
+  JSON.stringify(DEFAULT_CATALOG_WORDING) === JSON.stringify(BEFORE.catalog),
+  "the category page wording"
+);
+check(
+  JSON.stringify(DEFAULT_HOME_WORDING) === JSON.stringify(BEFORE.home),
+  "the home page's three lines"
+);
 
 console.log("\nA record from before the fields existed");
 {
@@ -89,6 +120,37 @@ console.log("\nA record from before the fields existed");
     parsed.catalogNotes.affordableLots === BEFORE.affordableLots &&
       parsed.catalogNotes.availability === BEFORE.availability,
     "Site details with no catalogNotes reads the old notes"
+  );
+  check(
+    Object.entries(BEFORE.catalog).every(
+      ([key, wording]) => (parsed.catalogNotes as Record<string, string>)[key] === wording
+    ),
+    "Site details with no catalogNotes reads the old category wording"
+  );
+  // The shape a stored record has today: the two notes and nothing else.
+  const twoNotes = siteContentSchema.parse({
+    ...site,
+    catalogNotes: { affordableLots: "Edited star key.", availability: "Edited note." },
+  });
+  check(
+    twoNotes.catalogNotes.availability === "Edited note." &&
+      twoNotes.catalogNotes.availabilityButton === BEFORE.catalog.availabilityButton,
+    "a record holding only the two notes keeps them and defaults the new wording"
+  );
+  const oldHome = clone(homePage) as unknown as {
+    hero: Record<string, unknown>;
+    itemsTeaser: Record<string, unknown>;
+    closing: Record<string, unknown>;
+  };
+  delete oldHome.hero.tileCue;
+  delete oldHome.itemsTeaser.plannerLink;
+  delete oldHome.closing.contactAlt;
+  const home = pageSchemas.home.parse(oldHome);
+  check(
+    home.hero.tileCue === BEFORE.home.tileCue &&
+      JSON.stringify(home.itemsTeaser.plannerLink) === JSON.stringify(BEFORE.home.plannerLink) &&
+      JSON.stringify(home.closing.contactAlt) === JSON.stringify(BEFORE.home.contactAlt),
+    "a home record from before the fields reads the old lines"
   );
   const info = pageSchemas["auction-info"].parse(without(auctionInfoPage, "closing"));
   check(
@@ -126,8 +188,37 @@ console.log("\nSaving from the admin");
     "a cleared note saves as the original wording, not as a gap or an error"
   );
 
+  const blankWording = clone(stored) as Record<string, unknown>;
+  blankWording.catalogNotes = Object.fromEntries(
+    Object.keys(stored.catalogNotes).map((key) => [key, ""])
+  );
+  const reset = siteContentSchema.safeParse(coerceToTree(blankWording, tree, stored));
+  check(
+    reset.success &&
+      Object.entries(BEFORE.catalog).every(
+        ([key, wording]) => (reset.data.catalogNotes as Record<string, string>)[key] === wording
+      ),
+    "clearing the category wording puts the original back"
+  );
+
+  const homeTree = buildFieldTree(pageSchemas.home, locksForPage("home"));
+  const homeDoc = pageSchemas.home.parse(homePage);
+  const blankHome = clone(homeDoc);
+  blankHome.hero.tileCue = "";
+  blankHome.itemsTeaser.plannerLink = { lead: "", link: "" };
+  blankHome.closing.contactAlt = { lead: "", link: "" };
+  const homeReset = pageSchemas.home.safeParse(coerceToTree(blankHome, homeTree, homeDoc));
+  check(
+    homeReset.success &&
+      homeReset.data.hero.tileCue === BEFORE.home.tileCue &&
+      JSON.stringify(homeReset.data.itemsTeaser.plannerLink) === JSON.stringify(BEFORE.home.plannerLink) &&
+      JSON.stringify(homeReset.data.closing.contactAlt) === JSON.stringify(BEFORE.home.contactAlt),
+    "clearing the home page's lines puts the originals back"
+  );
+
   const edited = clone(stored) as Record<string, unknown>;
   edited.catalogNotes = {
+    ...stored.catalogNotes,
     affordableLots: "marks the lots with the lowest opening bids.",
     availability: BEFORE.availability,
   };
@@ -171,6 +262,8 @@ console.log("\nThe pages read the fields");
   const category = readFileSync("app/(site)/auction-items/[slug]/page.tsx", "utf8");
   const info = readFileSync("app/(site)/auction-info/page.tsx", "utf8");
   const items = readFileSync("app/(site)/auction-items/page.tsx", "utf8");
+  const home = readFileSync("app/(site)/page.tsx", "utf8");
+  const form = readFileSync("src/components/ContactForm.tsx", "utf8");
 
   check(
     category.includes('editable("site:catalogNotes.affordableLots")') &&
@@ -190,6 +283,35 @@ console.log("\nThe pages read the fields");
     !items.includes("Not sure where to start") &&
       items.includes("{page.planner.lead}"),
     "Auction Items no longer carries the planner box in the code"
+  );
+
+  for (const key of Object.keys(BEFORE.catalog)) {
+    check(
+      category.includes(`site:catalogNotes.${key}`) &&
+        category.includes(`catalogNotes.${key}`),
+      `the category page's ${key} is drawn from Site details, and marked as such`
+    );
+  }
+  check(
+    !/in this category\s*</.test(category) &&
+      !category.includes(`: "Request this item"`) &&
+      !category.includes(">Availability:<") &&
+      !category.includes(`label: "Check Availability`),
+    "the category page no longer carries that wording in the code"
+  );
+  check(
+    !home.includes("Browse &rarr;") &&
+      !home.includes("answer five questions") &&
+      !home.includes("Prefer the full page"),
+    "the home page no longer carries its three lines in the code"
+  );
+  check(
+    !home.includes("collections/testimonials") && home.includes(`getPage("testimonials")`),
+    "the home page's testimonial strip reads the Testimonials record"
+  );
+  check(
+    !form.includes("250-6968") && form.includes("call us on {phone}"),
+    "the rate-limit message's phone number comes from Site details"
   );
 
   const editor = readFileSync("app/(admin)/admin/catalog/[slug]/edit/page.tsx", "utf8");
@@ -221,6 +343,15 @@ async function live(): Promise<void> {
         ? "the notes have been edited in Site details — the edit is what shows"
         : "unedited, so the category pages read exactly as before"
     );
+    const stored_ = (stored as { catalogNotes?: Record<string, unknown> }).catalogNotes ?? {};
+    for (const [key, wording] of Object.entries(BEFORE.catalog)) {
+      check(
+        key in stored_ || (notes as Record<string, string>)[key] === wording,
+        key in stored_
+          ? `${key} has been edited — the edit is what shows`
+          : `${key}: unedited, so it reads exactly as before`
+      );
+    }
   }
 
   const { data, error } = await getServiceClient()
@@ -228,6 +359,39 @@ async function live(): Promise<void> {
     .select("slug, data")
     .in("slug", ["auction-info", "auction-items"]);
   check(!error && (data?.length ?? 0) === 2, "both stored pages were read");
+
+  const { data: homeRow, error: homeError } = await getServiceClient()
+    .from("pages")
+    .select("data")
+    .eq("slug", "home")
+    .single();
+  check(!homeError && Boolean(homeRow), "the stored home page was read");
+  const storedHome = pageSchemas.home.safeParse(homeRow?.data);
+  check(storedHome.success, "the stored home page still parses");
+  if (storedHome.success) {
+    const raw = homeRow?.data as {
+      hero?: object;
+      itemsTeaser?: object;
+      closing?: object;
+    };
+    check(
+      (raw.hero && "tileCue" in raw.hero) ||
+        storedHome.data.hero.tileCue === BEFORE.home.tileCue,
+      "the home page's card prompt reads as before, or as edited"
+    );
+    check(
+      (raw.itemsTeaser && "plannerLink" in raw.itemsTeaser) ||
+        JSON.stringify(storedHome.data.itemsTeaser.plannerLink) ===
+          JSON.stringify(BEFORE.home.plannerLink),
+      "the home page's planner line reads as before, or as edited"
+    );
+    check(
+      (raw.closing && "contactAlt" in raw.closing) ||
+        JSON.stringify(storedHome.data.closing.contactAlt) ===
+          JSON.stringify(BEFORE.home.contactAlt),
+      "the home page's contact line reads as before, or as edited"
+    );
+  }
   for (const row of data ?? []) {
     const slug = row.slug as "auction-info" | "auction-items";
     const key = slug === "auction-info" ? "closing" : "planner";

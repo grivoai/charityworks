@@ -164,9 +164,9 @@ export default async function EditCategoryRoute({
               path: `/auction-items/${c.slug}`,
               editorHref: `/admin/catalog/${c.slug}/edit`,
             })),
-            /* The star key and the availability note are Site details
-               wording, marked "site:…" on every category page. Listed so a
-               click on either says where it is edited and links there. */
+            /* The wording shared by every category is in Site details, marked
+               "site:…" on every category page. Listed so a click on any of it
+               says where it is edited and links there. */
             {
               slug: "site",
               label: "Site details",

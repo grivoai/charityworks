@@ -104,6 +104,7 @@ export default async function CustomPageRoute({
         blocks={page.blocks}
         form={form}
         booking={site.booking}
+        phone={site.contact.phone}
         categories={categories}
       />
     </>

@@ -413,10 +413,11 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       {
         p:
-          "It also holds the two notes that appear on every category page: the " +
-          "line beside the gold star, and the availability note at the foot. " +
-          "The preview here shows only the header and footer, so open a " +
-          "category page to see them. Clearing either note puts its original " +
+          "It also holds the wording shared by every category page: the label " +
+          "and heading at the top, the line beside the gold star, the request " +
+          "link on each lot, and the availability label, note and button at the " +
+          "foot. The preview here shows only the header and footer, so open a " +
+          "category page to see them. Clearing any of these puts its original " +
           "wording back.",
       },
       {

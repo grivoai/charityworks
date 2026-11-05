@@ -82,6 +82,13 @@ const LABELS: Record<string, string> = {
   summaryLabel: "Summary label",
   prompt: "Question",
   help: "Help line",
+  topLabel: "Small label at the top",
+  introHeading: "Heading above the introduction",
+  requestLink: "Request link on each lot",
+  availabilityButton: "Availability button",
+  tileCue: "Prompt on the cards",
+  plannerLink: "Line leading to the planner",
+  contactAlt: "Line leading to the contact page",
 };
 
 /** `headingAccent` becomes "Heading accent"; known keys use the table above. */

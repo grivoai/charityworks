@@ -2,6 +2,7 @@ import type { SiteContent } from "./types";
 import {
   DEFAULT_AFFORDABLE_NOTE,
   DEFAULT_AVAILABILITY_NOTE,
+  DEFAULT_CATALOG_WORDING,
 } from "./default-wording";
 
 /**
@@ -124,6 +125,7 @@ export const site: SiteContent = {
     ],
   },
   catalogNotes: {
+    ...DEFAULT_CATALOG_WORDING,
     affordableLots: DEFAULT_AFFORDABLE_NOTE,
     availability: DEFAULT_AVAILABILITY_NOTE,
   },

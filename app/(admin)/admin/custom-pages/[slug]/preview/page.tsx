@@ -79,6 +79,7 @@ export default async function CustomPagePreviewRoute({
         blocks={page.blocks}
         form={form}
         booking={site.booking}
+        phone={site.contact.phone}
         categories={categories}
       />
     </SiteChrome>

@@ -12,7 +12,6 @@ import { HeroSlideshow } from "@/components/HeroSlideshow";
 import { ItemMarquee } from "@/components/ItemMarquee";
 import { Icon } from "@/components/Icon";
 import { editable } from "@/lib/editable";
-import { testimonials } from "@/content/collections/testimonials";
 
 /**
  * Runs before the hero paints. On the first visit of a session (and only when
@@ -82,11 +81,14 @@ export default async function HomePage() {
   const { hero } = page;
   // The form definition lives with the contact page content; the home page
   // renders the same fields so there is one source of truth for both.
-  const [{ form: contactForm }, site, categories] = await Promise.all([
-    getPage("contact"),
-    getSite(),
-    getAuctionCategories(),
-  ]);
+  const [{ form: contactForm }, site, categories, { testimonials }] =
+    await Promise.all([
+      getPage("contact"),
+      getSite(),
+      getAuctionCategories(),
+      // The Testimonials page's own record, so an edit there reaches this strip.
+      getPage("testimonials"),
+    ]);
 
   // A preview of the catalog rather than a stored copy of it, so a category
   // added in the admin shows up here without anyone remembering to.
@@ -224,8 +226,12 @@ export default async function HomePage() {
                 >
                   {tile.sub}
                 </span>
-                <span className="hero-tile-cue" aria-hidden="true">
-                  Browse &rarr;
+                <span
+                  className="hero-tile-cue"
+                  aria-hidden="true"
+                  {...editable("hero.tileCue")}
+                >
+                  {hero.tileCue}
                 </span>
               </Link>
             ))}
@@ -353,9 +359,14 @@ export default async function HomePage() {
           <div className="center section-cta" style={{ "--cta-gap": "46px" } as React.CSSProperties}>
             <Cta cta={page.itemsTeaser.cta} onDark={false} path="itemsTeaser.cta" />
             <p className="home-planner-link reveal">
-              Or{" "}
-              <Link href="/auction-planner">
-                answer five questions and we&rsquo;ll suggest a starting point
+              <span {...editable("itemsTeaser.plannerLink.lead")}>
+                {page.itemsTeaser.plannerLink.lead}
+              </span>{" "}
+              <Link
+                href="/auction-planner"
+                {...editable("itemsTeaser.plannerLink.link")}
+              >
+                {page.itemsTeaser.plannerLink.link}
               </Link>
               .
             </p>
@@ -429,8 +440,12 @@ export default async function HomePage() {
             <ContactChannels channels={site.contact.channels} />
 
             <p className="home-contact-alt reveal d3">
-              Prefer the full page?{" "}
-              <Link href="/contact">Go to our contact page →</Link>
+              <span {...editable("closing.contactAlt.lead")}>
+                {page.closing.contactAlt.lead}
+              </span>{" "}
+              <Link href="/contact" {...editable("closing.contactAlt.link")}>
+                {page.closing.contactAlt.link}
+              </Link>
             </p>
           </div>
 
@@ -442,6 +457,7 @@ export default async function HomePage() {
           <ContactForm
             form={contactForm}
             booking={site.booking}
+            phone={site.contact.phone}
             idPrefix="home"
             source="home"
             path="contact:form"

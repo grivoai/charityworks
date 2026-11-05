@@ -5,6 +5,8 @@ import {
   DEFAULT_AFFORDABLE_NOTE,
   DEFAULT_AUCTION_INFO_CLOSING,
   DEFAULT_AVAILABILITY_NOTE,
+  DEFAULT_CATALOG_WORDING,
+  DEFAULT_HOME_WORDING,
   DEFAULT_PLANNER_PROMO,
   DEFAULT_PLANNER_QUESTIONS,
   withBuiltInFormFields,
@@ -439,20 +441,40 @@ export const siteContentSchema = z.object({
       ),
   }),
   /**
-   * The two notes on the category pages. Here rather than on each category
+   * The wording shared by the category pages. Here rather than on each category
    * because each says the same thing on every one of them: written per
    * category, it would be nine copies to keep in step.
    */
   catalogNotes: z
     .object({
+      topLabel: defaultedText(
+        DEFAULT_CATALOG_WORDING.topLabel,
+        "The small label above the heading of every category page."
+      ),
+      introHeading: defaultedText(
+        DEFAULT_CATALOG_WORDING.introHeading,
+        "The heading above the introduction on every category page."
+      ),
       affordableLots: defaultedText(
         DEFAULT_AFFORDABLE_NOTE,
         "Follows the gold star above any section of a category page that has " +
           "a starred lot. Starts lower-case because it reads on from the star."
       ),
+      requestLink: defaultedText(
+        DEFAULT_CATALOG_WORDING.requestLink,
+        "The link on every lot that leads to the contact form. An arrow follows it."
+      ),
+      availabilityLabel: defaultedText(
+        DEFAULT_CATALOG_WORDING.availabilityLabel,
+        "The bold word that starts the availability note at the foot of every category page."
+      ),
       availability: defaultedText(
         DEFAULT_AVAILABILITY_NOTE,
-        'The note at the foot of every category page, after "Availability:".'
+        "The note at the foot of every category page, after the bold label above."
+      ),
+      availabilityButton: defaultedText(
+        DEFAULT_CATALOG_WORDING.availabilityButton,
+        "The button under the availability note on every category page."
       ),
     })
     .prefault({}),
@@ -543,6 +565,10 @@ export const homePageSchema = z.object({
         href: text.describe("Where the card goes. A path like /auction-items/vacations."),
       })
     ),
+    tileCue: defaultedText(
+      DEFAULT_HOME_WORDING.tileCue,
+      "The small prompt on every card above. One wording for all of them."
+    ),
     /**
      * The donor incentive, promoted into the hero.
      *
@@ -596,6 +622,19 @@ export const homePageSchema = z.object({
   itemsTeaser: z.object({
     header: sectionHeaderSchema,
     cta: ctaRefSchema,
+    /** The line under the button that leads to the planner. */
+    plannerLink: z
+      .object({
+        lead: defaultedText(
+          DEFAULT_HOME_WORDING.plannerLink.lead,
+          "The word before the planner link."
+        ),
+        link: defaultedText(
+          DEFAULT_HOME_WORDING.plannerLink.link,
+          "The linked words, which open the auction planner. A full stop follows them."
+        ),
+      })
+      .prefault({}),
   }),
   testimonialsTeaser: z.object({
     header: sectionHeaderSchema,
@@ -606,7 +645,23 @@ export const homePageSchema = z.object({
     header: sectionHeaderSchema,
     perks: z.array(donorPerkSchema),
   }),
-  closing: z.object({ header: sectionHeaderSchema, cta: ctaRefSchema }),
+  closing: z.object({
+    header: sectionHeaderSchema,
+    cta: ctaRefSchema,
+    /** The line under the contact details that leads to the contact page. */
+    contactAlt: z
+      .object({
+        lead: defaultedText(
+          DEFAULT_HOME_WORDING.contactAlt.lead,
+          "The words before the contact page link."
+        ),
+        link: defaultedText(
+          DEFAULT_HOME_WORDING.contactAlt.link,
+          "The linked words, which open the contact page."
+        ),
+      })
+      .prefault({}),
+  }),
 });
 
 export const auctionInfoPageSchema = z.object({

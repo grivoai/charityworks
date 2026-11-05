@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { CtaRef, SectionHeader as SectionHeaderData } from "@/content/types";
-import { at, editable, fixed as fixedMark } from "@/lib/editable";
+import { at, editable } from "@/lib/editable";
 
 /** Maps a content-layer button variant onto the stylesheet's button classes. */
 export function ctaClassName(variant: CtaRef["variant"], onDark = true): string {
@@ -23,7 +23,7 @@ export function Cta({
   cta,
   onDark = true,
   path,
-  fixed = false,
+  labelPath,
 }: {
   cta: CtaRef;
   onDark?: boolean;
@@ -34,13 +34,13 @@ export function Cta({
    */
   path?: string;
   /**
-   * For a button whose label is written into the page code rather than taken
-   * from a field. The preview then says it is built in instead of doing
-   * nothing. Ignored when there is a `path`.
+   * For a button built on the page whose label alone is a field, possibly on
+   * another record, e.g. `"site:catalogNotes.availabilityButton"`. Its `href`
+   * and `variant` are not content, so there is no CTA record for `path`.
    */
-  fixed?: boolean;
+  labelPath?: string;
 }) {
-  const mark = path ? editable(at(path, "label")) : fixed ? fixedMark() : {};
+  const mark = editable(labelPath ?? at(path, "label"));
   const label = (
     <>
       {cta.label}
