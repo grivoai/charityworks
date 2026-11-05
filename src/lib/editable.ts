@@ -49,8 +49,8 @@ export type EditableMark = { "data-cw"?: string };
  * rather than a guard.
  *
  * Shared components take an optional path *prefix* and pass it through `at()`.
- * A component rendering something that is not page content — the testimonial
- * marquee on the home page reads a static collection, not the page record — is
+ * A component rendering something this page does not own — the testimonial
+ * marquee on the home page shows the Testimonials record, each card twice — is
  * simply used without a prefix, and is then correctly not clickable. The failure
  * worth avoiding is a marker that points at a plausible but wrong field, so
  * silence is the default and a marker is the deliberate act.

@@ -86,9 +86,9 @@ export default async function AuctionCategoryRoute({
   const documents = await getDocumentSlugs();
 
   /**
-   * The star key and the availability note are site-wide wording, edited in
-   * Site details. Their markers name that record, so a click in the category
-   * preview says where they are edited instead of finding no field here.
+   * The wording shared by every category is edited in Site details. Its
+   * markers name that record, so a click in the category preview says where it
+   * is edited instead of finding no field here.
    */
   const { catalogNotes } = await getSite();
 
@@ -117,7 +117,12 @@ export default async function AuctionCategoryRoute({
       <header className="page-hero center">
         <div className="wrap">
           <span className="eyebrow">
-            <Link href="/auction-items">Auction Items</Link>
+            <Link
+              href="/auction-items"
+              {...editable("site:catalogNotes.topLabel")}
+            >
+              {catalogNotes.topLabel}
+            </Link>
           </span>
           <h1>
             <span className="cat-hero-ico" aria-hidden="true" {...editable("icon")}>
@@ -142,9 +147,9 @@ export default async function AuctionCategoryRoute({
             <h2
               className="section-title reveal"
               id="category-heading"
-              {...fixed()}
+              {...editable("site:catalogNotes.introHeading")}
             >
-              What&rsquo;s in this category
+              {catalogNotes.introHeading}
             </h2>
             <TextBlock
               text={category.intro}
@@ -362,11 +367,13 @@ export default async function AuctionCategoryRoute({
                           aria-label={`${
                             category.generalOnly ? "Ask about" : "Request"
                           } ${item.name}`}
-                          {...fixed()}
+                          {...(category.generalOnly
+                            ? fixed()
+                            : editable("site:catalogNotes.requestLink"))}
                         >
                           {category.generalOnly
                             ? "Ask about these"
-                            : "Request this item"}
+                            : catalogNotes.requestLink}
                           <span aria-hidden="true"> →</span>
                         </Link>
 
@@ -403,7 +410,9 @@ export default async function AuctionCategoryRoute({
           })}
 
           <p className="cat-notice reveal">
-            <strong {...fixed()}>Availability:</strong>{" "}
+            <strong {...editable("site:catalogNotes.availabilityLabel")}>
+              {catalogNotes.availabilityLabel}
+            </strong>{" "}
             {/* The general-only wording stays in the code: no category is
                 general-only, so it is drawn nowhere a click could reach. */}
             {category.generalOnly ? (
@@ -429,12 +438,12 @@ export default async function AuctionCategoryRoute({
             <Cta
               cta={{
                 id: `cta-category-${category.slug}`,
-                label: "Check Availability for Your Event",
+                label: catalogNotes.availabilityButton,
                 href: requestHref(category.id),
                 variant: "primary",
               }}
               onDark={false}
-              fixed
+              labelPath="site:catalogNotes.availabilityButton"
             />
             <p className="cat-back">
               <Link href="/auction-items" {...fixed()}>

@@ -1,6 +1,7 @@
 import type { HomePage } from "../types";
 import { valueProps } from "../collections/value-props";
 import { steps, donorPerks } from "../collections/steps";
+import { DEFAULT_HOME_WORDING } from "../default-wording";
 
 export const homePage: HomePage = {
   slug: "home",
@@ -96,6 +97,7 @@ export const homePage: HomePage = {
       href: "/faqs#free-vacation-program",
       cue: "What is this? →",
     },
+    tileCue: DEFAULT_HOME_WORDING.tileCue,
   },
 
   why: {
@@ -134,6 +136,7 @@ export const homePage: HomePage = {
       href: "/auction-items",
       variant: "solid",
     },
+    plannerLink: DEFAULT_HOME_WORDING.plannerLink,
   },
 
   testimonialsTeaser: {
@@ -173,5 +176,6 @@ export const homePage: HomePage = {
       href: "/contact",
       variant: "primary",
     },
+    contactAlt: DEFAULT_HOME_WORDING.contactAlt,
   },
 };

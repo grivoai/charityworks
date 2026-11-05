@@ -172,7 +172,8 @@ async function checkFraming(): Promise<void> {
 async function checkFixed(categorySlug: string | undefined): Promise<void> {
   const expected: Array<[string, number]> = [
     ["/auctioneers", 1],
-    ...(categorySlug ? [[`/auction-items/${categorySlug}`, 5] as [string, number]] : []),
+    // The back link is always there; the brochure links depend on the category.
+    ...(categorySlug ? [[`/auction-items/${categorySlug}`, 1] as [string, number]] : []),
   ];
   for (const [path, minimum] of expected) {
     let html: string;
@@ -407,9 +408,9 @@ async function main(): Promise<void> {
 
     /**
      * The one record a category page borrows from is Site details, for the
-     * star key and the availability note. Those markers are checked against
-     * the site's own fields, and the category preview lists Site details so a
-     * click on one of them links there.
+     * wording shared by every category. Those markers are checked against the
+     * site's own fields, and the category preview lists Site details so a click
+     * on one of them links there.
      */
     const siteTree = buildFieldTree(siteContentSchema, locksForSite());
     const siteMarked = new Set<string>();
@@ -435,7 +436,15 @@ async function main(): Promise<void> {
       }
     }
 
-    for (const field of ["catalogNotes.affordableLots", "catalogNotes.availability"]) {
+    for (const field of [
+      "catalogNotes.topLabel",
+      "catalogNotes.introHeading",
+      "catalogNotes.affordableLots",
+      "catalogNotes.requestLink",
+      "catalogNotes.availabilityLabel",
+      "catalogNotes.availability",
+      "catalogNotes.availabilityButton",
+    ]) {
       if (!siteMarked.has(field)) {
         fail(`catalog: the Site details field "${field}" is not marked on any category page`);
       }

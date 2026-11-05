@@ -30,6 +30,38 @@ export const DEFAULT_AFFORDABLE_NOTE =
 export const DEFAULT_AVAILABILITY_NOTE =
   "Inventory changes constantly — contact us to confirm current availability for your event date.";
 
+/**
+ * The rest of the fixed wording on a category page. Site-wide like the two notes
+ * above: one wording for every category, in Site details beside them.
+ *
+ * The arrow after the request link stays in the page, as it does on the planner
+ * box's link: it is decoration hidden from screen readers, not wording.
+ */
+export const DEFAULT_CATALOG_WORDING = {
+  topLabel: "Auction Items",
+  introHeading: "What’s in this category",
+  requestLink: "Request this item",
+  availabilityLabel: "Availability:",
+  availabilityButton: "Check Availability for Your Event",
+};
+
+/**
+ * Three small lines on the home page. The arrows are part of the wording here,
+ * as with the hero offer's "What is this? →". The full stop after the planner
+ * link stays in the page.
+ */
+export const DEFAULT_HOME_WORDING = {
+  tileCue: "Browse →",
+  plannerLink: {
+    lead: "Or",
+    link: "answer five questions and we’ll suggest a starting point",
+  },
+  contactAlt: {
+    lead: "Prefer the full page?",
+    link: "Go to our contact page →",
+  },
+};
+
 /** The closing band on Auction Info, above its button. */
 export const DEFAULT_AUCTION_INFO_CLOSING = {
   heading: "Ready to Supercharge Your Next Fundraiser?",

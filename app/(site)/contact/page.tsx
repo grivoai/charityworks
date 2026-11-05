@@ -62,6 +62,7 @@ export default async function ContactRoute() {
           <ContactForm
             form={page.form}
             booking={site.booking}
+            phone={site.contact.phone}
             source="contact-page"
             interests={await getInterestLookup()}
             path="form"
