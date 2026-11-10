@@ -114,7 +114,7 @@ export const auctionItems: AuctionItem[] = [
     intro:
       "A signed guitar is the single most requested item in our catalog. It displays well on a stage or easel, needs no explanation to a room, and consistently outperforms its opening bid. Every guitar in this category is genuinely hand-signed.",
     seo: {
-      title: "Celebrity Signed Guitar Fundraiser Auction Items | CharityWorks",
+      title: "Celebrity Signed Guitars for Charity Auctions | CharityWorks",
       description:
         "Hand-signed acoustic guitars for charity auctions — Taylor Swift, Ed Sheeran, Bruce Springsteen, Elton John and more, on risk-free consignment.",
       targetTerms: [

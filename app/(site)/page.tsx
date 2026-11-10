@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getAuctionCategories, getPage, getSite } from "@/lib/content";
+import {
+  getAuctionCategories,
+  getAuctionCategory,
+  getPage,
+  getSite,
+} from "@/lib/content";
 import { buildMetadata } from "@/lib/seo";
 import { Cta, SectionHeading } from "@/components/Section";
 import { BentoGrid } from "@/components/BentoGrid";
@@ -69,8 +74,20 @@ function heroWords(text: string, startIndex: number) {
   });
 }
 
-export function generateMetadata(): Promise<Metadata> {
-  return buildMetadata("home");
+/**
+ * The home page's share image is the signed-guitars category's own photograph:
+ * guitars are the most requested item in the catalog, and the photo is already
+ * a wide product shot that crops cleanly to a link card. Read from the category
+ * rather than written here, so replacing that photo in the admin replaces this
+ * one too. No image rather than a broken one if the category is ever removed.
+ */
+const HOME_SHARE_CATEGORY = "signed-guitars";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const category = await getAuctionCategory(HOME_SHARE_CATEGORY);
+  return buildMetadata("home", {
+    image: category ? category.image : undefined,
+  });
 }
 
 /** Tiles in the home page's catalog preview. The bento layout is built for four. */

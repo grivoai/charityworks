@@ -11,8 +11,7 @@ export const homePage: HomePage = {
   heading: "Raise More. Risk Nothing.",
 
   seo: {
-    title:
-      "Nonprofit Fundraising Consultant & Charity Auction Items | CharityWorks",
+    title: "Charity Auction Items on Consignment | CharityWorks",
     description:
       "Consignment auction items for nonprofit galas and fundraisers in all 50 states. No upfront cost — you only pay for what sells. Get a free fundraising plan.",
     targetTerms: [
