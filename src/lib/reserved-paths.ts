@@ -54,6 +54,8 @@ const WELL_KNOWN = [
   "favicon.ico",
   "robots.txt",
   "sitemap.xml",
+  // app/llms.txt/route.ts
+  "llms.txt",
   "opensearch.xml",
   "manifest.json",
   "sw.js",
