@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteChrome } from "@/components/SiteChrome";
 import { Cta } from "@/components/Section";
+import { Analytics } from "@/components/Analytics";
 
 /**
  * The 404.
@@ -55,6 +56,9 @@ export default function NotFound() {
           </p>
         </div>
       </section>
+      {/* Counts 404 hits too, so broken inbound links show up in the
+          reports. Not in SiteChrome: the admin preview renders that. */}
+      <Analytics />
     </SiteChrome>
   );
 }
