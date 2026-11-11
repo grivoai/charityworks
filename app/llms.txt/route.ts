@@ -19,9 +19,11 @@ import { siteUrl } from "@/lib/site-config";
  *
  * WHAT IS LEFT OUT, ON PURPOSE. Only the built-in pages and the catalog
  * categories are listed. Custom pages (campaign pages, the terms page) are not,
- * and neither is any legacy address: /guitar-prices, /travel_voucher and
+ * and neither is any legacy address: /travel_voucher and
  * /terms-and-conditions-voucher are permanent redirects in next.config.ts, not
- * pages, and nothing here should advertise them.
+ * pages, and nothing here should advertise them. /guitar-prices IS a page, but
+ * a hidden one (noindex, see HIDDEN_PAGES in reserved-paths.ts), so it is left
+ * out for the same reason.
  */
 
 export const dynamic = "force-static";
