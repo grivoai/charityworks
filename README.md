@@ -164,6 +164,18 @@ The lead's `leadId` travels to Calendly as `utm_content` and its source as
 own webhooks, which is what lets a booking be joined to the lead that produced
 it rather than matched on email address.
 
+## Analytics
+
+Google Analytics 4, for page views and referrers. Off unless
+`NEXT_PUBLIC_GA_ID` (a GA4 measurement ID, `G-XXXXXXXXXX`) is set in the Vercel
+project; with it unset no Google script loads at all. It is inlined at build
+time, so setting or changing it needs a redeploy.
+
+Mounted in `app/(site)/layout.tsx` and `app/not-found.tsx` only — never on
+`/admin`, never in the admin's live-preview iframe (a framed page skips it), and
+API routes render no HTML. Hidden pages such as `/guitar-prices` are tracked.
+See `src/components/Analytics.tsx`.
+
 ## Where to review the deployed site
 
 **Use <https://charityworks-pearl.vercel.app> until the domain cuts over.**
