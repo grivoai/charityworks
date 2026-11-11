@@ -34,6 +34,20 @@ export const BUILT_IN_PAGES = [
   "testimonials",
 ] as const;
 
+/**
+ * Hand-written pages that are deliberately NOT listed anywhere.
+ *
+ * Reserved like the built-in pages (a custom page slugged `guitar-prices` would
+ * never be served), but kept out of BUILT_IN_PAGES because that list is also
+ * what the admin offers as nav-link destinations — and a hidden page in the
+ * menu picker is one click from not being hidden. `check:custom-pages` counts
+ * both lists when it compares against app/(site).
+ */
+export const HIDDEN_PAGES = [
+  // The guitar price list. noindex; not in the sitemap, nav, footer or llms.txt.
+  "guitar-prices",
+] as const;
+
 /** Route segments the application owns. */
 const APPLICATION = [
   "admin",
@@ -87,6 +101,7 @@ const RESERVED = [
 
 const TAKEN = new Set<string>([
   ...BUILT_IN_PAGES,
+  ...HIDDEN_PAGES,
   ...APPLICATION,
   ...WELL_KNOWN,
   ...RESERVED,

@@ -2593,3 +2593,34 @@ body.nav-open .nav {
 .cat-card-body > .text-block { color: var(--muted); font-size: 0.92rem; }
 .faq-incentive-body > p + ul,
 .faq-incentive-body > ul + p { margin-top: 14px; }
+
+/* ---------- /guitar-prices (hidden price list) ----------
+   Rows of two catalog-style cards, each followed by the text that sat under
+   it on the old page. Two to a row because the old page paired them and the
+   text after each row belongs to that pair. */
+.gp-row { padding-top: clamp(44px, 24px + 3.5vw, 80px); padding-bottom: clamp(44px, 24px + 3.5vw, 80px); }
+.gp-row-tint { background: var(--cream); }
+.gp-about { padding-bottom: clamp(30px, 18px + 2vw, 56px); }
+.gp-about .block-prose { margin-top: 0; }
+.gp-about a, .gp-text .block-prose a { color: var(--green-soft); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.gp-about a:hover, .gp-text .block-prose a:hover { color: var(--gold); }
+.gp-grid { max-width: 860px; margin: 0 auto; }
+.gp-grid .gp-card { flex: 0 1 calc((100% - 26px) / 2); }
+.gp-card-body { text-align: center; }
+.gp-card-body h3 { color: var(--green); line-height: 1.25; margin-bottom: 10px; }
+.gp-name { display: block; font-size: 1.3rem; }
+.gp-kind { display: block; font-size: 1rem; font-weight: 500; color: var(--ink); margin-top: 2px; }
+.gp-card-body p.gp-price { color: var(--gold); font-size: 1.25rem; font-weight: 700; font-style: italic; }
+.gp-card-body p.gp-terms { color: var(--ink); font-size: 0.92rem; font-weight: 600; margin-top: 2px; }
+.gp-text { max-width: 760px; margin: clamp(36px, 24px + 2vw, 56px) auto 0; }
+.gp-text .section-title + .block-prose { margin-top: 14px; }
+.gp-text .text-list { width: fit-content; max-width: 100%; margin: 14px auto 0; color: var(--muted); font-size: 1.05rem; }
+.gp-ways { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; list-style: none; margin-top: 12px; }
+.gp-ways li { font-family: "Playfair Display", serif; font-size: 1.35rem; font-weight: 700; color: var(--green); }
+.gp-ways li::before { content: "•"; color: var(--gold); margin-right: 8px; }
+.gp-guide { margin-top: 18px; }
+.gp-book { margin-top: 26px; }
+.gp-book .btn { white-space: normal; text-align: center; line-height: 1.35; max-width: 100%; }
+@media (max-width: 640px) {
+  .gp-grid .gp-card { flex-basis: 100%; min-width: 0; }
+}

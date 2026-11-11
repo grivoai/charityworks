@@ -27,7 +27,7 @@ import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { withFreshId } from "@/lib/admin/entry-id";
 import { resolveShades } from "@/content/block-shades";
 import { COMMON_LOCKS } from "@/lib/admin/locks";
-import { BUILT_IN_PAGES, checkSlug, couldBeCustomPage } from "@/lib/reserved-paths";
+import { BUILT_IN_PAGES, HIDDEN_PAGES, checkSlug, couldBeCustomPage } from "@/lib/reserved-paths";
 import {
   PAGE_TEMPLATES,
   DEFAULT_TEMPLATE_ID,
@@ -59,7 +59,7 @@ function staticSegments(): string[] {
 }
 
 const onDisk = staticSegments().sort();
-const declared = [...BUILT_IN_PAGES].sort();
+const declared = [...BUILT_IN_PAGES, ...HIDDEN_PAGES].sort();
 
 for (const segment of onDisk) {
   check(
@@ -74,17 +74,32 @@ for (const segment of onDisk) {
 for (const segment of declared) {
   check(
     onDisk.includes(segment),
-    `BUILT_IN_PAGES lists "${segment}", which still exists under app/(site)`
+    `BUILT_IN_PAGES/HIDDEN_PAGES list "${segment}", which still exists under app/(site)`
   );
 }
 
 check(
   onDisk.join(",") === declared.join(","),
-  `BUILT_IN_PAGES is in step with the filesystem` +
+  `BUILT_IN_PAGES + HIDDEN_PAGES are in step with the filesystem` +
     (onDisk.join(",") === declared.join(",")
       ? ""
       : `\n        on disk:  ${onDisk.join(", ")}\n        declared: ${declared.join(", ")}`)
 );
+
+/* A hidden page stays hidden: never offered as a nav destination (that list
+   is BUILT_IN_PAGES), and noindex in its own metadata. Read from source
+   because the metadata needs a request context to run. */
+for (const segment of HIDDEN_PAGES) {
+  check(
+    !(BUILT_IN_PAGES as readonly string[]).includes(segment),
+    `/${segment} is hidden and is not offered as a nav-link destination`
+  );
+  const source = readFileSync(join(SITE_DIR, segment, "page.tsx"), "utf8");
+  check(
+    /robots:\s*\{\s*index:\s*false/.test(source),
+    `/${segment} sets robots index: false in its metadata`
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* 2. The application's own routes are refused                         */

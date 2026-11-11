@@ -74,7 +74,13 @@ const nextConfig: NextConfig = {
       // Catalog category pages that moved under /auction-items.
       { source: "/gold-albums", destination: "/auction-items/gold-albums", permanent: true },
       { source: "/guitars-handsigned", destination: "/auction-items/signed-guitars", permanent: true },
-      { source: "/guitar-prices", destination: "/auction-items/signed-guitars", permanent: true },
+      /* No /guitar-prices entry. It was a permanent redirect to the
+         signed-guitars category until Nov 2026; it is a page again now, a
+         hidden price list (app/(site)/guitar-prices). Redirects run before
+         routes, so putting it back here would make that page unreachable.
+         Browsers that saw the old 308 do not keep it: it was sent with
+         `Cache-Control: public, max-age=0, must-revalidate` (Vercel's default
+         for these), so they ask again and get the page. */
       { source: "/dm-taylor-swift", destination: "/auction-items/taylor-swift-signed-guitar", permanent: true },
       { source: "/mexicovac", destination: "/auction-items/vacations", permanent: true },
       { source: "/travel_voucher", destination: "/auction-items/vacations", permanent: true },
