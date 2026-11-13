@@ -83,7 +83,11 @@ const nextConfig: NextConfig = {
          for these), so they ask again and get the page. */
       { source: "/dm-taylor-swift", destination: "/auction-items/taylor-swift-signed-guitar", permanent: true },
       { source: "/mexicovac", destination: "/auction-items/vacations", permanent: true },
-      { source: "/travel_voucher", destination: "/auction-items/vacations", permanent: true },
+      /* No /travel_voucher entry. It was a permanent redirect to the vacations
+         category until Nov 2026; it is a page again now, the hidden voucher
+         program explanation and FAQ (app/(site)/travel_voucher). Same as
+         /guitar-prices above: a redirect here would hide the page, and the old
+         308 was sent with max-age=0, must-revalidate, so browsers re-ask. */
       { source: "/trips", destination: "/auction-items/vacations", permanent: true },
       { source: "/best-items", destination: "/auction-items", permanent: true },
       /* Categories that became groups of /auction-items/vacations. Their lots
@@ -107,12 +111,13 @@ const nextConfig: NextConfig = {
       /* The two legacy terms pages — SAV's package terms and JustRewards'
          redemption terms — are one page here, and both addresses land on it.
          These links are printed on vouchers and in old emails, so they are
-         the last redirects that should ever go home. The voucher page was the
-         free-vacation programme's explanation and FAQ, which now lives on
-         /faqs. */
+         the last redirects that should ever go home.
+         No /terms-and-conditions-voucher entry: it redirected to /faqs until
+         Nov 2026 and is now its own hidden page, the voucher program's terms
+         (app/(site)/terms-and-conditions-voucher). Same caching note as
+         /guitar-prices above. */
       { source: "/terms-conditions", destination: "/terms-and-conditions", permanent: true },
       { source: "/travel-terms", destination: "/terms-and-conditions", permanent: true },
-      { source: "/terms-and-conditions-voucher", destination: "/faqs", permanent: true },
       // No equivalent on the new site — sent home rather than to a soft 404.
       { source: "/cbid", destination: "/", permanent: true },
     ];
