@@ -21,6 +21,7 @@
     "check:line-breaks": "tsx scripts/check-line-breaks.ts",
     "check:default-wording": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-default-wording.ts",
     "check:duplicate": "tsx --conditions=react-server scripts/check-duplicate.ts",
+    "check:hidden-pages": "tsx --conditions=react-server scripts/check-hidden-pages.ts",
     "check:planner": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-planner.ts",
     "mfa": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/mfa-reset.ts",
     "check:uploads": "tsx --conditions=react-server --env-file-if-exists=.env.local scripts/check-uploads.ts",

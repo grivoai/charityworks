@@ -3,9 +3,13 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { pageSchemas } from "@/content/schema";
-import type { PageSlug } from "@/content/types";
-import { PAGE_PATHS, isPageSlug } from "@/lib/admin/page-meta";
+import { isHiddenPageSlug } from "@/content/hidden-pages";
+import {
+  EDITABLE_PATHS,
+  isEditableSlug,
+  schemaFor,
+  type EditableSlug,
+} from "@/lib/admin/page-meta";
 import { tagsForPage } from "@/lib/content-tags";
 import { requireAdmin } from "@/lib/auth";
 import { getServiceClient } from "@/lib/supabase";
@@ -14,7 +18,7 @@ import type { FieldErrors } from "@/lib/admin/field-node";
 import { humanizeIssue, toFieldErrors } from "@/lib/admin/field-errors";
 import { locksForPage } from "@/lib/admin/locks";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
-import { readPageDocument } from "@/lib/admin/page-read";
+import { readEditableDocument } from "@/lib/admin/page-read";
 import { FormWriteError, applyContactFormRules } from "@/lib/admin/form-write";
 import {
   ensureBaseline,
@@ -72,9 +76,27 @@ import {
  * ever becomes a route handler, this has to go back to
  * `revalidateTag(tag, "max")`.
  */
-function publish(slug: PageSlug): void {
+function publish(slug: EditableSlug): void {
   for (const tag of tagsForPage(slug)) updateTag(tag);
-  revalidatePath(PAGE_PATHS[slug]);
+  revalidatePath(EDITABLE_PATHS[slug]);
+}
+
+/**
+ * Writes one page's document.
+ *
+ * An update for the eight built-in pages, whose rows always exist. An upsert
+ * for a hidden page, whose row is created by its first save (until then it
+ * renders the wording in the code; see hidden-pages.ts).
+ */
+async function writePage(slug: EditableSlug, data: unknown, adminId: string) {
+  const table = getServiceClient().from("pages");
+  if (isHiddenPageSlug(slug)) {
+    return table.upsert(
+      { slug, data, updated_by: adminId },
+      { onConflict: "slug" }
+    );
+  }
+  return table.update({ data, updated_by: adminId }).eq("slug", slug);
 }
 
 /* ------------------------------------------------------------------ */
@@ -117,7 +139,7 @@ export async function savePage(
   const admin = await requireAdmin();
 
   const slug = formData.get("slug");
-  if (!isPageSlug(slug)) {
+  if (!isEditableSlug(slug)) {
     return { message: "That page does not exist." };
   }
 
@@ -146,7 +168,7 @@ export async function savePage(
    */
   let current: unknown;
   try {
-    current = await readPageDocument(slug);
+    current = await readEditableDocument(slug);
   } catch (error) {
     return { message: (error as Error).message };
   }
@@ -159,7 +181,7 @@ export async function savePage(
    * This drops any key the schema does not declare and takes fixed values —
    * the page's `slug` above all — from the server rather than the request.
    */
-  const tree = buildFieldTree(pageSchemas[slug], locksForPage(slug));
+  const tree = buildFieldTree(schemaFor(slug), locksForPage(slug));
   let coerced = coerceToTree(submitted, tree, current);
 
   /**
@@ -179,7 +201,7 @@ export async function savePage(
     }
   }
 
-  const parsed = pageSchemas[slug].safeParse(coerced);
+  const parsed = schemaFor(slug).safeParse(coerced);
   if (!parsed.success) {
     return {
       errors: toFieldErrors(parsed.error.issues),
@@ -209,10 +231,7 @@ export async function savePage(
     return { message: (error as Error).message };
   }
 
-  const { error: writeError } = await getServiceClient()
-    .from("pages")
-    .update({ data: next, updated_by: admin.id })
-    .eq("slug", slug);
+  const { error: writeError } = await writePage(slug, next, admin.id);
 
   if (writeError) {
     return { message: `The page could not be saved: ${writeError.message}` };
@@ -272,7 +291,7 @@ export async function restorePageRevision(
   const admin = await requireAdmin();
 
   const slug = formData.get("slug");
-  if (!isPageSlug(slug)) return { message: "That page does not exist." };
+  if (!isEditableSlug(slug)) return { message: "That page does not exist." };
 
   const revisionId = Number(formData.get("revisionId"));
   if (!Number.isInteger(revisionId) || revisionId <= 0) {
@@ -290,7 +309,7 @@ export async function restorePageRevision(
    * can gain a required field between then and now, and restoring content that
    * no longer parses would take the page down rather than back.
    */
-  const parsed = pageSchemas[slug].safeParse(revision.data);
+  const parsed = schemaFor(slug).safeParse(revision.data);
   if (!parsed.success) {
     return {
       message:
@@ -303,7 +322,7 @@ export async function restorePageRevision(
     };
   }
 
-  const current = await readPageDocument(slug);
+  const current = await readEditableDocument(slug);
   if (current === null) {
     return { message: "That page is missing from the database." };
   }
@@ -319,10 +338,7 @@ export async function restorePageRevision(
     adminId: admin.id,
   });
 
-  const { error } = await getServiceClient()
-    .from("pages")
-    .update({ data: parsed.data, updated_by: admin.id })
-    .eq("slug", slug);
+  const { error } = await writePage(slug, parsed.data, admin.id);
 
   if (error) {
     return { message: `That version could not be restored: ${error.message}` };

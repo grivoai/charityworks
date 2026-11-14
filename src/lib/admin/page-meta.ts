@@ -1,5 +1,12 @@
 import { pageSchemas } from "@/content/schema";
 import type { PageSlug } from "@/content/types";
+import {
+  HIDDEN_PAGE_LABELS,
+  HIDDEN_PAGE_PATHS,
+  hiddenPageSchemas,
+  isHiddenPageSlug,
+  type HiddenPageSlug,
+} from "@/content/hidden-pages";
 
 /**
  * Facts about the eight pages that both the editor routes and the save action
@@ -48,6 +55,33 @@ export const PAGE_PATHS: Record<PageSlug, string> = {
 export function isPageSlug(value: unknown): value is PageSlug {
   return typeof value === "string" && value in pageSchemas;
 }
+
+/**
+ * Every page the "Page text" editor can open: the eight built-in pages and the
+ * three hidden ones. The hidden ones are kept out of `PageSlug` so the sitemap,
+ * /llms.txt and the nav-link picker never see them (see hidden-pages.ts); the
+ * editor, the save action and the history take this wider type instead.
+ */
+export type EditableSlug = PageSlug | HiddenPageSlug;
+
+export function isEditableSlug(value: unknown): value is EditableSlug {
+  return isPageSlug(value) || isHiddenPageSlug(value);
+}
+
+/** The schema that validates and draws the form for an editable page. */
+export function schemaFor(slug: EditableSlug) {
+  return isHiddenPageSlug(slug) ? hiddenPageSchemas[slug] : pageSchemas[slug];
+}
+
+export const EDITABLE_LABELS: Record<EditableSlug, string> = {
+  ...PAGE_LABELS,
+  ...HIDDEN_PAGE_LABELS,
+};
+
+export const EDITABLE_PATHS: Record<EditableSlug, string> = {
+  ...PAGE_PATHS,
+  ...HIDDEN_PAGE_PATHS,
+};
 
 /** "3 minutes ago" for recent edits, an absolute date once that stops being useful. */
 export function formatWhen(iso: string | null | undefined): string {

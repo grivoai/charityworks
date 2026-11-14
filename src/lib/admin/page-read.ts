@@ -1,6 +1,7 @@
 import "server-only";
 
-import type { PageSlug } from "@/content/types";
+import { hiddenPageDefault, isHiddenPageSlug } from "@/content/hidden-pages";
+import type { EditableSlug } from "@/lib/admin/page-meta";
 import { getServiceClient, readWithRetry } from "@/lib/supabase";
 
 /**
@@ -19,7 +20,7 @@ import { getServiceClient, readWithRetry } from "@/lib/supabase";
  * Retried for the same reason `readSiteDocument` is: a transient gateway
  * timeout on this one read takes the editor and its preview down together.
  */
-export async function readPageDocument(slug: PageSlug): Promise<unknown | null> {
+export async function readPageDocument(slug: EditableSlug): Promise<unknown | null> {
   const { data, error } = await readWithRetry(`page "${slug}"`, () =>
     getServiceClient()
       .from("pages")
@@ -30,4 +31,18 @@ export async function readPageDocument(slug: PageSlug): Promise<unknown | null> 
 
   if (error) throw new Error(`could not read the page: ${error.message}`);
   return data ? data.data : null;
+}
+
+/**
+ * The document the editor opens and a save is compared against.
+ *
+ * The same as `readPageDocument`, except for a hidden page with no row yet.
+ * Those start from today's wording in the code (hidden-pages.ts): the editor
+ * shows it, the first save writes the row, and the history's first version
+ * is that wording. There is no separate seed step to forget.
+ */
+export async function readEditableDocument(slug: EditableSlug): Promise<unknown | null> {
+  const stored = await readPageDocument(slug);
+  if (stored === null && isHiddenPageSlug(slug)) return hiddenPageDefault(slug);
+  return stored;
 }

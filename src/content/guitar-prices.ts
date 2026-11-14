@@ -7,10 +7,11 @@
  * were collapsed. The order is the old page's: a row of two guitars, then the
  * fundraising text that sat under that row.
  *
- * In the code, not the admin. A new built-in page in the admin means a schema,
- * a seed document, a database row and an editing screen; the client-built page
- * type has no block for a priced guitar card. Change the wording or a price
- * here and redeploy.
+ * Since Nov 2026 the page is edited in the admin (Page text → Hidden pages),
+ * and what is saved there is what shows. This file is the FALLBACK: the page
+ * shows it when no row is saved yet or the saved one is broken, and the
+ * admin's first edit starts from it (see src/content/hidden-pages.ts). Editing
+ * it changes nothing on a page that has been saved in the admin.
  *
  * The photographs are the catalog's own copies of the same guitars
  * (public/images/catalog/guitars), matched to the screenshots one by one.

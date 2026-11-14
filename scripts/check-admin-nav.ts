@@ -50,6 +50,9 @@ const NO_FRAME: Record<string, string> = {
     "rendered inside the preview iframe, wearing the site's chrome rather " +
     "than the panel's — admin furniture in there would be previewing the " +
     "wrong thing. The way out is the editor around the frame.",
+  "pages/[slug]/preview/page.tsx":
+    "a hidden page with its unsaved edits, rendered inside the preview " +
+    "iframe for the same reason as the custom-page preview above.",
 };
 
 function pagesUnder(dir: string, prefix = ""): string[] {

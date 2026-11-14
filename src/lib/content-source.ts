@@ -7,6 +7,7 @@ import type {
   PageSlug,
   SiteContent,
 } from "@/content/types";
+import type { HiddenPageSlug } from "@/content/hidden-pages";
 import { seedContentSource } from "@/lib/content-source-seed";
 
 /**
@@ -37,6 +38,12 @@ export interface ContentSource {
   getPage<S extends PageSlug>(slug: S): Promise<PageMap[S]>;
   getAllPages(): Promise<AnyPage[]>;
   getAuctionCategories(): Promise<AuctionItem[]>;
+  /**
+   * A hidden page's stored document, unvalidated, or null when it has no row.
+   * Validation and the fallback to the code's wording are in `getHiddenPage`,
+   * because for these pages a missing or broken row is not an error.
+   */
+  getHiddenPageDocument(slug: HiddenPageSlug): Promise<unknown | null>;
 }
 
 /**

@@ -13,6 +13,11 @@ import type {
 import { getContentSource } from "@/lib/content-source";
 import { BUILD_KEY } from "@/lib/build-key";
 import { CATALOG_TAG, PAGES_TAG, SITE_TAG, pageTag } from "@/lib/content-tags";
+import {
+  resolveHiddenPage,
+  type HiddenPageMap,
+  type HiddenPageSlug,
+} from "@/content/hidden-pages";
 
 /**
  * The content access layer.
@@ -138,4 +143,47 @@ export async function getAuctionCategory(
 ): Promise<AuctionItem | undefined> {
   const categories = await getAuctionCategories();
   return categories.find((category) => category.slug === slug);
+}
+
+/* ------------------------------------------------------------------ */
+/* Hidden pages                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * /guitar-prices, /travel_voucher and /terms-and-conditions-voucher.
+ *
+ * Cached and tagged exactly like a built-in page, under `page:<slug>`, so the
+ * admin's save publishes one the same way: `updateTag` + `revalidatePath`, and
+ * the live page updates with no redeploy.
+ *
+ * Unlike a built-in page, a missing or invalid row is not an error here: the
+ * page renders today's wording from the code instead (see hidden-pages.ts),
+ * so it can never go blank. A row that fails validation is logged, which is
+ * how it gets noticed.
+ */
+const hiddenReaders = new Map<HiddenPageSlug, () => Promise<unknown>>();
+
+export async function getHiddenPage<S extends HiddenPageSlug>(
+  slug: S
+): Promise<HiddenPageMap[S]> {
+  let reader = hiddenReaders.get(slug);
+  if (!reader) {
+    reader = unstable_cache(
+      async () => {
+        const stored = await (await getContentSource()).getHiddenPageDocument(slug);
+        const { page, problem } = resolveHiddenPage(slug, stored);
+        if (problem) {
+          console.error(
+            `[content] the stored "${slug}" page does not match its schema, so ` +
+              `the wording in the code is shown instead: ${problem}`
+          );
+        }
+        return page;
+      },
+      ["hidden-page", slug, BUILD_KEY],
+      { tags: [pageTag(slug)] }
+    );
+    hiddenReaders.set(slug, reader);
+  }
+  return (await reader()) as HiddenPageMap[S];
 }

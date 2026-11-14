@@ -8,14 +8,15 @@ import {
   type RevisionView,
 } from "@/components/admin/RevisionList";
 import { requireAdmin } from "@/lib/auth";
-import { getPage } from "@/lib/content";
+import { getHiddenPage, getPage } from "@/lib/content";
+import { isHiddenPageSlug } from "@/content/hidden-pages";
 import { stableStringify } from "@/lib/admin/coerce";
 import { humanize } from "@/lib/admin/schema-tree";
 import { listRevisions } from "@/lib/admin/revisions";
 import {
-  PAGE_LABELS,
+  EDITABLE_LABELS,
   formatExact,
-  isPageSlug,
+  isEditableSlug,
 } from "@/lib/admin/page-meta";
 
 export const metadata: Metadata = {
@@ -54,11 +55,11 @@ export default async function PageHistoryRoute({
   const admin = await requireAdmin();
   const { slug } = await params;
 
-  if (!isPageSlug(slug)) notFound();
+  if (!isEditableSlug(slug)) notFound();
 
   const [revisions, current] = await Promise.all([
     listRevisions("page", slug),
-    getPage(slug),
+    isHiddenPageSlug(slug) ? getHiddenPage(slug) : getPage(slug),
   ]);
 
   const currentKey = stableStringify(current);
@@ -79,7 +80,7 @@ export default async function PageHistoryRoute({
       <nav className="admin-crumbs">
         <Link href="/admin/pages">Page text</Link>
         <span aria-hidden="true">›</span>
-        <Link href={`/admin/pages/${slug}`}>{PAGE_LABELS[slug]}</Link>
+        <Link href={`/admin/pages/${slug}`}>{EDITABLE_LABELS[slug]}</Link>
         <span aria-hidden="true">›</span>
         <span>History</span>
       </nav>
@@ -87,7 +88,7 @@ export default async function PageHistoryRoute({
       <div className="admin-head">
         <h1>Version history</h1>
         <p>
-          Every save of the {PAGE_LABELS[slug].toLowerCase()} page, newest first.
+          Every save of the {EDITABLE_LABELS[slug].toLowerCase()} page, newest first.
           Restoring puts that wording back on the site and keeps everything else
           — including the version you are replacing, so a restore can itself be
           undone.

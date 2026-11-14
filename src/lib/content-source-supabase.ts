@@ -10,10 +10,12 @@ import type {
   SiteContent,
 } from "@/content/types";
 import type { ContentSource } from "@/lib/content-source";
+import type { HiddenPageSlug } from "@/content/hidden-pages";
 import {
   anyPageSchema,
   auctionItemSchema,
   pageSchemas,
+  pageSlugSchema,
   siteContentSchema,
 } from "@/content/schema";
 // `read` is the shared retrying reader: see readWithRetry for why every
@@ -204,7 +206,14 @@ export const supabaseContentSource: ContentSource = {
 
   async getAllPages(): Promise<AnyPage[]> {
     const { data, error } = await read("pages", () =>
-      getServiceClient().from("pages").select("slug, data").returns<PageRow[]>()
+      /* The built-in pages only. The `pages` table also holds the hidden
+         pages (hidden-pages.ts), which this list feeds straight into the
+         sitemap, and which `anyPageSchema` would refuse anyway. */
+      getServiceClient()
+        .from("pages")
+        .select("slug, data")
+        .in("slug", pageSlugSchema.options)
+        .returns<PageRow[]>()
     );
 
     if (error || !data) fail("pages", error);
@@ -221,6 +230,24 @@ export const supabaseContentSource: ContentSource = {
       }
       return parsed.data;
     });
+  },
+
+  async getHiddenPageDocument(slug: HiddenPageSlug): Promise<unknown | null> {
+    const { data, error } = await read(`page "${slug}"`, () =>
+      getServiceClient()
+        .from("pages")
+        .select("data")
+        .eq("slug", slug)
+        .maybeSingle<{ data: unknown }>()
+    );
+
+    /* A failed query still throws, as everywhere in this file. The page is
+       statically generated, so a throw here leaves the last good version
+       online (a failed revalidation) or stops a deploy (a failed build); it
+       never serves a blank page. Falling back to the code's wording instead
+       would quietly undo Lauri's edits because of a network blip. */
+    if (error) fail(`page "${slug}"`, error);
+    return data ? data.data : null;
   },
 
   async getAuctionCategories(): Promise<AuctionItem[]> {

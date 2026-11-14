@@ -89,6 +89,24 @@ const LABELS: Record<string, string> = {
   tileCue: "Prompt on the cards",
   plannerLink: "Line leading to the planner",
   contactAlt: "Line leading to the contact page",
+  // The hidden pages (src/content/hidden-pages.ts).
+  closingParagraphs: "Closing paragraphs",
+  explanation: "Explanation paragraphs",
+  verify: "Verification link",
+  priceLabel: "Price label",
+  consignmentLabel: "Line under the price",
+  guitars: "Guitars",
+  kind: "Line under the name",
+  sections: "Text sections",
+  guideLine: "Line before the Download PDF button",
+  highlightLead: "Line before the large list",
+  highlights: "Large list items",
+  guideBefore: "Guide line, before the title",
+  guideTitle: "Guide title",
+  guideAfter: "Guide line, after the title",
+  guideButton: "Download PDF button",
+  faqHeading: "Questions heading",
+  dining: "Dining gift card",
 };
 
 /** `headingAccent` becomes "Heading accent"; known keys use the table above. */
@@ -129,6 +147,12 @@ const MULTILINE_KEYS = new Set([
   "strapline",
   "closer",
   "reward",
+  // The hidden pages: lists of paragraphs, one textarea per paragraph.
+  "paragraphs",
+  "closingparagraphs",
+  "explanation",
+  "steps",
+  "guideline",
 ]);
 
 /* ------------------------------------------------------------------ */

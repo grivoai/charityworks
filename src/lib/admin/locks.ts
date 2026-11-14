@@ -303,8 +303,8 @@ export function matchesPattern(path: string, pattern: string): boolean {
   return b.every((segment, i) => segment === "*" || segment === a[i]);
 }
 
-export function locksForPage(slug: PageSlug): LockRule[] {
-  return [...COMMON_LOCKS, ...(PAGE_LOCKS[slug] ?? [])];
+export function locksForPage(slug: string): LockRule[] {
+  return [...COMMON_LOCKS, ...(PAGE_LOCKS[slug as PageSlug] ?? [])];
 }
 
 export function findLock(
