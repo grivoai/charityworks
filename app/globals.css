@@ -2624,3 +2624,18 @@ body.nav-open .nav {
 @media (max-width: 640px) {
   .gp-grid .gp-card { flex-basis: 100%; min-width: 0; }
 }
+
+/* ---------- /travel_voucher + /terms-and-conditions-voucher (hidden) ----------
+   Text-only program pages in the /guitar-prices layout. The prose is left-
+   aligned: these are long terms, and centred multi-line paragraphs read badly. */
+.vp-prose { max-width: 760px; margin: 0 auto; text-align: left; }
+.vp-faq { max-width: 820px; margin: 36px auto 0; }
+.vp-faq-item { border-bottom: 1px solid var(--line); padding: 22px 8px; }
+.vp-faq-item:first-child { border-top: 1px solid var(--line); }
+.vp-faq dt { font-family: "Playfair Display", serif; font-weight: 700; font-size: 1.18rem; color: var(--green); line-height: 1.35; }
+.vp-faq dd { margin: 0; }
+.vp-faq dd .block-prose { margin-top: 10px; max-width: none; }
+.vp-list { color: var(--muted); font-size: 1.05rem; line-height: 1.6; margin-top: 12px; }
+.vp-terms { max-width: 760px; margin: 0 auto; }
+.vp-dining { margin-top: 0; }
+.vp-dining .block-prose { margin-left: auto; margin-right: auto; }

@@ -46,6 +46,11 @@ export const BUILT_IN_PAGES = [
 export const HIDDEN_PAGES = [
   // The guitar price list. noindex; not in the sitemap, nav, footer or llms.txt.
   "guitar-prices",
+  // The voucher program pages: how it works + FAQ, and its terms. Same rules.
+  // (travel_voucher has an underscore, which checkSlug's shape refuses anyway;
+  // it is listed so check:custom-pages matches the folder on disk.)
+  "terms-and-conditions-voucher",
+  "travel_voucher",
 ] as const;
 
 /** Route segments the application owns. */
