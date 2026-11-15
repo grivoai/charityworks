@@ -61,4 +61,9 @@ export const seedContentSource: ContentSource = {
   async getAuctionCategories(): Promise<AuctionItem[]> {
     return auctionItems;
   },
+
+  /* No database, so no row: the page renders the wording in the code. */
+  async getHiddenPageDocument(): Promise<unknown | null> {
+    return null;
+  },
 };

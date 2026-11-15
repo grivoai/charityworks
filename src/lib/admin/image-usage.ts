@@ -2,7 +2,7 @@ import "server-only";
 
 import { getServiceClient } from "@/lib/supabase";
 import { IMAGE_BUCKET, imageUrlFor } from "@/lib/admin/uploads";
-import { PAGE_LABELS, formatWhen, isPageSlug } from "@/lib/admin/page-meta";
+import { EDITABLE_LABELS, formatWhen, isEditableSlug } from "@/lib/admin/page-meta";
 
 /**
  * Where each uploaded photograph is used, and the library built on that.
@@ -115,7 +115,7 @@ export async function findImageUses(options: { strict?: boolean } = {}): Promise
 
   if (pages.error) fail("the pages", pages.error.message);
   for (const row of pages.data ?? []) {
-    const label = isPageSlug(row.slug) ? `${PAGE_LABELS[row.slug]} page` : `/${row.slug}`;
+    const label = isEditableSlug(row.slug) ? `${EDITABLE_LABELS[row.slug]} page` : `/${row.slug}`;
     for (const s of strings(row.data)) note(uses, s, { label, href: `/admin/pages/${row.slug}` });
   }
 

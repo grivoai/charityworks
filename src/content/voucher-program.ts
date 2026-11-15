@@ -17,8 +17,10 @@
  * The old pages also had a couple of images; they could not be recovered and
  * these pages are text only.
  *
- * In the code, not the admin, for the same reason as guitar-prices.ts. Change
- * the wording here and redeploy.
+ * Since Nov 2026 both pages are edited in the admin (Page text → Hidden
+ * pages), and what is saved there is what shows. This file is the FALLBACK,
+ * as guitar-prices.ts is: shown when no row is saved yet or the saved one is
+ * broken, and where the admin's first edit starts (src/content/hidden-pages.ts).
  */
 
 /** One question and its answer. */

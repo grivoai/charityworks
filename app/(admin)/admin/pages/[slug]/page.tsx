@@ -2,22 +2,25 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { pageSchemas } from "@/content/schema";
+import { isHiddenPageSlug } from "@/content/hidden-pages";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PageEditor } from "@/components/admin/PageEditor";
 import { PagePreview } from "@/components/admin/PagePreview";
 import { requireAdmin } from "@/lib/auth";
-import { readPageDocument } from "@/lib/admin/page-read";
+import { readEditableDocument } from "@/lib/admin/page-read";
 import { getServiceClient } from "@/lib/supabase";
 import { buildFieldTree } from "@/lib/admin/schema-tree";
 import { locksForPage } from "@/lib/admin/locks";
 import { countRevisions } from "@/lib/admin/revisions";
 import {
+  EDITABLE_LABELS,
+  EDITABLE_PATHS,
   PAGE_LABELS,
   PAGE_ORDER,
   PAGE_PATHS,
   formatWhen,
-  isPageSlug,
+  isEditableSlug,
+  schemaFor,
 } from "@/lib/admin/page-meta";
 import { MARKED_UP } from "@/lib/admin/visual-map";
 
@@ -44,7 +47,8 @@ export default async function EditPageRoute({
   const { slug } = await params;
   const { restored } = await searchParams;
 
-  if (!isPageSlug(slug)) notFound();
+  if (!isEditableSlug(slug)) notFound();
+  const hidden = isHiddenPageSlug(slug);
 
   /**
    * Read straight from the table, not through the cached content layer.
@@ -58,10 +62,10 @@ export default async function EditPageRoute({
    * Validated against the page's own schema afterwards, so what is rendered is
    * still exactly what the site would render from this row.
    */
-  const stored = await readPageDocument(slug);
+  const stored = await readEditableDocument(slug);
   if (stored === null) notFound();
 
-  const parsed = pageSchemas[slug].safeParse(stored);
+  const parsed = schemaFor(slug).safeParse(stored);
   if (!parsed.success) {
     throw new Error(
       `[admin] the stored ${slug} page does not match its schema: ` +
@@ -82,9 +86,12 @@ export default async function EditPageRoute({
       .maybeSingle<MetaRow>(),
   ]);
 
-  const tree = buildFieldTree(pageSchemas[slug], locksForPage(slug));
+  const tree = buildFieldTree(schemaFor(slug), locksForPage(slug));
 
-  const showPreview = MARKED_UP.includes(slug);
+  /* A hidden page always has the preview, and its preview is fed the unsaved
+     form as it is typed (see HiddenPagePreviewFrame), so an edit can be
+     checked before it is saved. */
+  const showPreview = hidden || (MARKED_UP as string[]).includes(slug);
 
   const editor = meta.data?.admin_users;
   const updatedLabel = meta.data?.updated_at
@@ -97,18 +104,25 @@ export default async function EditPageRoute({
       <nav className="admin-crumbs">
         <Link href="/admin/pages">Page text</Link>
         <span aria-hidden="true">›</span>
-        <span>{PAGE_LABELS[slug]}</span>
+        <span>{EDITABLE_LABELS[slug]}</span>
       </nav>
 
       <div className="admin-head">
-        <h1>{PAGE_LABELS[slug]}</h1>
+        <h1>{EDITABLE_LABELS[slug]}</h1>
         <p>
           Saving publishes straight to{" "}
-          <a href={PAGE_PATHS[slug]} target="_blank" rel="noreferrer">
-            {PAGE_PATHS[slug]}
+          <a href={EDITABLE_PATHS[slug]} target="_blank" rel="noreferrer">
+            {EDITABLE_PATHS[slug]}
           </a>
           . Every save is kept, so anything here can be put back the way it was.
         </p>
+        {hidden && (
+          <p>
+            This is a hidden page: it is not in the menu, the footer or search
+            results, and only people with the link can open it. Saving keeps it
+            hidden. The preview shows your changes as you type, before you save.
+          </p>
+        )}
       </div>
 
       {/* Two columns where the page has been marked up for it, one where it has
@@ -126,11 +140,23 @@ export default async function EditPageRoute({
           />
         </div>
 
-        {showPreview && (
+        {showPreview && hidden && (
           <PagePreview
             slug={slug}
-            path={PAGE_PATHS[slug]}
-            label={PAGE_LABELS[slug]}
+            path={`/admin/pages/${slug}/preview`}
+            label={EDITABLE_LABELS[slug]}
+            canPointAndEdit={false}
+            liveDraft
+            pages={[]}
+            foot="This page as it will look, updating as you type. Nothing is live until you press Save and publish."
+          />
+        )}
+
+        {showPreview && !hidden && (
+          <PagePreview
+            slug={slug}
+            path={EDITABLE_PATHS[slug]}
+            label={EDITABLE_LABELS[slug]}
             pages={PAGE_ORDER.map((s) => ({
               slug: s,
               label: PAGE_LABELS[s],

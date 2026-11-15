@@ -92,6 +92,39 @@ export const HELP_TOPICS: HelpTopic[] = [
     link: { href: "/admin/pages", label: "Page text" },
   },
   {
+    id: "hidden-pages",
+    title: "The hidden pages: guitar prices and the travel voucher",
+    routes: ["/admin/pages", "/admin/pages/"],
+    body: [
+      {
+        p:
+          "Three pages are hidden: they are not in the menu, the footer or " +
+          "search results, and only people with the link can open them. They " +
+          "are listed under Hidden pages at the bottom of Page text. Saving " +
+          "one publishes it straight away and keeps it hidden.",
+      },
+      {
+        p:
+          "Guitar prices: each guitar has a name, a line under it, a price and " +
+          "a picture. Add guitar puts a new one at the end; drag a guitar, or " +
+          "use its arrows, to move it; Remove takes it off. The guitars are " +
+          "shown two to a row, and the text sections go under the rows in order.",
+      },
+      {
+        p:
+          "The Download PDF buttons open the document called Hand-Signed " +
+          "Guitars - Fundraising Info in Documents. To change the PDF, replace " +
+          "it there; this page picks it up by itself.",
+      },
+      {
+        p:
+          "The preview beside these three forms shows your changes as you type, " +
+          "before you save. Nothing is live until you press Save.",
+      },
+    ],
+    link: { href: "/admin/pages", label: "Page text" },
+  },
+  {
     id: "locked-fields",
     title: "Why a field is greyed out",
     routes: ["/admin/pages/", "/admin/site", "/admin/catalog/"],

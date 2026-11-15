@@ -90,6 +90,9 @@ jobs:
       - name: Planner wording matches its scoring
         run: npm run check:planner
 
+      - name: Hidden pages (wording unchanged, still hidden)
+        run: npm run check:hidden-pages
+
       # Without Supabase configured this builds from the seed modules in
       # src/content, which still exercises every route, every component and the
       # schemas the seed is parsed through. What it cannot see is the live
