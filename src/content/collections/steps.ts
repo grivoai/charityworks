@@ -14,14 +14,14 @@ export const steps: Step[] = [
     number: "2",
     icon: "party-popper",
     title: "Run Your Event",
-    body: "Silent auction, live auction, or virtual. We support all formats and can deliver items last minute.",
+    body: "Silent auction, live auction, or virtual. We support all formats, and travel and experience packages can be emailed as PDFs at the last minute.",
   },
   {
     id: "step-pay",
     number: "3",
     icon: "hand-coins",
     title: "Pay Only What Sells",
-    body: "Return anything unsold. You owe nothing. Keep every dollar above our set price.",
+    body: "Return anything unsold and you are never invoiced for it. Your nonprofit pays return shipping on physical items. Keep every dollar above our set price.",
   },
 ];
 

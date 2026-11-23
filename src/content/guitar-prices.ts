@@ -73,6 +73,7 @@ export const guitarPrices = {
       "All of our hand-signed autographs are 100% authentic and have been independently verified by a trusted third-party authentication service. Colors of guitars may vary based on availability at the time of order.",
       "CharityWorks is one of the leading suppliers to fundraisers around the USA, of hand-signed guitars.",
       "All items on Consignment. No upfront costs to you or your Charity. If items don't sell you are responsible for the shipping to return.",
+      "Guitars ship in 2 to 3 weeks. Faster delivery is possible only if your nonprofit pays for express shipping.",
     ],
   },
 

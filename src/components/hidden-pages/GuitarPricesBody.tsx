@@ -6,6 +6,7 @@ import type {
   PricedGuitar,
 } from "@/content/hidden-pages";
 import { Icon } from "@/components/Icon";
+import { withBookingPage } from "@/lib/calendly";
 
 /**
  * The body of /guitar-prices, from its document.
@@ -214,7 +215,7 @@ export function GuitarPricesBody({
                   <p className="gp-book">
                     <a
                       className="btn btn-gold"
-                      href={booking.href}
+                      href={withBookingPage(booking.href, "guitar-prices")}
                       target="_blank"
                       rel="noopener"
                     >

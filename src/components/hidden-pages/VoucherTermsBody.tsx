@@ -1,4 +1,5 @@
 import type { VoucherTermsPage } from "@/content/hidden-pages";
+import { withBookingPage } from "@/lib/calendly";
 
 /**
  * The body of /terms-and-conditions-voucher, from its document. Shared by the
@@ -36,7 +37,7 @@ export function VoucherTermsBody({ page }: { page: VoucherTermsPage }) {
               ))}
             </div>
             <p className="gp-book">
-              <a className="btn btn-gold" href={booking.href} target="_blank" rel="noopener">
+              <a className="btn btn-gold" href={withBookingPage(booking.href, "voucher-terms")} target="_blank" rel="noopener">
                 {booking.label}
               </a>
             </p>

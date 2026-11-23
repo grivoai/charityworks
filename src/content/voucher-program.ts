@@ -35,7 +35,7 @@ export interface VoucherFaq {
 /** The "Book a call" button at the foot of both pages. */
 export const voucherBooking = {
   label: "Book a call",
-  href: "https://calendly.com/iraklein82/new-meeting",
+  href: "https://calendly.com/iraklein82/30min",
 };
 
 export const travelVoucher = {

@@ -48,7 +48,7 @@ export const valueProps: ValueProp[] = [
     id: "vp-last-minute",
     icon: "zap",
     title: "Last Minute Ready",
-    body: "We can deliver items with only hours notice.",
+    body: "Travel and experience packages are emailed as PDFs, in as little as a few hours. Guitars and other physical items ship in 2 to 3 weeks.",
   },
   {
     id: "vp-no-hidden-costs",
@@ -82,7 +82,7 @@ export const pricingPoints: ValueProp[] = [
     id: "price-return",
     icon: "undo",
     title: "Return What Doesn't Sell",
-    body: "Unsold items go back to us at no cost. You are never invoiced for them.",
+    body: "You are never invoiced for unsold items. Your nonprofit pays the return shipping on unsold physical items; travel and experience packages are PDFs, so there is nothing to send back.",
   },
   {
     id: "price-invoice-after",

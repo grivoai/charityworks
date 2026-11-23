@@ -454,7 +454,7 @@ export default async function HomePage() {
               </span>
             </p>
 
-            <ContactChannels channels={site.contact.channels} />
+            <ContactChannels channels={site.contact.channels} bookingPage="home" />
 
             <p className="home-contact-alt reveal d3">
               <span {...editable("closing.contactAlt.lead")}>

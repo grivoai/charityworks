@@ -1,4 +1,5 @@
 import type { TravelVoucherPage } from "@/content/hidden-pages";
+import { withBookingPage } from "@/lib/calendly";
 
 /**
  * The body of /travel_voucher, from its document. Shared by the public route
@@ -63,7 +64,7 @@ export function TravelVoucherBody({ page }: { page: TravelVoucherPage }) {
             ))}
           </dl>
           <p className="gp-book center">
-            <a className="btn btn-gold" href={booking.href} target="_blank" rel="noopener">
+            <a className="btn btn-gold" href={withBookingPage(booking.href, "travel-voucher")} target="_blank" rel="noopener">
               {booking.label}
             </a>
           </p>

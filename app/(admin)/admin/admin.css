@@ -446,14 +446,35 @@ a.admin-card:hover {
   margin-left: 8px;
 }
 
-.admin-list { list-style: none; display: grid; gap: 10px; margin-top: 12px; }
+/* Item cards. Each card used to be the page's own --paper colour with a hairline
+   border and a 10px gap, so a long lot with several items read as one block
+   (client feedback, Nov 2026). Now each card is white on the paper page, with a
+   gold edge down its left, a soft shadow, and a rule drawn across the gap
+   between one card and the next. One rule set, so every list editor in the
+   admin gets it: lot items, FAQs, steps, tiles and the rest. */
+.admin-list { list-style: none; display: grid; gap: 29px; margin-top: 14px; }
 .admin-list-empty { font-size: 13px; color: var(--muted); margin-top: 10px; }
 
 .admin-item {
-  border: 1px solid var(--line);
+  position: relative;
+  border: 1px solid #d9d2bf;
+  border-left: 4px solid var(--gold);
   border-radius: 10px;
-  background: var(--paper);
-  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(20, 32, 26, 0.06), 0 3px 10px rgba(20, 32, 26, 0.05);
+}
+/* The divider sits centred in the 29px gap above every card except the first.
+   It is a pseudo-element on the card, not a border on the list, so drag-and-drop
+   reordering keeps it in place. The card is not overflow:hidden so the rule can
+   sit outside it; the head rounds its own top corners instead. */
+.admin-list > .admin-item + .admin-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -16px;
+  border-top: 1px dashed #c9bf9f;
+  pointer-events: none;
 }
 .admin-item-head {
   display: flex;
@@ -461,7 +482,23 @@ a.admin-card:hover {
   gap: 10px;
   padding: 9px 12px;
   background: var(--cream);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid #e4dcc6;
+  border-radius: 9px 9px 0 0;
+}
+/* A list inside a card (say, highlights inside a lot item) needs to read as part
+   of that card, not as a peer of it: paper rather than white, a thinner edge,
+   a smaller gap and a solid rule. */
+.admin-item .admin-list { gap: 19px; }
+.admin-item .admin-item {
+  background: var(--paper);
+  border-left-width: 3px;
+  border-left-color: var(--gold-soft);
+  box-shadow: none;
+}
+.admin-item .admin-list > .admin-item + .admin-item::before {
+  top: -11px;
+  border-top-style: solid;
+  border-top-color: #e4dcc6;
 }
 .admin-item-title {
   font-size: 13px;
@@ -476,7 +513,10 @@ a.admin-card:hover {
 .admin-item-body > .admin-sub > legend { display: none; }
 
 /* A list of plain strings needs no header row, only the input and a remove. */
-.admin-list.is-scalar .admin-item { border: 0; background: none; }
+.admin-list.is-scalar { gap: 10px; }
+.admin-list.is-scalar .admin-item,
+.admin-item .admin-list.is-scalar .admin-item { border: 0; background: none; box-shadow: none; }
+.admin-list.is-scalar > .admin-item + .admin-item::before { content: none; }
 .admin-list.is-scalar .admin-item-body {
   padding: 0;
   display: flex;

@@ -44,7 +44,7 @@ export default async function ContactRoute() {
             </p>
 
             <h2 className="sr-only">How to reach us</h2>
-            <ContactChannels channels={site.contact.channels} />
+            <ContactChannels channels={site.contact.channels} bookingPage="contact" />
 
             <p className="mobile-note reveal d3">
               <span className="inline-ico" aria-hidden="true"><Icon name="smartphone" /></span>{" "}

@@ -10,7 +10,7 @@ export const faqs: FaqItem[] = [
     id: "faq-how-it-works",
     question: "How does the CharityWorks program work?",
     answer:
-      "You choose from dozens of consignment items in our catalog, feature them at your event, and only pay us for what sells. Anything unsold is returned at no cost — it's that simple and that risk-free.",
+      "You choose from dozens of consignment items in our catalog, feature them at your event, and only pay us for what sells. You are never invoiced for unsold items, but your nonprofit pays the return shipping on unsold physical items. Travel and experience packages are PDFs, so there is nothing to send back.",
   },
   {
     id: "faq-silent-or-live",
@@ -40,7 +40,7 @@ export const faqs: FaqItem[] = [
     id: "faq-lead-time",
     question: "How much lead time do I need?",
     answer:
-      "As little as a few hours. We can deliver items on extremely short notice, so even last-minute events are covered.",
+      "Travel and experience packages can arrive in as little as a few hours, because we email them to you as PDFs. Guitars and other physical items take 2 to 3 weeks to ship. Faster delivery of a physical item is possible only if your nonprofit pays for express shipping.",
   },
   {
     id: "faq-payment",
