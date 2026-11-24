@@ -1,5 +1,6 @@
 import { Icon } from "@/components/Icon";
 import type { SiteContent } from "@/content/types";
+import { withBookingPage } from "@/lib/calendly";
 
 /**
  * The ways to reach us, as rows.
@@ -16,6 +17,7 @@ import type { SiteContent } from "@/content/types";
 export function ContactChannels({
   channels,
   reveal = true,
+  bookingPage,
 }: {
   channels: SiteContent["contact"]["channels"];
   /**
@@ -29,6 +31,12 @@ export function ContactChannels({
    * at the top of RevealObserver is about exactly this.
    */
   reveal?: boolean;
+  /**
+   * The page these rows are on ("home", "contact"), sent to Calendly as
+   * utm_content so a booking shows which page it came from. Left out in the
+   * admin preview, where nobody books anything.
+   */
+  bookingPage?: string;
 }) {
   return (
     <div className="contact-info">
@@ -44,7 +52,11 @@ export function ContactChannels({
             <div className="lbl">{channel.label}</div>
             {channel.href ? (
               <a
-                href={channel.href}
+                href={
+                  bookingPage
+                    ? withBookingPage(channel.href, bookingPage)
+                    : channel.href
+                }
                 className="val"
                 // Another site — the booking calendar — opens beside this one
                 // rather than over it. `tel:` and `mailto:` are not http and
