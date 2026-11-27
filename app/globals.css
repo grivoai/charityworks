@@ -1150,6 +1150,16 @@ main.is-transitioning {
 }
 .bento-link:focus-visible { outline: none; }
 
+/* The cue and the hover blurb are painted ABOVE the card's link. Each is a
+   flex item with z-index 2, and so is the h3 — and a z-indexed flex item is a
+   stacking context, so .bento-link::after's z-index 3 only counts inside the
+   h3. These two come later in the DOM at the same level, so they cover the
+   overlay, and a click on "View category →" landed on inert text (only the
+   photo area opened the category). Letting clicks fall through to the overlay
+   fixes it without touching the stacking the comment above depends on. */
+.bento-cue,
+.bento-card .reveal-txt { pointer-events: none; }
+
 .bento-cue {
   /* Unpositioned for the same reason as .bento-card h3 — see above. */
   z-index: 2;
