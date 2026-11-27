@@ -160,6 +160,14 @@ export const travelVoucherPageSchema = z.object({
   booking: bookingSchema.describe(
     "The button under the questions. The terms page has its own copy of this button."
   ),
+  /** A text link under that button. Drawn only when both halves are set. */
+  eventLinkLabel: optionalText.describe(
+    'Optional text link under the button, e.g. "See how it works at your event". ' +
+      "Shown only when the address below is filled in too."
+  ),
+  eventLinkHref: optionalText.describe(
+    "Where that text link goes, e.g. /#donor. Leave empty to hide the link."
+  ),
 });
 
 export type TravelVoucherPage = z.infer<typeof travelVoucherPageSchema>;

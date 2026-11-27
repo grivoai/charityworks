@@ -125,12 +125,75 @@ export default async function HomePage() {
         <div className="hero-grid" />
         <div className="wrap">
           <div className="hero-content">
+            {/* ---- The free donor incentive, first in the hero ----
+                At the very top of the copy column, above the credential, so it
+                is the first thing read on a desktop and the first card on a
+                phone, where the column stacks above the tiles and only one card
+                fits above the fold. It sits with the copy rather than in the
+                tile stack on the right: the tiles are doors into the catalog,
+                and filing the one free thing on the page among things to buy is
+                what made it read as a fourth category.
+
+                Solid yellow, not glass, and no intro animation or hover
+                movement: the client asked for it to stand out without
+                flashing.
+
+                The card is one link stretched over it from the label
+                (.hero-offer-link::after), not a link wrapping the whole card,
+                so the optional note under the sub-line can be a second link
+                of its own — a link cannot sit inside another. */}
+            {hero.offer && (
+              <div className="hero-offer">
+                <span
+                  className="hero-offer-ico"
+                  aria-hidden="true"
+                  {...editable("hero.offer.icon")}
+                >
+                  <Icon name={hero.offer.icon} />
+                </span>
+                <span className="hero-offer-text">
+                  <Link
+                    href={hero.offer.href}
+                    className="hero-offer-name hero-offer-link"
+                    {...editable("hero.offer.label")}
+                  >
+                    {hero.offer.label}
+                  </Link>
+                  <span
+                    className="hero-offer-sub"
+                    {...editable("hero.offer.sub")}
+                  >
+                    {hero.offer.sub}
+                  </span>
+                  {hero.offer.noteLabel && hero.offer.noteHref && (
+                    <Link
+                      href={hero.offer.noteHref}
+                      className="hero-offer-note"
+                      {...editable("hero.offer.noteLabel")}
+                    >
+                      {hero.offer.noteLabel}
+                    </Link>
+                  )}
+                </span>
+                {hero.offer.cue && (
+                  <span
+                    className="hero-offer-cue"
+                    aria-hidden="true"
+                    {...editable("hero.offer.cue")}
+                  >
+                    {hero.offer.cue}
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* The experience figure, as a credential above the pill rather
                 than in a card. It is the one number here that is about the
                 company rather than about something the visitor can go and look
-                at, so it stays small, but the client wants it read first
-                rather than under the offer at the foot of the column. Fixed
-                here on purpose; there is no position field. */}
+                at, so it stays small, but the client wants it read early — now
+                straight after the free vacation card, which they asked to have
+                first of all. Fixed here on purpose; there is no position
+                field. */}
             <p className="hero-badge">
               <span className="hero-badge-ico" aria-hidden="true">
                 <Icon name="shield-check" />
@@ -168,48 +231,6 @@ export default async function HomePage() {
               <Cta cta={hero.secondaryCta} path="hero.secondaryCta" />
             </div>
 
-            {/* ---- The free donor incentive, promoted out of the fold ----
-                The offer that costs the nonprofit nothing was previously only
-                discoverable by scrolling past four sections to reach #donor.
-                It sits with the copy rather than in the tile stack on the
-                right: the tiles are doors into the catalog, and filing the one
-                free thing on the page among three things to buy is what made
-                it read as a fourth category. Gold rather than glass for the
-                same reason. */}
-            {hero.offer && (
-              <Link href={hero.offer.href} className="hero-offer">
-                <span
-                  className="hero-offer-ico"
-                  aria-hidden="true"
-                  {...editable("hero.offer.icon")}
-                >
-                  <Icon name={hero.offer.icon} />
-                </span>
-                <span className="hero-offer-text">
-                  <span
-                    className="hero-offer-name"
-                    {...editable("hero.offer.label")}
-                  >
-                    {hero.offer.label}
-                  </span>
-                  <span
-                    className="hero-offer-sub"
-                    {...editable("hero.offer.sub")}
-                  >
-                    {hero.offer.sub}
-                  </span>
-                </span>
-                {hero.offer.cue && (
-                  <span
-                    className="hero-offer-cue"
-                    aria-hidden="true"
-                    {...editable("hero.offer.cue")}
-                  >
-                    {hero.offer.cue}
-                  </span>
-                )}
-              </Link>
-            )}
           </div>
 
           {/* Doors, not statistics. These were four floating counters; the two

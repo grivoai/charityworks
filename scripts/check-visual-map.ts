@@ -218,11 +218,12 @@ async function checkFixed(categorySlug: string | undefined): Promise<void> {
 }
 
 /**
- * The years-in-business chip sits above the pill at the top of the hero copy,
+ * The years-in-business chip sits above the pill near the top of the hero copy,
  * where the client asked for it. One fixed place rather than a setting, so the
- * check is on the served page: it is the column's first element, it comes
- * before the pill, it is there once, and its stylesheet keeps it on a line of
- * its own and brings it in first.
+ * check is on the served page: it is the column's first element — or second,
+ * straight after the free vacation card, which the client asked to have first
+ * of all (2026-11-27) — it comes before the pill, it is there once, and its
+ * stylesheet keeps it on a line of its own and brings it in before the pill.
  */
 async function checkHeroBadge(): Promise<void> {
   let html: string;
@@ -242,7 +243,12 @@ async function checkHeroBadge(): Promise<void> {
   const pillIntro = css.match(/\[data-home-intro="play"\] \.hero-pill \{[^}]*?(\d*\.?\d+)s both/)?.[1];
 
   const problems: string[] = [];
-  if (column?.[2] !== "hero-badge") problems.push(`the hero copy starts with .${column?.[2] ?? "?"}, not the badge`);
+  const offer = html.indexOf('class="hero-offer"');
+  if (column?.[2] === "hero-offer") {
+    if (!(offer >= 0 && badge > offer)) problems.push("the free vacation card is not before the badge");
+  } else if (column?.[2] !== "hero-badge") {
+    problems.push(`the hero copy starts with .${column?.[2] ?? "?"}, not the free vacation card or the badge`);
+  }
   if (count !== 1) problems.push(`the badge is drawn ${count} times`);
   if (!(badge >= 0 && pill > badge)) problems.push("the badge is not before the pill");
   if (!/display: flex;/.test(rule) || !/width: fit-content;/.test(rule) || /margin-top/.test(rule)) {
@@ -252,7 +258,7 @@ async function checkHeroBadge(): Promise<void> {
     problems.push("the first-load intro brings the badge in after the pill");
   }
   if (problems.length) problems.forEach((p) => fail(`hero badge: ${p}`));
-  else console.log(`  ok    ${"/".padEnd(32)} years badge first in the hero, above the pill`);
+  else console.log(`  ok    ${"/".padEnd(32)} free vacation card first, then the years badge, above the pill`);
 }
 
 async function main(): Promise<void> {
