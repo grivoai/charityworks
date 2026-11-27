@@ -62,6 +62,17 @@ export const COMMON_NOT_VISIBLE: NotVisibleRule[] = [
       "is not something on the page.",
   },
   {
+    // The optional small links' addresses (hero.offer.noteHref,
+    // incentive.linkHref). Named for the label they belong to rather than
+    // `href`, so `**.href` above does not reach them.
+    pattern: "**.noteHref",
+    reason: "Where the small link goes. Its words are clickable; the address is not on the page.",
+  },
+  {
+    pattern: "**.linkHref",
+    reason: "Where the text link goes. Its words are clickable; the address is not on the page.",
+  },
+  {
     pattern: "**.variant",
     reason: "A button's style. Visible as an appearance rather than as text.",
   },
@@ -266,6 +277,15 @@ export function notVisibleRules(slug: PageSlug): NotVisibleRule[] {
  * field into one documented as broken.
  */
 export const PAGE_DEFERRED: Partial<Record<PageSlug, NotVisibleRule[]>> = {
+  home: [
+    {
+      pattern: "hero.offer.noteLabel",
+      reason:
+        "The small link under the free vacation card's sub-line. The markup is " +
+        "there and it becomes clickable once both its words and its address " +
+        "are filled in; until then nothing is drawn.",
+    },
+  ],
   /**
    * Both of these replace the form once it has been submitted, so neither is
    * in the page as served. Deliberately not exercised by any automated check:
@@ -293,6 +313,12 @@ export const PAGE_DEFERRED: Partial<Record<PageSlug, NotVisibleRule[]>> = {
     },
   ],
   faqs: [
+    {
+      pattern: "incentive.linkLabel",
+      reason:
+        "The text link under the free vacation section's button. Drawn, and " +
+        "clickable, once both its words and its address are filled in.",
+    },
     {
       pattern: "video.caption",
       reason:
