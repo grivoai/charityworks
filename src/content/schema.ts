@@ -601,7 +601,20 @@ export const homePageSchema = z.object({
           'Where it goes. "#donor" is the incentive section further down this page.'
         ),
         cue: optionalText.describe(
-          'The small gold prompt, e.g. "See how it works →". Optional.'
+          'The small prompt at the right of the card, e.g. "See how it works →". Optional.'
+        ),
+        /**
+         * A second, separate link under the sub-line. Separate because the card
+         * is already one link, and a link cannot sit inside another. Both
+         * halves optional and nothing is drawn unless both are filled in, so a
+         * record saved before these existed looks exactly as it did.
+         */
+        noteLabel: optionalText.describe(
+          'Optional small link under the line above, e.g. "This is not a timeshare". ' +
+            "Shown only when the address below is filled in too."
+        ),
+        noteHref: optionalText.describe(
+          "Where that small link goes, e.g. /travel_voucher. Leave empty to hide the link."
         ),
       })
       .optional(),
@@ -795,6 +808,14 @@ export const faqsPageSchema = z.object({
        * other rather than one being a copy of the other.
        */
       cta: ctaRefSchema.optional(),
+      /** A plain text link under the button. Drawn only when both are set. */
+      linkLabel: optionalText.describe(
+        'Optional text link under the button, e.g. "Voucher program FAQ". ' +
+          "Shown only when the address below is filled in too."
+      ),
+      linkHref: optionalText.describe(
+        "Where that text link goes, e.g. /travel_voucher. Leave empty to hide the link."
+      ),
     })
     .optional(),
   cta: ctaRefSchema,

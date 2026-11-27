@@ -213,44 +213,61 @@ section { position: relative; }
 .hero-badge-ico svg { width: 15px; height: 15px; }
 
 /* ---- The free donor incentive, in the hero ----
-   Gold, where the tiles beside it are glass. That is the whole point of the
-   element: it is the one thing in the hero that costs the visitor nothing, and
-   it spent its life below four sections of page. Sitting in the copy column
-   under the buttons puts it in the reading path — pill, headline, sub,
-   buttons, this — instead of in the stack of things to buy on the right, where
-   it read as a fourth category rather than as a free gift. */
+   First in the copy column, above the credential, and solid bright yellow
+   where everything else in the hero is glass on a dark photograph: it is the
+   one thing here that costs the visitor nothing, and the client wants it seen
+   first, on a phone above all. Static on purpose: no intro rise, no hover lift
+   (the client asked for no flashing or animation), only a colour change on
+   hover so it still reads as clickable.
+
+   Text is the hero's own navy on the yellow. Measured in the browser: the
+   title, cue and note link (#07152e on #ffd43b) are 12.8:1 and the sub-line at
+   82% opacity is 8.5:1, well past AA (4.5:1) at every size used here.
+
+   The card is not itself a link. The label is, and .hero-offer-link::after
+   stretches it over the card (the card is the containing block), so the whole
+   yellow area still opens the offer while the note link — raised above that
+   overlay — goes somewhere else. */
 .hero-offer {
+  position: relative;
   display: flex; align-items: center; gap: 14px;
-  margin-top: 18px; padding: 12px 16px;
+  margin-bottom: 18px; padding: 13px 16px;
   max-width: 520px; border-radius: var(--radius-sm);
-  background: linear-gradient(120deg, rgba(224,168,46,0.16), rgba(224,168,46,0.06));
-  border: 1px solid rgba(224,168,46,0.42);
-  transition: border-color 0.3s var(--ease), background 0.3s var(--ease), transform 0.3s var(--ease);
+  background: #ffd43b;
+  border: 1px solid #e6b800;
+  color: #07152e;
+  box-shadow: 0 10px 28px rgba(7, 21, 46, 0.28);
+  transition: background-color 0.2s var(--ease);
 }
-.hero-offer:hover {
-  border-color: rgba(224,168,46,0.75);
-  background: linear-gradient(120deg, rgba(224,168,46,0.24), rgba(224,168,46,0.1));
-  transform: translateY(-2px);
-}
-.hero-offer:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
-.hero-offer-ico { display: inline-flex; flex: none; color: var(--gold-bright); }
+.hero-offer:hover { background: #ffdc5e; }
+.hero-offer:focus-within { outline: 2px solid #fff; outline-offset: 3px; }
+.hero-offer-link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.hero-offer-link:focus-visible { outline: none; }
+.hero-offer-ico { display: inline-flex; flex: none; color: #07152e; }
 .hero-offer-ico svg { width: 26px; height: 26px; }
 .hero-offer-text { display: block; min-width: 0; }
 .hero-offer-name {
   display: block; font-family: "Playfair Display", serif;
-  font-size: 1.06rem; font-weight: 800; color: #fff; line-height: 1.2;
+  font-size: 1.1rem; font-weight: 800; color: #07152e; line-height: 1.2;
 }
-.hero-offer-sub { display: block; font-size: 0.8rem; color: rgba(255,255,255,0.76); margin-top: 3px; }
+.hero-offer-sub { display: block; font-size: 0.84rem; color: rgba(7, 21, 46, 0.82); margin-top: 3px; line-height: 1.35; }
+.hero-offer-note {
+  position: relative; z-index: 1;
+  display: inline-block; margin-top: 5px;
+  font-size: 0.8rem; font-weight: 700; color: #07152e;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.hero-offer-note:hover { text-decoration-thickness: 2px; }
+.hero-offer-note:focus-visible { outline: 2px solid #07152e; outline-offset: 2px; border-radius: 2px; }
 .hero-offer-cue {
-  margin-left: auto; flex: none; font-size: 0.76rem; font-weight: 600;
-  letter-spacing: 0.04em; color: var(--gold-bright); opacity: 0.85;
-  transition: opacity 0.3s var(--ease);
+  margin-left: auto; flex: none; font-size: 0.76rem; font-weight: 700;
+  letter-spacing: 0.04em; color: #07152e;
 }
-.hero-offer:hover .hero-offer-cue { opacity: 1; }
 
 @media (max-width: 620px) {
-  .hero-offer { max-width: none; padding: 12px 14px; gap: 11px; }
-  .hero-offer-name { font-size: 0.98rem; }
+  .hero-offer { max-width: none; padding: 12px 14px; gap: 11px; align-items: flex-start; }
+  .hero-offer-ico { margin-top: 2px; }
+  .hero-offer-name { font-size: 1rem; }
   /* The cue is the first thing to go: at 375px the label and sub need every
      pixel, and the whole card is the link anyway. */
   .hero-offer-cue { display: none; }
@@ -343,12 +360,10 @@ section { position: relative; }
 [data-home-intro="play"] .hero p.sub { animation: intro-rise 0.85s var(--ease) 0.95s both; }
 [data-home-intro="play"] .hero-btns { animation: intro-rise 0.85s var(--ease) 1.25s both; }
 
-/* Slots into the sequence in DOM order — buttons (1.25s), then the offer — so
-   the eye follows the column down. The badge is first in the column, so it
-   leads the pill (0.1s) rather than arriving last; the whole run still ends
-   well inside INTRO_CLEAR_MS. */
+/* The badge leads the pill (0.1s) rather than arriving last; the whole run
+   still ends well inside INTRO_CLEAR_MS. The free vacation card above the
+   badge has no intro on purpose: it is there from first paint, unanimated. */
 [data-home-intro="play"] .hero-badge { animation: intro-rise 0.8s var(--ease) 0s both; }
-[data-home-intro="play"] .hero-offer { animation: intro-rise 0.85s var(--ease) 1.45s both; }
 
 /* Hero tiles keep their resting float — the intro only fades them in, staggered.
    Two comma-separated animation-delays: the first staggers the fade 0.22s per
@@ -678,6 +693,8 @@ section { position: relative; }
 .faq-incentive-body { color: var(--muted); font-size: 0.96rem; line-height: 1.72; text-align: left; }
 .faq-incentive-body p + p { margin-top: 14px; }
 .faq-incentive-cta { margin-top: 26px; }
+.faq-incentive-more { margin-top: 14px; font-size: 0.92rem; font-weight: 600; }
+.faq-incentive-more a { color: var(--green-soft); text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 620px) {
   .faq-incentive { margin-top: 52px; }
@@ -2639,3 +2656,8 @@ body.nav-open .nav {
 .vp-terms { max-width: 760px; margin: 0 auto; }
 .vp-dining { margin-top: 0; }
 .vp-dining .block-prose { margin-left: auto; margin-right: auto; }
+
+/* The optional text link under the voucher page's booking button. */
+.vp-event-link { margin-top: 16px; font-size: 0.95rem; font-weight: 600; }
+.vp-event-link a { color: var(--green-soft); text-decoration: underline; text-underline-offset: 3px; }
+.faq-incentive-more a:hover, .vp-event-link a:hover { color: var(--green-mid); }

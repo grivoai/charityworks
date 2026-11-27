@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { TravelVoucherPage } from "@/content/hidden-pages";
 import { withBookingPage } from "@/lib/calendly";
 
@@ -6,7 +7,7 @@ import { withBookingPage } from "@/lib/calendly";
  * and the admin's preview frame, like GuitarPricesBody.
  */
 export function TravelVoucherBody({ page }: { page: TravelVoucherPage }) {
-  const { heading, lede, steps, explanation, faqHeading, faqs, booking } = page;
+  const { heading, lede, steps, explanation, faqHeading, faqs, booking, eventLinkLabel, eventLinkHref } = page;
 
   return (
     <>
@@ -68,6 +69,12 @@ export function TravelVoucherBody({ page }: { page: TravelVoucherPage }) {
               {booking.label}
             </a>
           </p>
+          {/* Optional, drawn only when both halves are set. */}
+          {eventLinkLabel && eventLinkHref && (
+            <p className="vp-event-link center">
+              <Link href={eventLinkHref}>{eventLinkLabel}</Link>
+            </p>
+          )}
         </div>
       </section>
     </>

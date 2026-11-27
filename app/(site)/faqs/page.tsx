@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { getPage } from "@/lib/content";
@@ -129,6 +130,19 @@ export default async function FaqsRoute() {
                 <div className="faq-incentive-cta">
                   <Cta cta={page.incentive.cta} onDark={false} path="incentive.cta" />
                 </div>
+              )}
+
+              {/* Optional, and drawn only when both halves are set, so a
+                  record saved before the fields existed looks as it did. */}
+              {page.incentive.linkLabel && page.incentive.linkHref && (
+                <p className="faq-incentive-more">
+                  <Link
+                    href={page.incentive.linkHref}
+                    {...editable("incentive.linkLabel")}
+                  >
+                    {page.incentive.linkLabel}
+                  </Link>
+                </p>
               )}
             </section>
           )}
